@@ -1,0 +1,34 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>table {width: 100%;}</style>
+{% endblock %}
+
+{% block content_title %}<h1>RQ Stats</h1>{% endblock %}
+
+{% block content %}
+
+<div id="content-main">
+    {% for queue in queues %}
+        <div class="module">
+            <table>
+                <caption>{{ queue.name }}</caption>
+                <thead>
+                    <tr>
+                        <th>Number of jobs</th>
+                        <th>Number of workers</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ queue.jobs }}</td>
+                        <td>{{ queue.workers }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    {% endfor %}
+</div>
+    
+{% endblock %}
