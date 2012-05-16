@@ -1,17 +1,24 @@
 =========
-Django RQ
+Django-RQ
 =========
 
-Django integration with `rq <https://github.com/nvie/rq>`_, a Redis based
-Python queuing library. django_rq is a simple app that allows you to configure
-your queues in django's ``settings.py`` and easily use them in your project. 
+Django integration with `RQ <https://github.com/nvie/rq>`_, a `Redis <http://redis.io/>`_
+based Python queuing library. `Django-RQ <https://github.com/ui/django-rq>`_ is a
+simple app that allows you to configure your queues in django's ``settings.py``
+and easily use them in your project. 
 
+============
+Requirements
+============
+
+* `Django <https://www.djangoproject.com/>`_
+* `RQ`_
 
 ============
 Installation
 ============
 
-* Put django_rq in your Python Path
+* Put django_rq in your Python Path (installation via pip coming soon)
 * Add ``django_rq`` to ``INSTALLED_APPS`` in ``settings.py``::
     
     INSTALLED_APPS = (
@@ -47,17 +54,26 @@ Usage
 Putting jobs in the queue
 -------------------------
 
-django_rq allows you to easily use any of the queues defined in ``settings.py``
+`Django-RQ` allows you to easily put jobs into any of the queues defined in
+``settings.py``. It comes with a few utility functions:
 
-* enqueue - push a job to the ``default`` queue::
+* ``enqueue`` - push a job to the ``default`` queue::
     
     import django_rq
     django_rq.enqueue(func, foo, bar=baz)
 
-* get_queue - returns an rq ``Queue`` instance::
+* ``get_queue`` - accepts a single queue name argument (defaults to "default")
+  and returns an `RQ` ``Queue`` instance for you to queue jobs into::
     
     import django_rq
-    django_rq.get_queue('test').enqueue(func, foo, bar=baz)
+    queue = django_rq.get_queue('test')
+    queue.enqueue(func, foo, bar=baz)
+
+* ``get_connection`` - accepts a single queue name argument (defaults to "default")
+  and returns a connection to the queue's `Redis`_ server::
+
+    import django_rq
+    redis_conn = django_rq.get_connection('test')
 
 
 Running workers
