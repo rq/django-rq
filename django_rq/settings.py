@@ -1,13 +1,9 @@
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 
-DEFAULT_QUEUES = {
-    'default': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
-    }
-}
 
-QUEUES = getattr(settings, 'RQ_QUEUES', DEFAULT_QUEUES)
+QUEUES = getattr(settings, 'RQ_QUEUES', None)
+if QUEUES is None:
+    raise ImproperlyConfigured("You have to define RQ_QUEUES in settings.py")
 NAME = getattr(settings, 'RQ_NAME', 'default')
 BURST = getattr(settings, 'RQ_BURST', False)

@@ -1,3 +1,4 @@
+from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
 from django.test.utils import override_settings
 
@@ -60,3 +61,8 @@ class DjangoRQTest(TestCase):
         self.assertEqual(connection_kwargs['host'], config['HOST'])
         self.assertEqual(connection_kwargs['port'], config['PORT'])
         self.assertEqual(connection_kwargs['db'], config['DB'])
+
+    @override_settings(RQ_QUEUES=None)
+    def test_empty_queue_setting_raises_exception(self):
+        # Raise an exception if RQ_QUEUES is not defined
+        self.assertRaises(ImproperlyConfigured, get_connection)
