@@ -18,7 +18,10 @@ Requirements
 Installation
 ============
 
-* Put django_rq in your Python Path (installation via pip coming soon)
+* Install ``django-rq``::
+    
+    pip install django-rq
+
 * Add ``django_rq`` to ``INSTALLED_APPS`` in ``settings.py``::
     
     INSTALLED_APPS = (
