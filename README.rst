@@ -90,4 +90,10 @@ defined in ``settings.py``::
 Queue statistics
 ----------------
 
-You can also monitor the status of your queues from ``/django_rq/``.
+You can also monitor the status of your queues from ``/django_rq/``. This uses some
+features that's not yet available in RQ's current stable release (0.1.3) so you'll need
+to install RQ's development version from https://github.com/nvie/rq to use this feature.
+
+If you need a more sophisticated monitoring tools for RQ, you could also try
+`rq-dashboard <https://github.com/nvie/rq-dashboard>`_.
+provides a more comprehensive of monitoring tools.
