@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name='django-rq',
     version='0.1.0',
     author='Selwin Ong',
     author_email='selwin.ong@gmail.com',
-    packages=['django_rq'],
+    packages=['django_rq', 'django_rq.management'],
     url='https://github.com/ui/django-rq',
     license='MIT',
     description='A simple app that provides django integration for RQ (Redis Queue)',
     long_description=open('README.rst').read(),
     zip_safe=False,
     include_package_data=True,
-    package_data = { '': ['README.rst'] },
+    package_data={'': ['README.rst']},
     install_requires=['django', 'rq'],
     classifiers=[
         'Development Status :: 4 - Beta',
