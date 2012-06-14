@@ -3,20 +3,41 @@ from django.core.management.base import BaseCommand
 from rq import Queue, Worker
 from redis.exceptions import ConnectionError
 
-from django_rq import settings
-from django_rq.queues import get_connection
+from django_rq import get_queue
+
+
+def get_queues(*queue_names):
+    """
+    Return queue instances from specified queue names.
+    All instances must use the same Redis connection.
+    """
+    from django_rq import settings
+    if len(queue_names) > 1:
+        connection_params = settings.QUEUES[queue_names[0]]
+        for name in queue_names:
+            if settings.QUEUES[name] != connection_params:
+                raise ValueError('All queues in a single command must have the same redis connection')
+    return [get_queue(name) for name in queue_names]
 
 
 class Command(BaseCommand):
     """
-    RQ consumer
-    """
+    Runs RQ workers on specified queues. Note that all queues passed into a single rqworker
+    command must share the same connection.
 
-    def handle(self, *args, **options):
+    Example usage:
+    python manage.py rqworker high medium low
+    """
+    args = '<queue queue ...>'
+
+    def handle(self, *args, **options):        
+        if args:
+            queues = get_queues(*args)
+        else:
+            from django_rq import settings
+            queues = get_queues(*settings.QUEUES.keys())
         try:
-            queues = [Queue(name, connection=get_connection(name)) for name in settings.QUEUES]
-            for queue in queues:
-                w = Worker([queue], connection=queue.connection)
-                w.work(burst=settings.BURST)
+            w = Worker(queues, connection=queues[0].connection)
+            w.work()
         except ConnectionError as e:
             print(e)

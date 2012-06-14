@@ -37,10 +37,15 @@ Installation
             'PORT': 6379,
             'DB': 0,
         },
-        'test': {
+        'high': {
             'HOST': 'localhost',
-            'PORT': 1,
-            'DB': 1,
+            'PORT': 6379,
+            'DB': 0,
+        }
+        'low': {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 0,
         }
     }
 * Include ``django_rq.urls`` in your ``urls.py``::
@@ -69,22 +74,22 @@ Putting jobs in the queue
   and returns an `RQ` ``Queue`` instance for you to queue jobs into::
     
     import django_rq
-    queue = django_rq.get_queue('test')
+    queue = django_rq.get_queue('high')
     queue.enqueue(func, foo, bar=baz)
 
 * ``get_connection`` - accepts a single queue name argument (defaults to "default")
   and returns a connection to the queue's `Redis`_ server::
 
     import django_rq
-    redis_conn = django_rq.get_connection('test')
+    redis_conn = django_rq.get_connection('high')
 
 
 Running workers
 ---------------
 django_rq provides a management command that starts a worker for every queue
-defined in ``settings.py``::
+specified as arguments::
     
-    python manage.py rqworkers
+    python manage.py rqworkers high default low
 
 
 Queue statistics

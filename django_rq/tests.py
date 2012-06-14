@@ -1,9 +1,11 @@
 from django.core.exceptions import ImproperlyConfigured
+from django.core.management import call_command
 from django.test import TestCase
 from django.test.utils import override_settings
 
 from rq.job import Job
 
+from .management.commands.rqworker import get_queues
 from .queues import get_connection, get_queue
 
 
@@ -17,7 +19,12 @@ TEST_QUEUES = {
         'HOST': 'localhost',
         'PORT': 1,
         'DB': 1,
-    }
+    },
+    'test2': {
+        'HOST': 'localhost',
+        'PORT': 1,
+        'DB': 1,
+    },
 }
 
 
@@ -66,3 +73,10 @@ class DjangoRQTest(TestCase):
     def test_empty_queue_setting_raises_exception(self):
         # Raise an exception if RQ_QUEUES is not defined
         self.assertRaises(ImproperlyConfigured, get_connection)
+
+    @override_settings(RQ_QUEUES=TEST_QUEUES)
+    def test_get_queues(self):        
+        # Getting queues with the same redis connection is ok
+        self.assertEqual(get_queues('test', 'test2'), [get_queue('test'), get_queue('test2')])
+        # Getting queues with different connections raises an exception
+        self.assertRaises(ValueError, get_queues, 'default', 'test')
