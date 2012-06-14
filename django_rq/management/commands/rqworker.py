@@ -16,7 +16,9 @@ def get_queues(*queue_names):
         connection_params = settings.QUEUES[queue_names[0]]
         for name in queue_names:
             if settings.QUEUES[name] != connection_params:
-                raise ValueError('All queues in a single command must have the same redis connection')
+                raise ValueError('Queues in a single command must have the same '
+                                 'redis connection. Queues "{0}" and "{1}" have '
+                                 'different connections'.format(name, queue_names[0]))
     return [get_queue(name) for name in queue_names]
 
 
