@@ -1,12 +1,20 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
 from django.test import TestCase
+from django.utils.unittest import skipIf
 from django.test.utils import override_settings
 
 from rq.job import Job
 
 from .management.commands.rqworker import get_queues
 from .queues import get_connection, get_queue
+
+try:
+    from rq_scheduler import Scheduler
+    from .queues import get_scheduler
+    RQ_SCHEDULER_INSTALLED = True
+except ImportError:
+    RQ_SCHEDULER_INSTALLED = False
 
 
 TEST_QUEUES = {
@@ -80,3 +88,28 @@ class DjangoRQTest(TestCase):
         self.assertEqual(get_queues('test', 'test2'), [get_queue('test'), get_queue('test2')])
         # Getting queues with different connections raises an exception
         self.assertRaises(ValueError, get_queues, 'default', 'test')
+
+    @override_settings(RQ_QUEUES=TEST_QUEUES)
+    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    def test_get_scheduler(self):        
+        """
+        Ensure get_scheduler creates a scheduler instance with the right
+        connection params.
+        """
+        
+        config = TEST_QUEUES['default']
+        scheduler = get_scheduler()
+        connection_kwargs = scheduler.connection.connection_pool.connection_kwargs
+        self.assertEqual(scheduler.queue_name, 'default')
+        self.assertEqual(connection_kwargs['host'], config['HOST'])
+        self.assertEqual(connection_kwargs['port'], config['PORT'])
+        self.assertEqual(connection_kwargs['db'], config['DB'])        
+
+        config = TEST_QUEUES['test']
+        scheduler = get_scheduler('test')
+        connection_kwargs = scheduler.connection.connection_pool.connection_kwargs
+        self.assertEqual(scheduler.queue_name, 'test')
+        self.assertEqual(connection_kwargs['host'], config['HOST'])
+        self.assertEqual(connection_kwargs['port'], config['PORT'])
+        self.assertEqual(connection_kwargs['db'], config['DB'])        
+

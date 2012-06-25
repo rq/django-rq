@@ -1,3 +1,5 @@
+from django.core.exceptions import ImproperlyConfigured
+
 import redis
 from rq import Queue
 
@@ -27,3 +29,20 @@ def enqueue(func, *args, **kwargs):
     enqueue(func, *args, **kwargs)
     '''
     return get_queue().enqueue(func, *args, **kwargs)
+
+
+"""
+If rq_scheduler is installed, provide a ``get_scheduler`` function that behaves
+like ``get_connection``, except that it returns a ``Scheduler`` instance instead of
+a ``Queue`` instance.
+"""
+try:
+    from rq_scheduler import Scheduler
+    def get_scheduler(name='default'):
+        """
+        Returns an RQ Scheduler instance using parameters defined in ``RQ_QUEUES``
+        """
+        return Scheduler(name, connection=get_connection(name))
+except ImportError:
+    def get_scheduler(name='default'):
+        raise ImproperlyConfigured('rq_scheduler not installed')

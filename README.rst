@@ -92,6 +92,17 @@ specified as arguments::
     python manage.py rqworkers high default low
 
 
+Support for RQ Scheduler
+------------------------
+
+If you have `RQ Scheduler <https://github.com/ui/rq-scheduler>`_ installed,
+you can also use the ``get_scheduler`` function to return a ``Scheduler``
+instance for queues defined in settings.py's ``RQ_QUEUES``. For example:
+
+    import django_rq
+    scheduler = django_rq.get_scheduler('default')
+    job = scheduler.enqueue_at(datetime(2020, 10, 10), func)
+
 Queue statistics
 ----------------
 
