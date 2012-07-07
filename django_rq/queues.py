@@ -10,6 +10,10 @@ def get_connection(name='default'):
     """
     from .settings import QUEUES
     queue_config = QUEUES[name]
+    if 'PASSWORD' in queue_config:
+        return redis.Redis(host=queue_config['HOST'],
+                           port=queue_config['PORT'], db=queue_config['DB'],
+                           password=queue_config['PASSWORD'])        
     return redis.Redis(host=queue_config['HOST'],
         port=queue_config['PORT'], db=queue_config['DB'])
 
