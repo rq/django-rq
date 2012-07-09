@@ -11,7 +11,8 @@ def get_connection(name='default'):
     from .settings import QUEUES
     queue_config = QUEUES[name]
     return redis.Redis(host=queue_config['HOST'],
-        port=queue_config['PORT'], db=queue_config['DB'])
+        port=queue_config['PORT'], db=queue_config['DB'],
+        password=queue_config.get('PASSWORD', None))
 
 
 def get_queue(name='default'):
