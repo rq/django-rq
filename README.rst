@@ -36,6 +36,7 @@ Installation
             'HOST': 'localhost',
             'PORT': 6379,
             'DB': 0,
+            'PASSWORD': 'some-password',
         },
         'high': {
             'HOST': 'localhost',
@@ -113,3 +114,9 @@ to install RQ's development version from https://github.com/nvie/rq to use this 
 If you need a more sophisticated monitoring tools for RQ, you could also try
 `rq-dashboard <https://github.com/nvie/rq-dashboard>`_.
 provides a more comprehensive of monitoring tools.
+
+=========
+Changelog
+=========
+
+* Version 0.2.2: "PASSWORD" key in RQ_QUEUES will now be used when connecting to Redis.
