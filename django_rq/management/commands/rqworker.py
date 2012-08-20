@@ -3,7 +3,7 @@ from django.core.management.base import BaseCommand
 from rq import Worker
 from redis.exceptions import ConnectionError
 
-from django_rq import get_queues
+from django_rq.queues import get_queues
 
 
 class Command(BaseCommand):
