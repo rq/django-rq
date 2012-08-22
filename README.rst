@@ -84,6 +84,12 @@ Putting jobs in the queue
     import django_rq
     redis_conn = django_rq.get_connection('high')
 
+* ``get_worker`` - accepts optionnal queue names and returns a new `RQ` ``Worker`` instance for all (or given) queues::
+
+    import django_rq
+    w = django_rq.get_worker('default', 'hight')
+    w.run()
+
 
 Running workers
 ---------------
