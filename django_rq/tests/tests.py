@@ -25,7 +25,8 @@ QUEUES = settings.RQ_QUEUES
 class QueuesTest(TestCase):
 
     def test_get_connection_default(self):
-        """Test that get_connection returns the right connection based for
+        """
+        Test that get_connection returns the right connection based for
         `defaut` queue.
         """
         config = QUEUES['default']
@@ -36,7 +37,8 @@ class QueuesTest(TestCase):
         self.assertEqual(connection_kwargs['db'], config['DB'])
 
     def test_get_connection_test(self):
-        """Test that get_connection returns the right connection based for
+        """
+        Test that get_connection returns the right connection based for
         `test` queue.
         """
         config = QUEUES['test']
@@ -47,7 +49,8 @@ class QueuesTest(TestCase):
         self.assertEqual(connection_kwargs['db'], config['DB'])
 
     def test_get_queue_default(self):
-        """Test that get_queue use the right parameters for `default`
+        """
+        Test that get_queue use the right parameters for `default`
         connection.
         """
         config = QUEUES['default']
@@ -59,7 +62,8 @@ class QueuesTest(TestCase):
         self.assertEqual(connection_kwargs['db'], config['DB'])
 
     def test_get_queue_test(self):
-        """Test that get_queue use the right parameters for `test`
+        """
+        Test that get_queue use the right parameters for `test`
         connection.
         """
         config = QUEUES['test']
@@ -76,19 +80,22 @@ class QueuesTest(TestCase):
         self.assertRaises(ImproperlyConfigured, get_connection)
 
     def test_get_queues_same_connection(self):
-        """Checks that getting queues with the same redis connection is ok.
+        """
+        Checks that getting queues with the same redis connection is ok.
         """
         self.assertEqual(get_queues('test', 'test2'), [get_queue('test'), get_queue('test2')])
 
     def test_get_queues_different_connections(self):
-        """Checks that getting queues with different redis connections raise
+        """
+        Checks that getting queues with different redis connections raise
         an exception.
         """
         self.assertRaises(ValueError, get_queues, 'default', 'test')
 
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     def test_get_scheduler(self):
-        """Ensure get_scheduler creates a scheduler instance with the right
+        """
+        Ensure get_scheduler creates a scheduler instance with the right
         connection params for `default` queue.
         """
         config = QUEUES['default']
@@ -101,7 +108,8 @@ class QueuesTest(TestCase):
 
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     def test_get_scheduler(self):
-        """Ensure get_scheduler creates a scheduler instance with the right
+        """
+        Ensure get_scheduler creates a scheduler instance with the right
         connection params for `test` queue.
         """
         config = QUEUES['test']
@@ -115,14 +123,16 @@ class QueuesTest(TestCase):
 
 class WorkersTest(TestCase):
     def test_get_worker_all(self):
-        """Checks if a worker with all queues is created when no args
+        """
+        Checks if a worker with all queues is created when no args
         given.
         """
         w = get_worker()
         self.assertEqual(len(w.queues), 3)
 
     def test_get_worker_specified(self):
-        """Checks if a worker with specified queues is created when queue
+        """
+        Checks if a worker with specified queues is created when queue
         names are given.
         """
         w = get_worker('test')

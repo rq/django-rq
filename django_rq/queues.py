@@ -42,12 +42,12 @@ def get_queues(*queue_names):
 
 
 def enqueue(func, *args, **kwargs):
-    '''
+    """
     A convenience function to put a job in the default queue. Usage::
 
     from django_rq import enqueue
     enqueue(func, *args, **kwargs)
-    '''
+    """
     return get_queue().enqueue(func, *args, **kwargs)
 
 
