@@ -7,6 +7,8 @@ based Python queuing library. `Django-RQ <https://github.com/ui/django-rq>`_ is 
 simple app that allows you to configure your queues in django's ``settings.py``
 and easily use them in your project.
 
+.. image:: https://secure.travis-ci.org/jeanphix/django-rq.png
+
 ============
 Requirements
 ============
@@ -84,6 +86,12 @@ Putting jobs in the queue
     import django_rq
     redis_conn = django_rq.get_connection('high')
 
+* ``get_worker`` - accepts optionnal queue names and returns a new `RQ` ``Worker`` instance for all (or given) queues::
+
+    import django_rq
+    w = django_rq.get_worker('default', 'hight')
+    w.run()
+
 
 Running workers
 ---------------
@@ -114,6 +122,20 @@ to install RQ's development version from https://github.com/nvie/rq to use this 
 If you need a more sophisticated monitoring tools for RQ, you could also try
 `rq-dashboard <https://github.com/nvie/rq-dashboard>`_.
 provides a more comprehensive of monitoring tools.
+
+Testing tip
+-----------
+
+For an easier testing process, you can run a worker synchronously this way::
+
+    from django.test impor TestCase
+    from django_rq import get_worker
+
+    class MyTest(TestCase):
+        def test_something_that_creates_jobs(self):
+            ...                      # Stuff that init jobs.
+            get_worker().work(True)  # Processes all jobs then stop.
+            ...                      # Asserts that the job stuff is done.
 
 =========
 Changelog
