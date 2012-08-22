@@ -1,9 +1,8 @@
 from django.core.management.base import BaseCommand
 
-from rq import Worker
 from redis.exceptions import ConnectionError
 
-from django_rq.queues import get_queues
+from django_rq.workers import get_worker
 
 
 class Command(BaseCommand):
@@ -17,9 +16,8 @@ class Command(BaseCommand):
     args = '<queue queue ...>'
 
     def handle(self, *args, **options):
-        queues = get_queues(*args)
         try:
-            w = Worker(queues, connection=queues[0].connection)
+            w = get_worker(*args)
             w.work()
         except ConnectionError as e:
             print(e)
