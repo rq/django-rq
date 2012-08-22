@@ -6,6 +6,7 @@ from django.test.utils import override_settings
 
 from rq.job import Job
 
+from .decorators import job
 from .management.commands.rqworker import get_queues
 from .queues import get_connection, get_queue
 
@@ -31,6 +32,11 @@ TEST_QUEUES = {
     'test2': {
         'HOST': 'localhost',
         'PORT': 1,
+        'DB': 1,
+    },
+    'test3': {
+        'HOST': 'localhost',
+        'PORT': 6379,
         'DB': 1,
     },
 }
@@ -113,3 +119,19 @@ class DjangoRQTest(TestCase):
         self.assertEqual(connection_kwargs['port'], config['PORT'])
         self.assertEqual(connection_kwargs['db'], config['DB'])        
 
+    @override_settings(RQ_QUEUES=TEST_QUEUES)
+    def test_job_decorator(self):        
+        # Ensure that decorator passes in the right queue from settings.py
+        queue_name = 'test3'
+        config = TEST_QUEUES[queue_name]
+        @job(queue_name)
+        def test():
+            pass
+        result = test.delay()
+        queue = get_queue(queue_name)
+        connection = get_connection(queue_name)
+        self.assertEqual(result.origin, queue_name)
+        connection_kwargs = connection.connection_pool.connection_kwargs
+        self.assertEqual(connection_kwargs['host'], config['HOST'])
+        self.assertEqual(connection_kwargs['port'], config['PORT'])
+        self.assertEqual(connection_kwargs['db'], config['DB'])       

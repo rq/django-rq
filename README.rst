@@ -119,4 +119,6 @@ provides a more comprehensive of monitoring tools.
 Changelog
 =========
 
+* Version 0.3.0: Added support for RQ's ``@job`` decorator
+
 * Version 0.2.2: "PASSWORD" key in RQ_QUEUES will now be used when connecting to Redis.
