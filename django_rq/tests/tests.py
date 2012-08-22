@@ -8,6 +8,8 @@ from django.conf import settings
 from rq.job import Job
 
 from django_rq.queues import get_connection, get_queue, get_queues
+from django_rq.workers import get_worker
+
 
 try:
     from rq_scheduler import Scheduler
@@ -110,3 +112,7 @@ class QueuesTest(TestCase):
         self.assertEqual(connection_kwargs['port'], config['PORT'])
         self.assertEqual(connection_kwargs['db'], config['DB'])
 
+
+class WorkersTest(TestCase):
+    def test_get_worker_all(self):
+        self.assertRaises(ValueError, get_worker)
