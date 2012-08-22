@@ -121,6 +121,20 @@ If you need a more sophisticated monitoring tools for RQ, you could also try
 `rq-dashboard <https://github.com/nvie/rq-dashboard>`_.
 provides a more comprehensive of monitoring tools.
 
+Testing tip
+-----------
+
+For an easier testing process, you can run a worker synchronously this way::
+
+    from django.test impor TestCase
+    from django_rq import get_worker
+
+    class MyTest(TestCase):
+        def test_something_that_creates_jobs(self):
+            ...                      # Stuff that init jobs.
+            get_worker().work(True)  # Processes all jobs then stop.
+            ...                      # Assert that the job stuff is done.
+
 =========
 Changelog
 =========
