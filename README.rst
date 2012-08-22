@@ -133,7 +133,7 @@ For an easier testing process, you can run a worker synchronously this way::
         def test_something_that_creates_jobs(self):
             ...                      # Stuff that init jobs.
             get_worker().work(True)  # Processes all jobs then stop.
-            ...                      # Assert that the job stuff is done.
+            ...                      # Asserts that the job stuff is done.
 
 =========
 Changelog
