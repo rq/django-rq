@@ -17,11 +17,7 @@ class Command(BaseCommand):
     args = '<queue queue ...>'
 
     def handle(self, *args, **options):
-        if args:
-            queues = get_queues(*args)
-        else:
-            from django_rq import settings
-            queues = get_queues(*settings.QUEUES.keys())
+        queues = get_queues(*args)
         try:
             w = Worker(queues, connection=queues[0].connection)
             w.work()

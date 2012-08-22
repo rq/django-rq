@@ -36,6 +36,8 @@ def get_queues(*queue_names):
                     'Queues in a single command must have the same '
                     'redis connection. Queues "{0}" and "{1}" have '
                     'different connections'.format(name, queue_names[0]))
+    else:
+        queue_names = QUEUES.keys()
     return [get_queue(name) for name in queue_names]
 
 
