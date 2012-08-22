@@ -115,4 +115,15 @@ class QueuesTest(TestCase):
 
 class WorkersTest(TestCase):
     def test_get_worker_all(self):
-        self.assertRaises(ValueError, get_worker)
+        """Checks if a worker with all queues is created when no args
+        given.
+        """
+        w = get_worker()
+        self.assertEqual(len(w.queues), 3)
+
+    def test_get_worker_specified(self):
+        """Checks if a worker with specified queues is created when queue
+        names are given.
+        """
+        w = get_worker('test')
+        self.assertEqual(len(w.queues), 1)
