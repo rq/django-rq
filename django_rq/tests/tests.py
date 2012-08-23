@@ -124,11 +124,10 @@ class QueuesTest(TestCase):
 class WorkersTest(TestCase):
     def test_get_worker_all(self):
         """
-        Checks if a worker with all queues is created when no args
-        given.
+        Checks if raises an exception when all queues not in same
+        connection.
         """
-        w = get_worker()
-        self.assertEqual(len(w.queues), 3)
+        self.assertRaises(ValueError, get_worker)
 
     def test_get_worker_specified(self):
         """

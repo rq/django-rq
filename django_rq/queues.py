@@ -28,7 +28,9 @@ def get_queues(*queue_names):
     All instances must use the same Redis connection.
     """
     from .settings import QUEUES
-    if len(queue_names) > 0:
+    if len(queue_names) == 0:
+        queue_names = QUEUES.keys()
+    if len(queue_names) > 1:
         connection_params = QUEUES[queue_names[0]]
         for name in queue_names:
             if QUEUES[name] != connection_params:
@@ -36,8 +38,6 @@ def get_queues(*queue_names):
                     'Queues in a single command must have the same '
                     'redis connection. Queues "{0}" and "{1}" have '
                     'different connections'.format(name, queue_names[0]))
-    else:
-        queue_names = QUEUES.keys()
     return [get_queue(name) for name in queue_names]
 
 
