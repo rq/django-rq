@@ -86,11 +86,13 @@ Putting jobs in the queue
     import django_rq
     redis_conn = django_rq.get_connection('high')
 
-* ``get_worker`` - accepts optionnal queue names and returns a new `RQ` ``Worker`` instance for all (or given) queues::
+* ``get_worker`` - accepts optional queue names and returns a new `RQ`
+  ``Worker`` instance for specified queues (or ``default`` queue)::
 
     import django_rq
-    w = django_rq.get_worker('default', 'hight')
-    w.run()
+    worker = django_rq.get_worker() # Returns a worker for "default" queue
+    worker.run()
+    worker = django_rq.get_worker('low', 'high') # Returns a worker for "low" and "high"
 
 
 Running workers
@@ -112,16 +114,17 @@ instance for queues defined in settings.py's ``RQ_QUEUES``. For example::
     scheduler = django_rq.get_scheduler('default')
     job = scheduler.enqueue_at(datetime(2020, 10, 10), func)
 
+
 Queue statistics
 ----------------
 
-You can also monitor the status of your queues from ``/django_rq/``. This uses some
-features that's not yet available in RQ's current stable release (0.1.3) so you'll need
-to install RQ's development version from https://github.com/nvie/rq to use this feature.
+``django_rq`` also provides a very simple dashboard to monitor the status of
+your queues at ``/django_rq/``.
 
 If you need a more sophisticated monitoring tools for RQ, you could also try
 `rq-dashboard <https://github.com/nvie/rq-dashboard>`_.
 provides a more comprehensive of monitoring tools.
+
 
 Testing tip
 -----------
@@ -134,13 +137,28 @@ For an easier testing process, you can run a worker synchronously this way::
     class MyTest(TestCase):
         def test_something_that_creates_jobs(self):
             ...                      # Stuff that init jobs.
-            get_worker().work(True)  # Processes all jobs then stop.
+            get_worker().work(burst=True)  # Processes all jobs then stop.
             ...                      # Asserts that the job stuff is done.
+
+
+=============
+Running Tests
+=============
+
+To run ``django_rq``'s test suite::
+
+    django-admin.py test django_rq --settings=django_rq.tests.settings --pythonpath=.
 
 =========
 Changelog
 =========
 
-* Version 0.3.0: Added support for RQ's ``@job`` decorator
+Version 0.3.0
+-------------
+* Added support for RQ's ``@job`` decorator
+* Added ``get_worker`` command
 
-* Version 0.2.2: "PASSWORD" key in RQ_QUEUES will now be used when connecting to Redis.
+
+Version 0.2.2
+-------------
+* "PASSWORD" key in RQ_QUEUES will now be used when connecting to Redis.
