@@ -1,5 +1,6 @@
 Author:
-Selwin Ong
+* Selwin Ong
 
 Contributors:
-Gilang Chandrasa
+* Gilang Chandrasa
+* Jean-Philippe Serafin
