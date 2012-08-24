@@ -95,6 +95,20 @@ Putting jobs in the queue
     worker = django_rq.get_worker('low', 'high') # Returns a worker for "low" and "high"
 
 
+@job decorator
+--------------
+
+To easily turn a callable into an RQ task, you can also use the ``@job``
+decorator that comes with ``django_rq``::
+
+    import django_rq
+
+    @django_rq.job('high') 
+    def long_running_func():
+        pass
+    long_running_func.delay() # Enqueue function in the "high" queue
+
+
 Running workers
 ---------------
 django_rq provides a management command that starts a worker for every queue
