@@ -10,6 +10,8 @@ def get_connection(name='default'):
     """
     from .settings import QUEUES
     queue_config = QUEUES[name]
+    if 'URL' in queue_config:
+        return redis.from_url(queue_config['URL'], db=queue_config['DB'])
     return redis.Redis(host=queue_config['HOST'],
         port=queue_config['PORT'], db=queue_config['DB'],
         password=queue_config.get('PASSWORD', None))

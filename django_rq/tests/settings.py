@@ -33,5 +33,9 @@ RQ_QUEUES = {
         'PORT': 6379,
         'DB': 1,
     },
+    'url': {
+        'URL': 'redis://username:password@host:1234/',
+        'DB': 4,
+    }
 }
 

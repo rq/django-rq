@@ -62,6 +62,20 @@ class QueuesTest(TestCase):
         self.assertEqual(connection_kwargs['port'], config['PORT'])
         self.assertEqual(connection_kwargs['db'], config['DB'])
 
+    def test_get_queue_url(self):
+        """
+        Test that get_queue use the right parameters for queues using URL for
+        connection.
+        """
+        config = QUEUES['url']
+        queue = get_queue('url')
+        connection_kwargs = queue.connection.connection_pool.connection_kwargs
+        self.assertEqual(queue.name, 'url')
+        self.assertEqual(connection_kwargs['host'], 'host')
+        self.assertEqual(connection_kwargs['port'], 1234)
+        self.assertEqual(connection_kwargs['db'], 4)
+        self.assertEqual(connection_kwargs['password'], 'password')
+
     def test_get_queue_test(self):
         """
         Test that get_queue use the right parameters for `test`

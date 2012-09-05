@@ -41,9 +41,8 @@ Installation
             'PASSWORD': 'some-password',
         },
         'high': {
-            'HOST': 'localhost',
-            'PORT': 6379,
-            'DB': 0,
+            'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379'), # If you're on Heroku
+            'DB': 0,            
         },
         'low': {
             'HOST': 'localhost',
