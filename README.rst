@@ -166,6 +166,10 @@ To run ``django_rq``'s test suite::
 Changelog
 =========
 
+Version 0.3.1
+-------------
+* Queues can now be configured using the URL parameter in ``settings.py``.
+
 Version 0.3.0
 -------------
 * Added support for RQ's ``@job`` decorator
