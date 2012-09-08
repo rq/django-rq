@@ -2,12 +2,12 @@
 Django-RQ
 =========
 
+.. image:: https://secure.travis-ci.org/ui/django-rq.png
+
 Django integration with `RQ <https://github.com/nvie/rq>`_, a `Redis <http://redis.io/>`_
 based Python queuing library. `Django-RQ <https://github.com/ui/django-rq>`_ is a
 simple app that allows you to configure your queues in django's ``settings.py``
 and easily use them in your project.
-
-.. image:: https://secure.travis-ci.org/ui/django-rq.png
 
 ============
 Requirements
@@ -20,7 +20,7 @@ Requirements
 Installation
 ============
 
-* Install ``django-rq``::
+* Install ``django-rq`` (or `download from PyPI <http://pypi.python.org/pypi/django-rq>`_)::
 
     pip install django-rq
 
@@ -100,12 +100,17 @@ Putting jobs in the queue
 To easily turn a callable into an RQ task, you can also use the ``@job``
 decorator that comes with ``django_rq``::
 
-    import django_rq
+    from django_rq import job
 
-    @django_rq.job('high') 
+    @job
     def long_running_func():
         pass
-    long_running_func.delay() # Enqueue function in the "high" queue
+    long_running_func.delay() # Enqueue function in "default" queue
+
+    @job('high') 
+    def long_running_func():
+        pass
+    long_running_func.delay() # Enqueue function in "high" queue
 
 
 Running workers
