@@ -115,6 +115,14 @@ class DecoratorTest(TestCase):
         queue = get_queue(queue_name)
         self.assertEqual(result.origin, queue_name)
 
+    def test_job_decorator_default(self):
+        # Ensure that decorator passes in the right queue from settings.py
+        @job
+        def test():
+            pass
+        result = test.delay()
+        self.assertEqual(result.origin, 'default')
+
 
 class ConfigTest(TestCase):
     @override_settings(RQ_QUEUES=None)
