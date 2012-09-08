@@ -139,9 +139,8 @@ Queue statistics
 ``django_rq`` also provides a very simple dashboard to monitor the status of
 your queues at ``/django_rq/``.
 
-If you need a more sophisticated monitoring tools for RQ, you could also try
+If you need a more sophisticated monitoring tool for RQ, you could also try
 `rq-dashboard <https://github.com/nvie/rq-dashboard>`_.
-provides a more comprehensive of monitoring tools.
 
 
 Testing tip
@@ -170,6 +169,10 @@ To run ``django_rq``'s test suite::
 =========
 Changelog
 =========
+
+Version 0.3.2
+-------------
+* Simplified ``@job`` decorator syntax for enqueuing to "default" queue.
 
 Version 0.3.1
 -------------
