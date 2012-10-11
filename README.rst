@@ -2,12 +2,12 @@
 Django-RQ
 =========
 
+.. image:: https://secure.travis-ci.org/ui/django-rq.png
+
 Django integration with `RQ <https://github.com/nvie/rq>`_, a `Redis <http://redis.io/>`_
 based Python queuing library. `Django-RQ <https://github.com/ui/django-rq>`_ is a
 simple app that allows you to configure your queues in django's ``settings.py``
 and easily use them in your project.
-
-.. image:: https://secure.travis-ci.org/ui/django-rq.png
 
 ============
 Requirements
@@ -20,7 +20,7 @@ Requirements
 Installation
 ============
 
-* Install ``django-rq``::
+* Install ``django-rq`` (or `download from PyPI <http://pypi.python.org/pypi/django-rq>`_)::
 
     pip install django-rq
 
@@ -100,12 +100,21 @@ Putting jobs in the queue
 To easily turn a callable into an RQ task, you can also use the ``@job``
 decorator that comes with ``django_rq``::
 
-    import django_rq
+    from django_rq import job
 
+<<<<<<< HEAD
     @django_rq.job('high')
+=======
+    @job
+>>>>>>> f7bc7cc1ae0581c769991eac1b09d07e20b6a7d4
     def long_running_func():
         pass
-    long_running_func.delay() # Enqueue function in the "high" queue
+    long_running_func.delay() # Enqueue function in "default" queue
+
+    @job('high')
+    def long_running_func():
+        pass
+    long_running_func.delay() # Enqueue function in "high" queue
 
 
 Running workers
@@ -134,9 +143,8 @@ Queue statistics
 ``django_rq`` also provides a very simple dashboard to monitor the status of
 your queues at ``/admin/django_rq/``.
 
-If you need a more sophisticated monitoring tools for RQ, you could also try
+If you need a more sophisticated monitoring tool for RQ, you could also try
 `rq-dashboard <https://github.com/nvie/rq-dashboard>`_.
-provides a more comprehensive of monitoring tools.
 
 
 Testing tip
@@ -172,6 +180,10 @@ Greatly improved `/admin/django_rq/`, now you can:
 
 * See jobs in each queue, including failed queue
 * See each job's detailed information
+
+Version 0.3.2
+-------------
+* Simplified ``@job`` decorator syntax for enqueuing to "default" queue.
 
 Version 0.3.1
 -------------
