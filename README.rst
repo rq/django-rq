@@ -102,11 +102,7 @@ decorator that comes with ``django_rq``::
 
     from django_rq import job
 
-<<<<<<< HEAD
-    @django_rq.job('high')
-=======
     @job
->>>>>>> f7bc7cc1ae0581c769991eac1b09d07e20b6a7d4
     def long_running_func():
         pass
     long_running_func.delay() # Enqueue function in "default" queue
