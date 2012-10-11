@@ -1,0 +1,132 @@
+{% extends "admin/base_site.html" %}
+
+{% load url from future %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        .data {
+            display: inline-block;
+            float: left;
+            width: 80%;
+        }
+    </style>
+    <link href="{{ STATIC_URL }}admin/css/forms.css" type="text/css" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+        <a href="{% url 'rq_home' %}">Django RQ</a> &rsaquo;
+        <a href = "{% url 'rq_jobs' queue_index %}">{{ queue.name }}</a> &rsaquo;
+        <a href = "{% url 'rq_job_detail' queue_index job.id %}">{{ job.id }}</a>
+    </div>
+{% endblock %}
+
+{% block content_title %}<h1>Job Info</h1>{% endblock %}
+
+{% block content %}
+
+<div id="content-main">
+
+    <fieldset class="module aligned ">
+
+        <div class="form-row">
+            <div>
+                <label class="required">ID:</label>
+                <div class="data">{{ job.id }}</div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">Queue:</label>
+                <div class="data">{{ job.origin }}</div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">Timeout:</label>
+                <div class="data">{{ job.timeout }}</div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">Result TTL:</label>
+                <div class="data">{{ job.result_ttl }}</div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">Created:</label>
+                <div class="data">{{ job.created_at }}</div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">Queued:</label>
+                <div class="data">{{ job.enqueued_at }}</div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">Status:</label>
+                <div class="data">{{ job.status }}</div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">Callable:</label>
+                <div class="data">{{ job.func_name }}</div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">Args:</label>
+                <div class="data">
+                    {% if job.args %}
+                    <ul>
+                        {% for arg in job.args %}
+                            <li>{{ arg }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">Kwargs:</label>
+                <div class="data">
+                    {% if job.kwargs %}
+                        <ul>
+                            {% for key, value in job.kwargs.items %}
+                                <li>{{ key }}: {{ value|escape }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">Exception:</label>
+                <div class="data">{{ job.exc_info }}</div>
+            </div>
+        </div>
+
+
+    </fieldset>
+
+</div>
+
+{% endblock %}

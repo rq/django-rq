@@ -8,7 +8,7 @@ from django.conf import settings
 from rq.job import Job
 
 from django_rq.decorators import job
-from django_rq.queues import get_connection, get_queue, get_queues
+from django_rq.queues import get_connection, get_queue, get_queues, get_unique_connection_configs
 from django_rq.workers import get_worker
 
 
@@ -103,8 +103,34 @@ class QueuesTest(TestCase):
         self.assertRaises(ValueError, get_queues, 'default', 'test')
 
 
+    def test_get_unique_connection_configs(self):
+        connection_params_1 = {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 0,
+        }
+        connection_params_2 = {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 1,
+        }
+        config = {
+            'default': connection_params_1,
+            'test': connection_params_2
+        }
+        self.assertEqual(get_unique_connection_configs(config),
+                         [connection_params_1, connection_params_2])
+        config = {
+            'default': connection_params_1,
+            'test': connection_params_1
+        }
+        # Should return one connection config since it filters out duplicates
+        self.assertEqual(get_unique_connection_configs(config),
+                         [connection_params_1])
+
+
 class DecoratorTest(TestCase):
-    def test_job_decorator(self):        
+    def test_job_decorator(self):
         # Ensure that decorator passes in the right queue from settings.py
         queue_name = 'test3'
         config = QUEUES[queue_name]
@@ -114,6 +140,14 @@ class DecoratorTest(TestCase):
         result = test.delay()
         queue = get_queue(queue_name)
         self.assertEqual(result.origin, queue_name)
+
+    def test_job_decorator_default(self):
+        # Ensure that decorator passes in the right queue from settings.py
+        @job
+        def test():
+            pass
+        result = test.delay()
+        self.assertEqual(result.origin, 'default')
 
 
 class ConfigTest(TestCase):

@@ -1,0 +1,55 @@
+{% extends "admin/base_site.html" %}
+
+{% load url from future %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>table {width: 100%;}</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+        <a href="{% url 'rq_home' %}">Django RQ</a> &rsaquo;
+        <a href = "{% url 'rq_jobs' queue_index %}">{{ queue.name }}</a>
+    </div>
+{% endblock %}
+
+{% block content_title %}<h1>RQ Stats</h1>{% endblock %}
+
+{% block content %}
+
+<div id="content-main">
+
+    <div class="module">
+        <table>
+            <caption>Jobs at {{ queue.name }}</caption>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Created</th>
+                    <th>Enqueued</th>
+                    <th>Status</th>
+                    <th>Callable</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                    <tr>
+                        <td>
+                            <a href = "{% url 'rq_job_detail' queue_index job.id %}">
+                                {{ job.id }}
+                            </a>
+                        </td>
+                        <td>{{ job.created_at }}</td>
+                        <td>{{ job.enqueued_at }}</td>
+                        <td>{{ job.status }}</td>
+                        <td>{{ job.func_name }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

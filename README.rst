@@ -42,7 +42,7 @@ Installation
         },
         'high': {
             'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379'), # If you're on Heroku
-            'DB': 0,            
+            'DB': 0,
         },
         'low': {
             'HOST': 'localhost',
@@ -53,7 +53,7 @@ Installation
 * Include ``django_rq.urls`` in your ``urls.py``::
 
     urlpatterns += patterns('',
-        (r'^django_rq/', include('django_rq.urls')),
+        (r'^admin/django_rq/', include('django_rq.urls')),
     )
 
 
@@ -102,7 +102,7 @@ decorator that comes with ``django_rq``::
 
     import django_rq
 
-    @django_rq.job('high') 
+    @django_rq.job('high')
     def long_running_func():
         pass
     long_running_func.delay() # Enqueue function in the "high" queue
@@ -132,7 +132,7 @@ Queue statistics
 ----------------
 
 ``django_rq`` also provides a very simple dashboard to monitor the status of
-your queues at ``/django_rq/``.
+your queues at ``/admin/django_rq/``.
 
 If you need a more sophisticated monitoring tools for RQ, you could also try
 `rq-dashboard <https://github.com/nvie/rq-dashboard>`_.
@@ -165,6 +165,13 @@ To run ``django_rq``'s test suite::
 =========
 Changelog
 =========
+
+Version 0.4.0
+-------------
+Greatly improved `/admin/django_rq/`, now you can:
+
+* See jobs in each queue, including failed queue
+* See each job's detailed information
 
 Version 0.3.1
 -------------
