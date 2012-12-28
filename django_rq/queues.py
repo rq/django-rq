@@ -43,7 +43,7 @@ def get_queue_by_index(index):
     Returns an rq Queue using parameters defined in ``QUEUES_LIST``
     """
     from .settings import QUEUES_LIST
-    config = QUEUES_LIST[index]
+    config = QUEUES_LIST[int(index)]
     return Queue(config['name'],
                  connection=get_redis_connection(config['connection_config']))
 

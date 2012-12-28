@@ -1,4 +1,5 @@
-from django.shortcuts import render
+from django.contrib import messages
+from django.shortcuts import redirect, render
 
 from rq import Worker
 from rq.job import Job
@@ -42,7 +43,6 @@ def jobs(request, queue_index):
 
 
 def job_detail(request, queue_index, job_id):
-    queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection)
     context_data = {
@@ -51,3 +51,21 @@ def job_detail(request, queue_index, job_id):
         'queue': queue,
     }
     return render(request, 'django_rq/job_detail.html', context_data)
+
+
+def delete_job(request, queue_index, job_id):
+    queue = get_queue_by_index(queue_index)
+    job = Job.fetch(job_id, connection=queue.connection)
+
+    if request.POST:
+        job.delete()
+        messages.info(request, 'You have successfully deleted %s' % job.id)
+        return redirect('rq_jobs', queue_index)
+
+    context_data = {
+        'queue_index': queue_index,
+        'job': job,
+        'queue': queue,
+    }
+    return render(request, 'django_rq/delete_job.html', context_data)
+
