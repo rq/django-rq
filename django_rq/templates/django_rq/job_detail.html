@@ -117,10 +117,11 @@
             </div>
         </div>
 
+
         <div class="form-row">
             <div>
                 <label class="required">Exception:</label>
-                <div class="data">{{ job.exc_info|linebreaks }}</div>
+                <div class="data">{% if job.exc_info %}{{ job.exc_info|linebreaks }}{% endif %}</div>
             </div>
         </div>
 
