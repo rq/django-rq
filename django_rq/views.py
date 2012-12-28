@@ -34,11 +34,11 @@ def stats(request):
 
 @staff_member_required
 def jobs(request, queue_index):
-
-    queue = get_queue_by_index(int(queue_index))
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
     context_data = {
         'queue': queue,
-        'queue_index': int(queue_index),
+        'queue_index': queue_index,
         'jobs': queue.jobs,
     }
 
@@ -47,6 +47,7 @@ def jobs(request, queue_index):
 
 @staff_member_required
 def job_detail(request, queue_index, job_id):
+    queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection)
     context_data = {
@@ -59,6 +60,7 @@ def job_detail(request, queue_index, job_id):
 
 @staff_member_required
 def delete_job(request, queue_index, job_id):
+    queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection)
 
