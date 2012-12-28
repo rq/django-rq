@@ -170,6 +170,10 @@ To run ``django_rq``'s test suite::
 Changelog
 =========
 
+Version 0.4.2
+-------------
+Fixed a minor bug in accessing `rq_job_detail` view.
+
 Version 0.4.1
 -------------
 More improvements to `/admin/django_rq/`:
