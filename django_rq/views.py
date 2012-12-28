@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import redirect, render
 
 from rq import Worker
@@ -8,6 +9,7 @@ from .queues import get_connection, get_connection_by_index, get_queue, get_queu
 from .settings import QUEUES, QUEUES_LIST
 
 
+@staff_member_required
 def stats(request):
     queues = []
     for index, config in enumerate(QUEUES_LIST):
@@ -30,6 +32,7 @@ def stats(request):
     return render(request, 'django_rq/stats.html', context_data)
 
 
+@staff_member_required
 def jobs(request, queue_index):
 
     queue = get_queue_by_index(int(queue_index))
@@ -42,6 +45,7 @@ def jobs(request, queue_index):
     return render(request, 'django_rq/jobs.html', context_data)
 
 
+@staff_member_required
 def job_detail(request, queue_index, job_id):
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection)
@@ -53,6 +57,7 @@ def job_detail(request, queue_index, job_id):
     return render(request, 'django_rq/job_detail.html', context_data)
 
 
+@staff_member_required
 def delete_job(request, queue_index, job_id):
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection)
