@@ -170,6 +170,14 @@ To run ``django_rq``'s test suite::
 Changelog
 =========
 
+Version 0.4.1
+-------------
+More improvements to `/admin/django_rq/`:
+
+* Views now require staff permission
+* Now you can delete jobs from queue
+* Failed jobs' tracebacks are better formatted
+
 Version 0.4.0
 -------------
 Greatly improved `/admin/django_rq/`, now you can:
