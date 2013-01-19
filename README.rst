@@ -50,6 +50,11 @@ Installation
             'DB': 0,
         }
     }
+
+* (optional) Add a Sentry DSN to django's ``settings.py`` to log workers ::
+
+    RQ_SENTRY_DSN = 'your sentry DSN here'
+
 * Include ``django_rq.urls`` in your ``urls.py``::
 
     urlpatterns += patterns('',
