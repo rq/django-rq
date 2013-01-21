@@ -20,19 +20,25 @@ Requirements
 Installation
 ============
 
-* Install ``django-rq`` (or `download from PyPI <http://pypi.python.org/pypi/django-rq>`_)::
+* Install ``django-rq`` (or `download from PyPI <http://pypi.python.org/pypi/django-rq>`_):
 
+.. code-block:: python
+    
     pip install django-rq
 
-* Add ``django_rq`` to ``INSTALLED_APPS`` in ``settings.py``::
+* Add ``django_rq`` to ``INSTALLED_APPS`` in ``settings.py``:
 
+.. code-block:: python
+    
     INSTALLED_APPS = (
         # other apps
         "django_rq",
     )
 
-* Configure your queues in django's ``settings.py`` (syntax based on Django's database config) ::
+* Configure your queues in django's ``settings.py`` (syntax based on Django's database config):
 
+.. code-block:: python
+    
     RQ_QUEUES = {
         'default': {
             'HOST': 'localhost',
@@ -67,26 +73,34 @@ Putting jobs in the queue
 `Django-RQ` allows you to easily put jobs into any of the queues defined in
 ``settings.py``. It comes with a few utility functions:
 
-* ``enqueue`` - push a job to the ``default`` queue::
+* ``enqueue`` - push a job to the ``default`` queue:
+
+.. code-block:: python
 
     import django_rq
     django_rq.enqueue(func, foo, bar=baz)
 
 * ``get_queue`` - accepts a single queue name argument (defaults to "default")
-  and returns an `RQ` ``Queue`` instance for you to queue jobs into::
+  and returns an `RQ` ``Queue`` instance for you to queue jobs into:
+
+.. code-block:: python
 
     import django_rq
     queue = django_rq.get_queue('high')
     queue.enqueue(func, foo, bar=baz)
 
 * ``get_connection`` - accepts a single queue name argument (defaults to "default")
-  and returns a connection to the queue's `Redis`_ server::
+  and returns a connection to the queue's `Redis`_ server:
+
+.. code-block:: python
 
     import django_rq
     redis_conn = django_rq.get_connection('high')
 
 * ``get_worker`` - accepts optional queue names and returns a new `RQ`
-  ``Worker`` instance for specified queues (or ``default`` queue)::
+  ``Worker`` instance for specified queues (or ``default`` queue):
+
+.. code-block:: python
 
     import django_rq
     worker = django_rq.get_worker() # Returns a worker for "default" queue
@@ -98,7 +112,9 @@ Putting jobs in the queue
 --------------
 
 To easily turn a callable into an RQ task, you can also use the ``@job``
-decorator that comes with ``django_rq``::
+decorator that comes with ``django_rq``:
+
+.. code-block:: python
 
     from django_rq import job
 
@@ -130,7 +146,9 @@ Support for RQ Scheduler
 
 If you have `RQ Scheduler <https://github.com/ui/rq-scheduler>`_ installed,
 you can also use the ``get_scheduler`` function to return a ``Scheduler``
-instance for queues defined in settings.py's ``RQ_QUEUES``. For example::
+instance for queues defined in settings.py's ``RQ_QUEUES``. For example:
+
+.. code-block:: python
 
     import django_rq
     scheduler = django_rq.get_scheduler('default')
@@ -145,6 +163,41 @@ your queues at ``/admin/django_rq/``.
 
 If you need a more sophisticated monitoring tool for RQ, you could also try
 `rq-dashboard <https://github.com/nvie/rq-dashboard>`_.
+
+
+Configuring Logging
+-------------------
+
+Starting from version 0.3.3, RQ uses Python's ``logging``, this means
+you can easily configure ``rqworker``'s logging mechanism in django's 
+``settings.py``. For example:
+
+.. code-block:: python
+
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "rq_console": {
+                "format": "%(asctime)s %(message)s",
+                "datefmt": "%H:%M:%S",
+            },
+        },
+        "handlers": {
+            "rq_console": {
+                "level": "DEBUG",
+                "class": "rq.utils.ColorizingStreamHandler",
+                "formatter": "rq_console",
+                "exclude": ["%(asctime)s"],
+            },
+        },
+        'loggers': {
+            "rq.worker": {
+                "handlers": ["rq_console"],
+                "level": "DEBUG" 
+            },
+        }
+    }
 
 
 Testing tip
@@ -178,6 +231,8 @@ Version 0.4.3
 -------------
 
 * Added ``--burst`` option to ``rqworker`` management command
+* Fixed a bug that causes jobs using RQ's new ``get_current_job`` to fail when
+  executed through the ``rqworker`` management command
 
 
 Version 0.4.2

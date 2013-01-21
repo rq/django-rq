@@ -18,24 +18,24 @@ if not logger.handlers:
         "disable_existing_loggers": False,
 
         "formatters": {
-            "console": {
+            "rq_console": {
                 "format": "%(asctime)s %(message)s",
                 "datefmt": "%H:%M:%S",
             },
         },
 
         "handlers": {
-            "console": {
+            "rq_console": {
                 "level": "DEBUG",
                 #"class": "logging.StreamHandler",
                 "class": "rq.utils.ColorizingStreamHandler",
-                "formatter": "console",
+                "formatter": "rq_console",
                 "exclude": ["%(asctime)s"],
             },
         },
 
         "worker": {
-            "handlers": ["console"],
+            "handlers": ["rq_console"],
             "level": "DEBUG" 
         }
     })
