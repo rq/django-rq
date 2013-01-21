@@ -5,7 +5,7 @@ from django.utils.unittest import skipIf
 from django.test.utils import override_settings
 from django.conf import settings
 
-from rq import get_current_job
+from rq import get_current_job, Queue
 from rq.job import Job
 
 from django_rq.decorators import job
@@ -181,6 +181,18 @@ class WorkersTest(TestCase):
         self.assertEqual(len(w.queues), 1)
         queue = w.queues[0]
         self.assertEqual(queue.name, 'test')
+
+    def test_get_current_job(self):
+        """
+        Ensure that functions using RQ's ``get_current_job`` doesn't fail
+        when run from rqworker (the job id is not in the failed queue).
+        """
+        queue = get_queue()
+        job = queue.enqueue(access_self)
+        call_command('rqworker', burst=True)
+        failed_queue = Queue(name='failed', connection=queue.connection)
+        self.assertFalse(job.id in failed_queue.job_ids)
+
 
 
 class SchedulerTest(TestCase):

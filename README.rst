@@ -120,6 +120,10 @@ specified as arguments::
 
     python manage.py rqworker high default low
 
+If you want to run ``rqworker`` in burst mode, you can pass in the ``--burst`` flag::
+
+    python manage.py rqworker high default low --burst
+
 
 Support for RQ Scheduler
 ------------------------
@@ -169,6 +173,12 @@ To run ``django_rq``'s test suite::
 =========
 Changelog
 =========
+
+Version 0.4.3
+-------------
+
+* Added ``--burst`` option to ``rqworker`` management command
+
 
 Version 0.4.2
 -------------
