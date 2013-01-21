@@ -28,11 +28,15 @@ LOGGING = {
             "formatter": "rq_console",
             "exclude": ["%(asctime)s"],
         },
+        'null': {
+            'level': 'DEBUG',
+            'class': 'django.utils.log.NullHandler',
+        },
     },
     'loggers': {
         "rq.worker": {
-            "handlers": ["rq_console"],
-            "level": "DEBUG" 
+            "handlers": ['null'],
+            "level": "ERROR" 
         },
     }
 }
