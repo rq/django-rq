@@ -56,7 +56,9 @@ Installation
             'DB': 0,
         }
     }
-* Include ``django_rq.urls`` in your ``urls.py``::
+* Include ``django_rq.urls`` in your ``urls.py``:
+
+.. code-block:: python
 
     urlpatterns += patterns('',
         (r'^admin/django_rq/', include('django_rq.urls')),
@@ -203,7 +205,9 @@ you can easily configure ``rqworker``'s logging mechanism in django's
 Testing tip
 -----------
 
-For an easier testing process, you can run a worker synchronously this way::
+For an easier testing process, you can run a worker synchronously this way:
+
+.. code-block:: python
 
     from django.test impor TestCase
     from django_rq import get_worker
@@ -231,9 +235,9 @@ Version 0.4.3
 -------------
 
 * Added ``--burst`` option to ``rqworker`` management command
+* Added support for Python's ``logging``, introduced in ``RQ`` 0.3.3
 * Fixed a bug that causes jobs using RQ's new ``get_current_job`` to fail when
   executed through the ``rqworker`` management command
-
 
 Version 0.4.2
 -------------
@@ -266,7 +270,6 @@ Version 0.3.0
 -------------
 * Added support for RQ's ``@job`` decorator
 * Added ``get_worker`` command
-
 
 Version 0.2.2
 -------------
