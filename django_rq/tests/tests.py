@@ -5,6 +5,7 @@ from django.utils.unittest import skipIf
 from django.test.utils import override_settings
 from django.conf import settings
 
+from rq import get_current_job
 from rq.job import Job
 
 from django_rq.decorators import job
@@ -21,6 +22,11 @@ except ImportError:
 
 
 QUEUES = settings.RQ_QUEUES
+
+
+def access_self():
+    job = get_current_job()
+    return job.id
 
 
 class QueuesTest(TestCase):
