@@ -15,7 +15,7 @@ from django_rq.workers import get_worker
 
 try:
     from rq_scheduler import Scheduler
-    from .queues import get_scheduler
+    from ..queues import get_scheduler
     RQ_SCHEDULER_INSTALLED = True
 except ImportError:
     RQ_SCHEDULER_INSTALLED = False
