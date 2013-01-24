@@ -56,6 +56,7 @@ Installation
             'DB': 0,
         }
     }
+
 * Include ``django_rq.urls`` in your ``urls.py``:
 
 .. code-block:: python
