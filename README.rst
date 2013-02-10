@@ -62,9 +62,11 @@ Installation
 .. code-block:: python
 
     urlpatterns += patterns('',
-        (r'^admin/django_rq/', include('django_rq.urls')),
+        url(r'^admin/django_rq/', include('django_rq.urls')),
+        # the core django admin URL declaration must appear *after* the
+        # django_rq URL declaration otherwise you will receive a 404
+        url(r'^admin/', include(admin.site.urls)),
     )
-
 
 =====
 Usage
