@@ -2,6 +2,7 @@ import logging
 from optparse import make_option
 
 from django.core.management.base import BaseCommand
+from django.utils.log import dictConfig
 
 from redis.exceptions import ConnectionError
 
@@ -13,7 +14,7 @@ from rq import use_connection
 # Setup logging for RQWorker if not already configured
 logger = logging.getLogger('rq.worker')
 if not logger.handlers:
-    logging.config.dictConfig({
+    dictConfig({
         "version": 1,
         "disable_existing_loggers": False,
 
@@ -36,7 +37,7 @@ if not logger.handlers:
 
         "worker": {
             "handlers": ["rq_console"],
-            "level": "DEBUG" 
+            "level": "DEBUG"
         }
     })
 
@@ -61,7 +62,6 @@ class Command(BaseCommand):
     args = '<queue queue ...>'
 
     def handle(self, *args, **options):
-        
         try:
             w = get_worker(*args)
             # Call use_connection to push the redis connection into LocalStack
