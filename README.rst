@@ -62,7 +62,7 @@ Installation
 .. code-block:: python
 
     urlpatterns += patterns('',
-        (r'^admin/django_rq/', include('django_rq.urls')),
+        (r'^django-rq/', include('django_rq.urls')),
     )
 
 
@@ -162,7 +162,7 @@ Queue statistics
 ----------------
 
 ``django_rq`` also provides a very simple dashboard to monitor the status of
-your queues at ``/admin/django_rq/``.
+your queues at ``/django-rq/``.
 
 If you need a more sophisticated monitoring tool for RQ, you could also try
 `rq-dashboard <https://github.com/nvie/rq-dashboard>`_.
@@ -231,6 +231,11 @@ To run ``django_rq``'s test suite::
 =========
 Changelog
 =========
+
+Version 0.4.4
+-------------
+* ``rqworker`` management command now uses django.utils.log.dictConfig so it's
+  usable on Python 2.6
 
 Version 0.4.3
 -------------
