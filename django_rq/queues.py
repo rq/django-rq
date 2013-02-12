@@ -93,28 +93,6 @@ def get_unique_connection_configs(config=None):
     return connection_configs
 
 
-def get_failed_queues():
-    """
-    Get failed queues from config (one failed queue from each connection)
-    """
-    connection_configs = get_unique_connection_configs()
-    queues = []
-
-    for key, value in QUEUES.items():
-        if value not in connection_configs:
-            connection_configs.append(value)
-
-    for config in connection_configs:
-        if 'URL' in config:
-            connection = redis.from_url(config['URL'], db=config['DB'])
-        connection = redis.Redis(host=config['HOST'],
-            port=config['PORT'], db=config['DB'],
-            password=config.get('PASSWORD', None))
-        queues.append(Queue(name='failed', connection=connection))
-        queue = Queue(name='failed', connection=connection)
-    return queues
-
-
 """
 If rq_scheduler is installed, provide a ``get_scheduler`` function that
 behaveslike ``get_connection``, except that it returns a ``Scheduler``
