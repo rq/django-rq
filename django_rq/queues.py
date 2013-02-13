@@ -1,7 +1,7 @@
 from django.core.exceptions import ImproperlyConfigured
 
 import redis
-from rq import Queue
+from rq.queue import FailedQueue, Queue
 
 
 def get_redis_connection(config):
@@ -42,8 +42,10 @@ def get_queue_by_index(index):
     """
     Returns an rq Queue using parameters defined in ``QUEUES_LIST``
     """
-    from .settings import QUEUES_LIST
+    from .settings import QUEUES_LIST    
     config = QUEUES_LIST[int(index)]
+    if config['name'] == 'failed':
+        return FailedQueue(connection=get_redis_connection(config['connection_config']))    
     return Queue(config['name'],
                  connection=get_redis_connection(config['connection_config']))
 

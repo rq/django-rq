@@ -130,6 +130,12 @@
 
     <div class="submit-row">
         <p class="deletelink-box"><a href="delete/" class="deletelink">Delete</a></p>
+        {% if job.is_failed %}
+            <form method = 'POST' action = "{% url 'rq_requeue_job' queue_index job.id %}">
+                {% csrf_token %}
+                <input type="submit" value="Requeue" class="default" name="requeue">
+            </form>
+        {% endif %}
     </div>
 
 </div>

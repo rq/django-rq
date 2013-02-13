@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 
 
-INSTALLED_APPS = ['django_rq']
+INSTALLED_APPS = [
+    'django.contrib.contenttypes',
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.sessions',
+    'django_rq',
+]
 
 
 DATABASES = {
@@ -69,3 +75,24 @@ RQ_QUEUES = {
     }
 }
 
+ROOT_URLCONF = 'django_rq.tests.urls'
+
+TEMPLATE_LOADERS = (
+    'django.template.loaders.app_directories.Loader',
+)
+
+MIDDLEWARE_CLASSES = (
+    'django.middleware.common.CommonMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+)
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+TEMPLATE_CONTEXT_PROCESSORS = (
+    "django.contrib.auth.context_processors.auth",
+    "django.core.context_processors.request",
+)

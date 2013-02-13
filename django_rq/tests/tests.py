@@ -1,15 +1,17 @@
+from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
+from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.utils.unittest import skipIf
+from django.test.client import Client
 from django.test.utils import override_settings
 from django.conf import settings
 
 from rq import get_current_job, Queue
-from rq.job import Job
 
 from django_rq.decorators import job
-from django_rq.queues import get_connection, get_queue, get_queues, get_unique_connection_configs
+from django_rq.queues import get_connection, get_queue, get_queue_by_index, get_queues, get_unique_connection_configs
 from django_rq.workers import get_worker
 
 
@@ -28,6 +30,22 @@ def access_self():
     job = get_current_job()
     return job.id
 
+
+def get_failed_queue_index(name='default'):
+    """
+    Returns the position of FailedQueue for the named queue in QUEUES_LIST
+    """
+    # Get the index of FailedQueue for 'default' Queue in QUEUES_LIST
+    queue_index = None
+    connection = get_connection(name)
+    connection_kwargs = connection.connection_pool.connection_kwargs
+    for i in range(0, 100):            
+        q = get_queue_by_index(i)
+        if q.name == 'failed' and q.connection.connection_pool.connection_kwargs == connection_kwargs:
+            queue_index = i
+            break
+
+    return queue_index
 
 class QueuesTest(TestCase):
 
@@ -146,6 +164,7 @@ class DecoratorTest(TestCase):
         result = test.delay()
         queue = get_queue(queue_name)
         self.assertEqual(result.origin, queue_name)
+        result.delete()
 
     def test_job_decorator_default(self):
         # Ensure that decorator passes in the right queue from settings.py
@@ -154,6 +173,7 @@ class DecoratorTest(TestCase):
             pass
         result = test.delay()
         self.assertEqual(result.origin, 'default')
+        result.delete()
 
 
 class ConfigTest(TestCase):
@@ -192,6 +212,37 @@ class WorkersTest(TestCase):
         call_command('rqworker', burst=True)
         failed_queue = Queue(name='failed', connection=queue.connection)
         self.assertFalse(job.id in failed_queue.job_ids)
+        job.delete()
+
+
+class ViewTest(TestCase):
+
+    def setUp(self):        
+        user = User.objects.create_user('foo', password='pass')
+        user.is_staff = True
+        user.is_active = True
+        user.save()
+        self.client = Client()
+        self.client.login(username=user.username, password='pass')
+
+    def test_requeue_job(self):
+        """
+        Ensure that a failed job gets requeued when rq_requeue_job is called
+        """
+        def failing_job():
+            raise ValueError
+        
+        queue = get_queue('default')
+        queue_index = get_failed_queue_index('default')
+        job = queue.enqueue(failing_job)
+        worker = get_worker('default')
+        worker.work(burst=True)
+        job.refresh()
+        self.assertTrue(job.is_failed)
+        self.client.post(reverse('rq_requeue_job', args=[queue_index, job.id]),
+                         {'requeue': 'Requeue'})
+        self.assertIn(job, queue.jobs)
+        job.delete()
 
 
 
