@@ -65,6 +65,8 @@ def delete_job(request, queue_index, job_id):
     job = Job.fetch(job_id, connection=queue.connection)
 
     if request.POST:
+        # Remove job id from queue and delete the actual job
+        queue.connection._lrem(queue.key, 0, job.id)
         job.delete()
         messages.info(request, 'You have successfully deleted %s' % job.id)
         return redirect('rq_jobs', queue_index)

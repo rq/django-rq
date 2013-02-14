@@ -232,6 +232,12 @@ To run ``django_rq``'s test suite::
 Changelog
 =========
 
+0.4.5
+-----
+* Added the ability to requeue failed jobs in the admin interface
+* In addition to deleting the actual job from Redis, job id is now also
+  correctly removed from the queue
+
 Version 0.4.4
 -------------
 * ``rqworker`` management command now uses django.utils.log.dictConfig so it's

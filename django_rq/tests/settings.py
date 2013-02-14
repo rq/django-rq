@@ -72,7 +72,12 @@ RQ_QUEUES = {
     'url': {
         'URL': 'redis://username:password@host:1234/',
         'DB': 4,
-    }
+    },
+    'django_rq_test': {
+        'HOST': 'localhost',
+        'PORT': 6379,
+        'DB': 0,
+    },
 }
 
 ROOT_URLCONF = 'django_rq.tests.urls'

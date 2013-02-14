@@ -9,6 +9,7 @@ from django.test.utils import override_settings
 from django.conf import settings
 
 from rq import get_current_job, Queue
+from rq.job import Job
 
 from django_rq.decorators import job
 from django_rq.queues import get_connection, get_queue, get_queue_by_index, get_queues, get_unique_connection_configs
@@ -46,6 +47,22 @@ def get_failed_queue_index(name='default'):
             break
 
     return queue_index
+
+
+def get_queue_index(name='default'):
+    """
+    Returns the position of Queue for the named queue in QUEUES_LIST
+    """
+    queue_index = None
+    connection = get_connection(name)
+    connection_kwargs = connection.connection_pool.connection_kwargs
+    for i in range(0, 100):            
+        q = get_queue_by_index(i)
+        if q.name == name and q.connection.connection_pool.connection_kwargs == connection_kwargs:
+            queue_index = i
+            break
+    return queue_index
+
 
 class QueuesTest(TestCase):
 
@@ -212,7 +229,7 @@ class WorkersTest(TestCase):
         call_command('rqworker', burst=True)
         failed_queue = Queue(name='failed', connection=queue.connection)
         self.assertFalse(job.id in failed_queue.job_ids)
-        job.delete()
+        job.delete()        
 
 
 class ViewTest(TestCase):
@@ -243,6 +260,20 @@ class ViewTest(TestCase):
                          {'requeue': 'Requeue'})
         self.assertIn(job, queue.jobs)
         job.delete()
+
+    def test_delete_job(self):
+        """
+        In addition to deleting job from Redis, the job id also needs to be
+        deleted from Queue.
+        """
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+        job = queue.enqueue(access_self)
+        self.client.post(reverse('rq_delete_job', args=[queue_index, job.id]),
+                         {'post': 'yes'})
+        self.assertFalse(Job.exists(job.id, connection=queue.connection))
+        self.assertNotIn(job.id, queue.job_ids)
+
 
 
 
