@@ -23,13 +23,13 @@ Installation
 * Install ``django-rq`` (or `download from PyPI <http://pypi.python.org/pypi/django-rq>`_):
 
 .. code-block:: python
-    
+
     pip install django-rq
 
 * Add ``django_rq`` to ``INSTALLED_APPS`` in ``settings.py``:
 
 .. code-block:: python
-    
+
     INSTALLED_APPS = (
         # other apps
         "django_rq",
@@ -38,7 +38,7 @@ Installation
 * Configure your queues in django's ``settings.py`` (syntax based on Django's database config):
 
 .. code-block:: python
-    
+
     RQ_QUEUES = {
         'default': {
             'HOST': 'localhost',
@@ -172,7 +172,7 @@ Configuring Logging
 -------------------
 
 Starting from version 0.3.3, RQ uses Python's ``logging``, this means
-you can easily configure ``rqworker``'s logging mechanism in django's 
+you can easily configure ``rqworker``'s logging mechanism in django's
 ``settings.py``. For example:
 
 .. code-block:: python
@@ -193,11 +193,16 @@ you can easily configure ``rqworker``'s logging mechanism in django's
                 "formatter": "rq_console",
                 "exclude": ["%(asctime)s"],
             },
+            # If you use sentry for logging
+            'sentry': {
+                'level': 'ERROR',
+                'class': 'raven.contrib.django.handlers.SentryHandler',
+            },
         },
         'loggers': {
             "rq.worker": {
-                "handlers": ["rq_console"],
-                "level": "DEBUG" 
+                "handlers": ["rq_console", "sentry"],
+                "level": "DEBUG"
             },
         }
     }
