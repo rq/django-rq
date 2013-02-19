@@ -237,6 +237,8 @@ Changelog
 * Added the ability to requeue failed jobs in the admin interface
 * In addition to deleting the actual job from Redis, job id is now also
   correctly removed from the queue
+* Bumped up ``RQ`` requirement to 0.3.4 as earlier versions cause logging to fail
+  (thanks @hugorodgerbrown)
 
 Version 0.4.4
 -------------
