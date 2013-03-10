@@ -7,7 +7,7 @@
     <style>table {width: 100%;}</style>
 {% endblock %}
 
-{% block content_title %}<h1>RQ Stats</h1>{% endblock %}
+{% block content_title %}<h1>RQ Queues</h1>{% endblock %}
 
 {% block breadcrumbs %}
     <div class="breadcrumbs">
@@ -22,10 +22,9 @@
 
     <div class="module">
         <table>
-            <caption>Queues</caption>
             <thead>
                 <tr>
-                    <th>Queue Name</th>
+                    <th>Name</th>
                     <th>Number of Jobs</th>
                     <th>Number of Workers</th>
                 </tr>
@@ -33,11 +32,11 @@
             <tbody>
                 {% for queue in queues %}
                     <tr>
-                        <td>
+                        <th>
                             <a href = "{% url 'rq_jobs' queue.index %}">
                                 {{ queue.name }}
                             </a>
-                        </td>
+                        </th>
                         <td>{{ queue.jobs }}</td>
                         <td>{{ queue.workers }}</td>
                     </tr>

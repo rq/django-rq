@@ -15,7 +15,7 @@
     </div>
 {% endblock %}
 
-{% block content_title %}<h1>RQ Stats</h1>{% endblock %}
+{% block content_title %}<h1>Jobs in {{ queue.name }}</h1>{% endblock %}
 
 {% block content %}
 
@@ -23,7 +23,6 @@
 
     <div class="module">
         <table>
-            <caption>Jobs at {{ queue.name }}</caption>
             <thead>
                 <tr>
                     <th>ID</th>
@@ -36,11 +35,11 @@
             <tbody>
                 {% for job in jobs %}
                     <tr>
-                        <td>
+                        <th>
                             <a href = "{% url 'rq_job_detail' queue_index job.id %}">
                                 {{ job.id }}
                             </a>
-                        </td>
+                        </th>
                         <td>{{ job.created_at }}</td>
                         <td>{{ job.enqueued_at }}</td>
                         <td>{{ job.status }}</td>
