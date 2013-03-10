@@ -1,0 +1,27 @@
+{% extends "admin/index.html" %}
+
+{% load url from future %}
+
+{% block sidebar %}
+    
+
+    {{ block.super }}
+
+    <div id = 'django-rq' style = "float: left">
+        <div class="module">
+            <table style="width: 498px">
+                <caption>Django RQ</caption>
+                <tbody>
+                    <tr>
+                        <th>
+                            <a href = "{% url 'rq_home' %}">
+                                Queues
+                            </a>
+                        </th>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}
