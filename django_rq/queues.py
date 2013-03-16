@@ -31,11 +31,12 @@ def get_connection_by_index(index):
     return get_redis_connection(QUEUES_LIST[index]['connection_config'])
 
 
-def get_queue(name='default'):
+def get_queue(name='default', default_timeout=None, async=True):
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
-    return Queue(name, connection=get_connection(name))
+    return Queue(name, default_timeout=default_timeout,
+                 connection=get_connection(name), async=async)
 
 
 def get_queue_by_index(index):
