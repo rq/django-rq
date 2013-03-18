@@ -31,7 +31,7 @@
             </thead>
             <tbody>
                 {% for queue in queues %}
-                    <tr>
+                    <tr class = "{% cycle 'row1' 'row2' %}">
                         <th>
                             <a href = "{% url 'rq_jobs' queue.index %}">
                                 {{ queue.name }}
