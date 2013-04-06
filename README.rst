@@ -232,6 +232,11 @@ To run ``django_rq``'s test suite::
 Changelog
 =========
 
+0.4.6
+-----
+* ``get_queue`` now accepts ``async`` and ``default_timeout`` arguments
+* Minor updates to admin interface
+
 0.4.5
 -----
 * Added the ability to requeue failed jobs in the admin interface
