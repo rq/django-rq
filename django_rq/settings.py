@@ -3,6 +3,9 @@ from django.core.exceptions import ImproperlyConfigured
 
 from .queues import get_unique_connection_configs
 
+
+ADMIN_LINK = getattr(settings, 'RQ_ADMIN_LINK', False)
+
 QUEUES = getattr(settings, 'RQ_QUEUES', None)
 if QUEUES is None:
     raise ImproperlyConfigured("You have to define RQ_QUEUES in settings.py")
