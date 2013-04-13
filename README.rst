@@ -161,14 +161,13 @@ instance for queues defined in settings.py's ``RQ_QUEUES``. For example:
 Queue statistics
 ----------------
 
-``django_rq`` also provides a very simple dashboard to monitor the status of
-your queues at ``/django-rq/``.
+``django_rq`` also provides a dashboard to monitor the status of your queues at
+``/django-rq/`` (or whatever URL you set in your ``urls.py`` during installation.
 
-To add dashboard link in admin site set ``RQ_SHOW_ADMIN_LINK = True`` in settings.
-**Be carefully it will override default admin index template!**
-
-If you need a more sophisticated monitoring tool for RQ, you could also try
-`rq-dashboard <https://github.com/nvie/rq-dashboard>`_.
+You can also add a link to this dashboard link in ``/admin`` by adding
+``RQ_SHOW_ADMIN_LINK = True`` in ``settings.py``. Be careful though, this will
+override the default admin template so it may interfere with other apps that
+modifies the default admin template.
 
 
 Configuring Logging
@@ -234,6 +233,10 @@ To run ``django_rq``'s test suite::
 =========
 Changelog
 =========
+
+0.4.7
+-----
+* Make admin template override optional.
 
 0.4.6
 -----
