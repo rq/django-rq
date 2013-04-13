@@ -164,6 +164,9 @@ Queue statistics
 ``django_rq`` also provides a very simple dashboard to monitor the status of
 your queues at ``/django-rq/``.
 
+To add dashboard link in admin site set ``RQ_SHOW_ADMIN_LINK = True`` in settings.
+**Be carefully it will override default admin index template!**
+
 If you need a more sophisticated monitoring tool for RQ, you could also try
 `rq-dashboard <https://github.com/nvie/rq-dashboard>`_.
 
