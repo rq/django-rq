@@ -82,6 +82,8 @@ RQ_QUEUES = {
 
 ROOT_URLCONF = 'django_rq.tests.urls'
 
+SECRET_KEY = 'a'
+
 TEMPLATE_LOADERS = (
     'django.template.loaders.app_directories.Loader',
 )
