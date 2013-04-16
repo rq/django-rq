@@ -17,6 +17,23 @@ DATABASES = {
     },
 }
 
+try:
+    SECRET_KEY = '5'
+    import redis_cache
+    CACHES = {
+        'redis-cache': {
+            'BACKEND': 'redis_cache.cache.RedisCache',
+            'LOCATION': 'localhost:6379:2',
+            'KEY_PREFIX': 'django-rq-tests',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'redis_cache.client.DefaultClient',
+                'MAX_ENTRIES': 5000,
+            },
+        },
+    }
+except ImportError:
+    redis_cache = None
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -78,6 +95,9 @@ RQ_QUEUES = {
         'PORT': 6379,
         'DB': 0,
     },
+    'redis-cache': {
+        'REDIS_CACHE': 'redis-cache',
+    }
 }
 
 ROOT_URLCONF = 'django_rq.tests.urls'

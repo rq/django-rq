@@ -10,6 +10,13 @@ def get_redis_connection(config):
     """
     if 'URL' in config:
         return redis.from_url(config['URL'], db=config['DB'])
+    if 'REDIS_CACHE' in config.keys():
+        from django.core.cache import get_cache
+        from redis_cache.client import DefaultClient
+        cache = get_cache(config['REDIS_CACHE'])
+        if isinstance(cache.client, DefaultClient):
+            return cache.client.client
+
     return redis.Redis(host=config['HOST'],
         port=config['PORT'], db=config['DB'],
         password=config.get('PASSWORD', None))
