@@ -143,7 +143,6 @@ If you want to run ``rqworker`` in burst mode, you can pass in the ``--burst`` f
 
     python manage.py rqworker high default low --burst
 
-
 Support for RQ Scheduler
 ------------------------
 
@@ -228,7 +227,7 @@ Running Tests
 
 To run ``django_rq``'s test suite::
 
-    django-admin.py test django_rq --settings=django_rq.tests.settings --pythonpath=.
+    django-admin.py test django_rq --settings=django_rq.test_settings --pythonpath=.
 
 =========
 Changelog
