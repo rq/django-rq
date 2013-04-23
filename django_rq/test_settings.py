@@ -1,5 +1,18 @@
 # -*- coding: utf-8 -*-
 
+SECRET_KEY = 'a'
+
+# Detect whether either django-redis or django-redis-cache is installed. This
+# is only really used to conditionally configure options for the unit tests.
+# In actually usage, no such check is necessary.
+try:
+    import redis_cache
+    if hasattr(redis_cache, 'get_redis_connection'):
+        REDIS_CACHE_TYPE = 'django-redis'
+    else:
+        REDIS_CACHE_TYPE = 'django-redis-cache'
+except ImportError:
+    REDIS_CACHE_TYPE = 'none'
 
 INSTALLED_APPS = [
     'django.contrib.contenttypes',
@@ -16,6 +29,31 @@ DATABASES = {
         'NAME': ':memory:',
     },
 }
+
+if REDIS_CACHE_TYPE == 'django-redis':
+    CACHES = {
+        'django-redis': {
+            'BACKEND': 'redis_cache.cache.RedisCache',
+            'LOCATION': 'localhost:6379:2',
+            'KEY_PREFIX': 'django-rq-tests',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'redis_cache.client.DefaultClient',
+                'MAX_ENTRIES': 5000,
+            },
+        },
+    }
+elif REDIS_CACHE_TYPE == 'django-redis-cache':
+    CACHES = {
+        'django-redis-cache': {
+            'BACKEND': 'redis_cache.cache.RedisCache',
+            'LOCATION': 'localhost:6379',
+            'KEY_PREFIX': 'django-rq-tests',
+            'OPTIONS': {
+                'DB': 2,
+                'MAX_ENTRIES': 5000,
+            },
+        },
+    }
 
 LOGGING = {
     "version": 1,
@@ -46,7 +84,6 @@ LOGGING = {
         },
     }
 }
-
 
 RQ_QUEUES = {
     'default': {
@@ -80,9 +117,12 @@ RQ_QUEUES = {
     },
 }
 
-ROOT_URLCONF = 'django_rq.tests.urls'
+if REDIS_CACHE_TYPE == 'django-redis':
+    RQ_QUEUES['django-redis'] = {'USE_REDIS_CACHE': 'django-redis'}
+elif REDIS_CACHE_TYPE == 'django-redis-cache':
+    RQ_QUEUES['django-redis-cache'] = {'USE_REDIS_CACHE': 'django-redis-cache'}
 
-SECRET_KEY = 'a'
+ROOT_URLCONF = 'django_rq.tests.urls'
 
 TEMPLATE_LOADERS = (
     'django.template.loaders.app_directories.Loader',
