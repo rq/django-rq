@@ -10,12 +10,22 @@ def get_redis_connection(config):
     """
     if 'URL' in config:
         return redis.from_url(config['URL'], db=config['DB'])
-    if 'REDIS_CACHE' in config.keys():
+    if 'USE_REDIS_CACHE' in config.keys():
+
         from django.core.cache import get_cache
-        from redis_cache.client import DefaultClient
-        cache = get_cache(config['REDIS_CACHE'])
-        if isinstance(cache.client, DefaultClient):
-            return cache.client.client
+        cache = get_cache(config['USE_REDIS_CACHE'])
+
+        if hasattr(cache, 'client'):
+            # We're using django-redis. The cache's `client` attribute
+            # is a pluggable backend that return its Redis connection as
+            # its `client`
+            try:
+                return cache.client.client
+            except NotImplementedError:
+                pass
+        else:
+            # We're using django-redis-cache
+            return cache._client
 
     return redis.Redis(host=config['HOST'],
         port=config['PORT'], db=config['DB'],

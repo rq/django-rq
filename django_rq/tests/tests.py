@@ -23,12 +23,6 @@ try:
 except ImportError:
     RQ_SCHEDULER_INSTALLED = False
 
-try:
-    import redis_cache
-except ImportError:
-    redis_cache = None
-
-
 QUEUES = settings.RQ_QUEUES
 
 
@@ -297,21 +291,42 @@ class SchedulerTest(TestCase):
         self.assertEqual(connection_kwargs['db'], config['DB'])
 
 
-class DjangoRedisTest(TestCase):
+class RedisCacheTest(TestCase):
 
-    @skipIf(redis_cache is None, 'django-redis not installed')
+    @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis',
+            'django-redis not installed')
     def test_get_queue_django_redis(self):
         """
-        Test that the REDIS_CACHE option for configuration works.
+        Test that the USE_REDIS_CACHE option for configuration works.
         """
-        config = QUEUES['redis-cache']
-        queue = get_queue('redis-cache')
+        queueName = 'django-redis'
+        queue = get_queue(queueName)
         connection_kwargs = queue.connection.connection_pool.connection_kwargs
-        self.assertEqual(queue.name, 'redis-cache')
+        self.assertEqual(queue.name, queueName)
 
-        cacheHost = settings.CACHES['redis-cache']['LOCATION'].split(':')[0]
-        cachePort = settings.CACHES['redis-cache']['LOCATION'].split(':')[1]
-        cacheDBNum = settings.CACHES['redis-cache']['LOCATION'].split(':')[2]
+        cacheHost = settings.CACHES[queueName]['LOCATION'].split(':')[0]
+        cachePort = settings.CACHES[queueName]['LOCATION'].split(':')[1]
+        cacheDBNum = settings.CACHES[queueName]['LOCATION'].split(':')[2]
+
+        self.assertEqual(connection_kwargs['host'], cacheHost)
+        self.assertEqual(connection_kwargs['port'], int(cachePort))
+        self.assertEqual(connection_kwargs['db'], int(cacheDBNum))
+        self.assertEqual(connection_kwargs['password'], None)
+
+    @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis-cache',
+            'django-redis-cache not installed')
+    def test_get_queue_django_redis_cache(self):
+        """
+        Test that the USE_REDIS_CACHE option for configuration works.
+        """
+        queueName = 'django-redis-cache'
+        queue = get_queue(queueName )
+        connection_kwargs = queue.connection.connection_pool.connection_kwargs
+        self.assertEqual(queue.name, queueName)
+
+        cacheHost = settings.CACHES[queueName]['LOCATION'].split(':')[0]
+        cachePort = settings.CACHES[queueName]['LOCATION'].split(':')[1]
+        cacheDBNum = settings.CACHES[queueName]['OPTIONS']['DB']
 
         self.assertEqual(connection_kwargs['host'], cacheHost)
         self.assertEqual(connection_kwargs['port'], int(cachePort))
