@@ -76,6 +76,13 @@ def get_queue_by_index(index):
                  async=async)
 
 
+def get_failed_queue(name='default'):
+    """
+    Returns the rq failed Queue using parameters defined in ``RQ_QUEUES``
+    """
+    return FailedQueue(connection=get_connection(name))
+
+
 def get_queues(*queue_names):
     """
     Return queue instances from specified queue names.
