@@ -143,7 +143,6 @@ If you want to run ``rqworker`` in burst mode, you can pass in the ``--burst`` f
 
     python manage.py rqworker high default low --burst
 
-
 Support for RQ Scheduler
 ------------------------
 
@@ -157,6 +156,45 @@ instance for queues defined in settings.py's ``RQ_QUEUES``. For example:
     scheduler = django_rq.get_scheduler('default')
     job = scheduler.enqueue_at(datetime(2020, 10, 10), func)
 
+Support for django-redis and django-redis-cache
+-----------------------------------------------
+
+If you have `django-redis <https://django-redis.readthedocs.org/>`_ or
+`django-redis-cache <https://github.com/sebleier/django-redis-cache/>`_
+installed, you can instruct django_rq to use the same connection information
+from your Redis cache. This has two advantages: it's DRY and it takes advantage
+of any optimization that may be going on in your cache setup (like using
+connection pooling or `Hiredis <https://github.com/redis/hiredis>`_.)
+
+To use configure it, use a dict with the key ``USE_REDIS_CACHE`` pointing to the
+name of the desired cache in your ``RQ_QUEUES`` dict. It goes without saying
+that the chosen cache must exist and use the Redis backend. See your respective
+Redis cache package docs for configuration instructions. It's also important to
+point out that since the django-redis-cache ``ShardedClient`` splits the cache
+over multiple Redis connections, it does not work. Here is an example settings
+fragment for django-redis:
+
+.. code-block:: python
+
+    CACHES = {
+        'redis-cache': {
+            'BACKEND': 'redis_cache.cache.RedisCache',
+            'LOCATION': 'localhost:6379:1',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'redis_cache.client.DefaultClient',
+                'MAX_ENTRIES': 5000,
+            },
+        },
+    }
+
+    RQ_QUEUES = {
+        'high': {
+            'USE_REDIS_CACHE': 'redis-cache',
+        },
+        'low': {
+            'USE_REDIS_CACHE': 'redis-cache',
+        },
+    }
 
 Queue statistics
 ----------------
@@ -228,7 +266,7 @@ Running Tests
 
 To run ``django_rq``'s test suite::
 
-    django-admin.py test django_rq --settings=django_rq.tests.settings --pythonpath=.
+    django-admin.py test django_rq --settings=django_rq.test_settings --pythonpath=.
 
 =========
 Changelog

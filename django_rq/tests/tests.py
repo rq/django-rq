@@ -23,7 +23,6 @@ try:
 except ImportError:
     RQ_SCHEDULER_INSTALLED = False
 
-
 QUEUES = settings.RQ_QUEUES
 
 
@@ -275,8 +274,6 @@ class ViewTest(TestCase):
         self.assertNotIn(job.id, queue.job_ids)
 
 
-
-
 class SchedulerTest(TestCase):
 
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
@@ -292,3 +289,46 @@ class SchedulerTest(TestCase):
         self.assertEqual(connection_kwargs['host'], config['HOST'])
         self.assertEqual(connection_kwargs['port'], config['PORT'])
         self.assertEqual(connection_kwargs['db'], config['DB'])
+
+
+class RedisCacheTest(TestCase):
+
+    @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis',
+            'django-redis not installed')
+    def test_get_queue_django_redis(self):
+        """
+        Test that the USE_REDIS_CACHE option for configuration works.
+        """
+        queueName = 'django-redis'
+        queue = get_queue(queueName)
+        connection_kwargs = queue.connection.connection_pool.connection_kwargs
+        self.assertEqual(queue.name, queueName)
+
+        cacheHost = settings.CACHES[queueName]['LOCATION'].split(':')[0]
+        cachePort = settings.CACHES[queueName]['LOCATION'].split(':')[1]
+        cacheDBNum = settings.CACHES[queueName]['LOCATION'].split(':')[2]
+
+        self.assertEqual(connection_kwargs['host'], cacheHost)
+        self.assertEqual(connection_kwargs['port'], int(cachePort))
+        self.assertEqual(connection_kwargs['db'], int(cacheDBNum))
+        self.assertEqual(connection_kwargs['password'], None)
+
+    @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis-cache',
+            'django-redis-cache not installed')
+    def test_get_queue_django_redis_cache(self):
+        """
+        Test that the USE_REDIS_CACHE option for configuration works.
+        """
+        queueName = 'django-redis-cache'
+        queue = get_queue(queueName )
+        connection_kwargs = queue.connection.connection_pool.connection_kwargs
+        self.assertEqual(queue.name, queueName)
+
+        cacheHost = settings.CACHES[queueName]['LOCATION'].split(':')[0]
+        cachePort = settings.CACHES[queueName]['LOCATION'].split(':')[1]
+        cacheDBNum = settings.CACHES[queueName]['OPTIONS']['DB']
+
+        self.assertEqual(connection_kwargs['host'], cacheHost)
+        self.assertEqual(connection_kwargs['port'], int(cachePort))
+        self.assertEqual(connection_kwargs['db'], int(cacheDBNum))
+        self.assertEqual(connection_kwargs['password'], None)
