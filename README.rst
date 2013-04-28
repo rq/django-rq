@@ -107,7 +107,7 @@ Putting jobs in the queue
 
     import django_rq
     worker = django_rq.get_worker() # Returns a worker for "default" queue
-    worker.run()
+    worker.work()
     worker = django_rq.get_worker('low', 'high') # Returns a worker for "low" and "high"
 
 
