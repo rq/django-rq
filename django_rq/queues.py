@@ -48,10 +48,16 @@ def get_connection_by_index(index):
     return get_redis_connection(QUEUES_LIST[index]['connection_config'])
 
 
-def get_queue(name='default', default_timeout=None, async=True):
+def get_queue(name='default', default_timeout=None, async=None):
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
+    from .settings import QUEUES
+
+    # If async is provided, use it, otherwise, get it from the configuration
+    if async is None:
+        async = QUEUES[name].get('ASYNC', True)
+
     return Queue(name, default_timeout=default_timeout,
                  connection=get_connection(name), async=async)
 
@@ -63,9 +69,11 @@ def get_queue_by_index(index):
     from .settings import QUEUES_LIST    
     config = QUEUES_LIST[int(index)]
     if config['name'] == 'failed':
-        return FailedQueue(connection=get_redis_connection(config['connection_config']))    
+        return FailedQueue(connection=get_redis_connection(config['connection_config']))
+    async = config.get('ASYNC', True)
     return Queue(config['name'],
-                 connection=get_redis_connection(config['connection_config']))
+                 connection=get_redis_connection(config['connection_config']),
+                 async=async)
 
 
 def get_queues(*queue_names):
