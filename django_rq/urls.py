@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, url
 
 urlpatterns = patterns('django_rq.views',
     url(r'^$', 'stats', name='rq_home'),
