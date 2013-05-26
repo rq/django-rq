@@ -259,12 +259,14 @@ For an easier testing process, you can run a worker synchronously this way:
             get_worker().work(burst=True)  # Processes all jobs then stop.
             ...                      # Asserts that the job stuff is done.
 
-Syncronous mode
+Synchronous mode
 ----------------
 
-You can set the option ``ASYNC`` to ``False`` to force synchronous operation.
-This will cause jobs to execute immediates and on the same thread, useful for
-testing and debugging. For example:
+You can set the option ``ASYNC`` to ``False`` to make synchronous operation the
+default for a given queue. This will cause jobs to execute immediately and on
+the same thread as they are dispatched, which is useful for testing and
+debugging. For example, you might add the following after you queue
+configuration in your settings file:
 
 .. code-block:: python
 
@@ -275,6 +277,9 @@ testing and debugging. For example:
     if DEBUG or TESTING:
         for queueConfig in RQ_QUEUES.itervalues():
             queueConfig['ASYNC'] = False
+
+Note that setting the ``async`` parameter explicitly when calling ``get_queue``
+will override this setting.
 
 =============
 Running Tests

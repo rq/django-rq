@@ -70,10 +70,9 @@ def get_queue_by_index(index):
     config = QUEUES_LIST[int(index)]
     if config['name'] == 'failed':
         return FailedQueue(connection=get_redis_connection(config['connection_config']))
-    async = config.get('ASYNC', True)
     return Queue(config['name'],
                  connection=get_redis_connection(config['connection_config']),
-                 async=async)
+                 async=config.get('ASYNC', True))
 
 
 def get_failed_queue(name='default'):
