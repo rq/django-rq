@@ -106,6 +106,12 @@ RQ_QUEUES = {
         'PORT': 6379,
         'DB': 1,
     },
+    'async': {
+        'HOST': 'localhost',
+        'PORT': 6379,
+        'DB': 1,
+        'ASYNC': False,
+    },
     'url': {
         'URL': 'redis://username:password@host:1234/',
         'DB': 4,
