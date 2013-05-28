@@ -62,7 +62,7 @@ Installation
 .. code-block:: python
 
     urlpatterns += patterns('',
-        (r'^admin/django_rq/', include('django_rq.urls')),
+        (r'^django-rq/', include('django_rq.urls')),
     )
 
 
@@ -143,7 +143,6 @@ If you want to run ``rqworker`` in burst mode, you can pass in the ``--burst`` f
 
     python manage.py rqworker high default low --burst
 
-
 Support for RQ Scheduler
 ------------------------
 
@@ -157,15 +156,56 @@ instance for queues defined in settings.py's ``RQ_QUEUES``. For example:
     scheduler = django_rq.get_scheduler('default')
     job = scheduler.enqueue_at(datetime(2020, 10, 10), func)
 
+Support for django-redis and django-redis-cache
+-----------------------------------------------
+
+If you have `django-redis <https://django-redis.readthedocs.org/>`_ or
+`django-redis-cache <https://github.com/sebleier/django-redis-cache/>`_
+installed, you can instruct django_rq to use the same connection information
+from your Redis cache. This has two advantages: it's DRY and it takes advantage
+of any optimization that may be going on in your cache setup (like using
+connection pooling or `Hiredis <https://github.com/redis/hiredis>`_.)
+
+To use configure it, use a dict with the key ``USE_REDIS_CACHE`` pointing to the
+name of the desired cache in your ``RQ_QUEUES`` dict. It goes without saying
+that the chosen cache must exist and use the Redis backend. See your respective
+Redis cache package docs for configuration instructions. It's also important to
+point out that since the django-redis-cache ``ShardedClient`` splits the cache
+over multiple Redis connections, it does not work. Here is an example settings
+fragment for django-redis:
+
+.. code-block:: python
+
+    CACHES = {
+        'redis-cache': {
+            'BACKEND': 'redis_cache.cache.RedisCache',
+            'LOCATION': 'localhost:6379:1',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'redis_cache.client.DefaultClient',
+                'MAX_ENTRIES': 5000,
+            },
+        },
+    }
+
+    RQ_QUEUES = {
+        'high': {
+            'USE_REDIS_CACHE': 'redis-cache',
+        },
+        'low': {
+            'USE_REDIS_CACHE': 'redis-cache',
+        },
+    }
 
 Queue statistics
 ----------------
 
-``django_rq`` also provides a very simple dashboard to monitor the status of
-your queues at ``/admin/django_rq/``.
+``django_rq`` also provides a dashboard to monitor the status of your queues at
+``/django-rq/`` (or whatever URL you set in your ``urls.py`` during installation.
 
-If you need a more sophisticated monitoring tool for RQ, you could also try
-`rq-dashboard <https://github.com/nvie/rq-dashboard>`_.
+You can also add a link to this dashboard link in ``/admin`` by adding
+``RQ_SHOW_ADMIN_LINK = True`` in ``settings.py``. Be careful though, this will
+override the default admin template so it may interfere with other apps that
+modifies the default admin template.
 
 
 Configuring Logging
@@ -224,6 +264,27 @@ For an easier testing process, you can run a worker synchronously this way:
             get_worker().work(burst=True)  # Processes all jobs then stop.
             ...                      # Asserts that the job stuff is done.
 
+Synchronous mode
+----------------
+
+You can set the option ``ASYNC`` to ``False`` to make synchronous operation the
+default for a given queue. This will cause jobs to execute immediately and on
+the same thread as they are dispatched, which is useful for testing and
+debugging. For example, you might add the following after you queue
+configuration in your settings file:
+
+.. code-block:: python
+
+    # ... Logic to set DEBUG and TESTING settings to True or False ...
+
+    # ... Regular RQ_QUEUES setup code ...
+
+    if DEBUG or TESTING:
+        for queueConfig in RQ_QUEUES.itervalues():
+            queueConfig['ASYNC'] = False
+
+Note that setting the ``async`` parameter explicitly when calling ``get_queue``
+will override this setting.
 
 =============
 Running Tests
@@ -231,11 +292,33 @@ Running Tests
 
 To run ``django_rq``'s test suite::
 
-    django-admin.py test django_rq --settings=django_rq.tests.settings --pythonpath=.
+    django-admin.py test django_rq --settings=django_rq.test_settings --pythonpath=.
 
 =========
 Changelog
 =========
+
+0.4.7
+-----
+* Make admin template override optional.
+
+0.4.6
+-----
+* ``get_queue`` now accepts ``async`` and ``default_timeout`` arguments
+* Minor updates to admin interface
+
+0.4.5
+-----
+* Added the ability to requeue failed jobs in the admin interface
+* In addition to deleting the actual job from Redis, job id is now also
+  correctly removed from the queue
+* Bumped up ``RQ`` requirement to 0.3.4 as earlier versions cause logging to fail
+  (thanks @hugorodgerbrown)
+
+Version 0.4.4
+-------------
+* ``rqworker`` management command now uses django.utils.log.dictConfig so it's
+  usable on Python 2.6
 
 Version 0.4.3
 -------------

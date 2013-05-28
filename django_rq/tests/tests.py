@@ -1,7 +1,10 @@
+from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
+from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.utils.unittest import skipIf
+from django.test.client import Client
 from django.test.utils import override_settings
 from django.conf import settings
 
@@ -9,7 +12,7 @@ from rq import get_current_job, Queue
 from rq.job import Job
 
 from django_rq.decorators import job
-from django_rq.queues import get_connection, get_queue, get_queues, get_unique_connection_configs
+from django_rq.queues import get_connection, get_queue, get_queue_by_index, get_queues, get_unique_connection_configs
 from django_rq.workers import get_worker
 
 
@@ -20,13 +23,44 @@ try:
 except ImportError:
     RQ_SCHEDULER_INSTALLED = False
 
-
 QUEUES = settings.RQ_QUEUES
 
 
 def access_self():
     job = get_current_job()
     return job.id
+
+
+def get_failed_queue_index(name='default'):
+    """
+    Returns the position of FailedQueue for the named queue in QUEUES_LIST
+    """
+    # Get the index of FailedQueue for 'default' Queue in QUEUES_LIST
+    queue_index = None
+    connection = get_connection(name)
+    connection_kwargs = connection.connection_pool.connection_kwargs
+    for i in range(0, 100):            
+        q = get_queue_by_index(i)
+        if q.name == 'failed' and q.connection.connection_pool.connection_kwargs == connection_kwargs:
+            queue_index = i
+            break
+
+    return queue_index
+
+
+def get_queue_index(name='default'):
+    """
+    Returns the position of Queue for the named queue in QUEUES_LIST
+    """
+    queue_index = None
+    connection = get_connection(name)
+    connection_kwargs = connection.connection_pool.connection_kwargs
+    for i in range(0, 100):            
+        q = get_queue_by_index(i)
+        if q.name == name and q.connection.connection_pool.connection_kwargs == connection_kwargs:
+            queue_index = i
+            break
+    return queue_index
 
 
 class QueuesTest(TestCase):
@@ -134,6 +168,22 @@ class QueuesTest(TestCase):
         self.assertEqual(get_unique_connection_configs(config),
                          [connection_params_1])
 
+    def test_async(self):
+        """
+        Checks whether asynchronous settings work
+        """
+        # Make sure async is not set by default
+        defaultQueue = get_queue('default')
+        self.assertTrue(defaultQueue._async)
+
+        # Make sure async override works
+        defaultQueueAsync = get_queue('default', async=False)
+        self.assertFalse(defaultQueueAsync._async)
+
+        # Make sure async setting works
+        asyncQueue = get_queue('async')
+        self.assertFalse(asyncQueue._async)
+
 
 class DecoratorTest(TestCase):
     def test_job_decorator(self):
@@ -146,6 +196,7 @@ class DecoratorTest(TestCase):
         result = test.delay()
         queue = get_queue(queue_name)
         self.assertEqual(result.origin, queue_name)
+        result.delete()
 
     def test_job_decorator_default(self):
         # Ensure that decorator passes in the right queue from settings.py
@@ -154,6 +205,7 @@ class DecoratorTest(TestCase):
             pass
         result = test.delay()
         self.assertEqual(result.origin, 'default')
+        result.delete()
 
 
 class ConfigTest(TestCase):
@@ -192,7 +244,50 @@ class WorkersTest(TestCase):
         call_command('rqworker', burst=True)
         failed_queue = Queue(name='failed', connection=queue.connection)
         self.assertFalse(job.id in failed_queue.job_ids)
+        job.delete()        
 
+
+class ViewTest(TestCase):
+
+    def setUp(self):        
+        user = User.objects.create_user('foo', password='pass')
+        user.is_staff = True
+        user.is_active = True
+        user.save()
+        self.client = Client()
+        self.client.login(username=user.username, password='pass')
+
+    def test_requeue_job(self):
+        """
+        Ensure that a failed job gets requeued when rq_requeue_job is called
+        """
+        def failing_job():
+            raise ValueError
+        
+        queue = get_queue('default')
+        queue_index = get_failed_queue_index('default')
+        job = queue.enqueue(failing_job)
+        worker = get_worker('default')
+        worker.work(burst=True)
+        job.refresh()
+        self.assertTrue(job.is_failed)
+        self.client.post(reverse('rq_requeue_job', args=[queue_index, job.id]),
+                         {'requeue': 'Requeue'})
+        self.assertIn(job, queue.jobs)
+        job.delete()
+
+    def test_delete_job(self):
+        """
+        In addition to deleting job from Redis, the job id also needs to be
+        deleted from Queue.
+        """
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+        job = queue.enqueue(access_self)
+        self.client.post(reverse('rq_delete_job', args=[queue_index, job.id]),
+                         {'post': 'yes'})
+        self.assertFalse(Job.exists(job.id, connection=queue.connection))
+        self.assertNotIn(job.id, queue.job_ids)
 
 
 class SchedulerTest(TestCase):
@@ -210,3 +305,46 @@ class SchedulerTest(TestCase):
         self.assertEqual(connection_kwargs['host'], config['HOST'])
         self.assertEqual(connection_kwargs['port'], config['PORT'])
         self.assertEqual(connection_kwargs['db'], config['DB'])
+
+
+class RedisCacheTest(TestCase):
+
+    @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis',
+            'django-redis not installed')
+    def test_get_queue_django_redis(self):
+        """
+        Test that the USE_REDIS_CACHE option for configuration works.
+        """
+        queueName = 'django-redis'
+        queue = get_queue(queueName)
+        connection_kwargs = queue.connection.connection_pool.connection_kwargs
+        self.assertEqual(queue.name, queueName)
+
+        cacheHost = settings.CACHES[queueName]['LOCATION'].split(':')[0]
+        cachePort = settings.CACHES[queueName]['LOCATION'].split(':')[1]
+        cacheDBNum = settings.CACHES[queueName]['LOCATION'].split(':')[2]
+
+        self.assertEqual(connection_kwargs['host'], cacheHost)
+        self.assertEqual(connection_kwargs['port'], int(cachePort))
+        self.assertEqual(connection_kwargs['db'], int(cacheDBNum))
+        self.assertEqual(connection_kwargs['password'], None)
+
+    @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis-cache',
+            'django-redis-cache not installed')
+    def test_get_queue_django_redis_cache(self):
+        """
+        Test that the USE_REDIS_CACHE option for configuration works.
+        """
+        queueName = 'django-redis-cache'
+        queue = get_queue(queueName )
+        connection_kwargs = queue.connection.connection_pool.connection_kwargs
+        self.assertEqual(queue.name, queueName)
+
+        cacheHost = settings.CACHES[queueName]['LOCATION'].split(':')[0]
+        cachePort = settings.CACHES[queueName]['LOCATION'].split(':')[1]
+        cacheDBNum = settings.CACHES[queueName]['OPTIONS']['DB']
+
+        self.assertEqual(connection_kwargs['host'], cacheHost)
+        self.assertEqual(connection_kwargs['port'], int(cachePort))
+        self.assertEqual(connection_kwargs['db'], int(cacheDBNum))
+        self.assertEqual(connection_kwargs['password'], None)

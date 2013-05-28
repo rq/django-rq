@@ -2,11 +2,11 @@ from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import redirect, render
 
-from rq import Worker
+from rq import requeue_job, Worker
 from rq.job import Job
 
-from .queues import get_connection, get_connection_by_index, get_queue, get_queue_by_index
-from .settings import QUEUES, QUEUES_LIST
+from .queues import get_connection, get_queue_by_index
+from .settings import QUEUES_LIST
 
 
 @staff_member_required
@@ -65,6 +65,8 @@ def delete_job(request, queue_index, job_id):
     job = Job.fetch(job_id, connection=queue.connection)
 
     if request.POST:
+        # Remove job id from queue and delete the actual job
+        queue.connection._lrem(queue.key, 0, job.id)
         job.delete()
         messages.info(request, 'You have successfully deleted %s' % job.id)
         return redirect('rq_jobs', queue_index)
@@ -76,3 +78,20 @@ def delete_job(request, queue_index, job_id):
     }
     return render(request, 'django_rq/delete_job.html', context_data)
 
+
+@staff_member_required
+def requeue_job_view(request, queue_index, job_id):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    job = Job.fetch(job_id, connection=queue.connection)
+    if request.POST:
+        requeue_job(job_id, connection=queue.connection)
+        messages.info(request, 'You have successfully requeued %s' % job.id)
+        return redirect('rq_job_detail', queue_index, job_id)
+
+    context_data = {
+        'queue_index': queue_index,
+        'job': job,
+        'queue': queue,
+    }
+    return render(request, 'django_rq/delete_job.html', context_data)

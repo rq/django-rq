@@ -1,7 +1,7 @@
 from django.core.exceptions import ImproperlyConfigured
 
 import redis
-from rq import Queue
+from rq.queue import FailedQueue, Queue
 
 
 def get_redis_connection(config):
@@ -10,6 +10,23 @@ def get_redis_connection(config):
     """
     if 'URL' in config:
         return redis.from_url(config['URL'], db=config['DB'])
+    if 'USE_REDIS_CACHE' in config.keys():
+
+        from django.core.cache import get_cache
+        cache = get_cache(config['USE_REDIS_CACHE'])
+
+        if hasattr(cache, 'client'):
+            # We're using django-redis. The cache's `client` attribute
+            # is a pluggable backend that return its Redis connection as
+            # its `client`
+            try:
+                return cache.client.client
+            except NotImplementedError:
+                pass
+        else:
+            # We're using django-redis-cache
+            return cache._client
+
     return redis.Redis(host=config['HOST'],
         port=config['PORT'], db=config['DB'],
         password=config.get('PASSWORD', None))
@@ -31,21 +48,45 @@ def get_connection_by_index(index):
     return get_redis_connection(QUEUES_LIST[index]['connection_config'])
 
 
-def get_queue(name='default'):
+def get_queue(name='default', default_timeout=None, async=None):
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
-    return Queue(name, connection=get_connection(name))
+    from .settings import QUEUES
+
+    # If async is provided, use it, otherwise, get it from the configuration
+    if async is None:
+        async = QUEUES[name].get('ASYNC', True)
+
+    return Queue(name, default_timeout=default_timeout,
+                 connection=get_connection(name), async=async)
 
 
 def get_queue_by_index(index):
     """
     Returns an rq Queue using parameters defined in ``QUEUES_LIST``
     """
-    from .settings import QUEUES_LIST
+    from .settings import QUEUES_LIST    
     config = QUEUES_LIST[int(index)]
+    if config['name'] == 'failed':
+        return FailedQueue(connection=get_redis_connection(config['connection_config']))
     return Queue(config['name'],
-                 connection=get_redis_connection(config['connection_config']))
+                 connection=get_redis_connection(config['connection_config']),
+                 async=config.get('ASYNC', True))
+
+
+def get_failed_queue(name='default'):
+    """
+    Returns the rq failed Queue using parameters defined in ``RQ_QUEUES``
+    """
+    return FailedQueue(connection=get_connection(name))
+
+
+def get_failed_queue(name='default'):
+    """
+    Returns the rq failed Queue using parameters defined in ``RQ_QUEUES``
+    """
+    return FailedQueue(connection=get_connection(name))
 
 
 def get_queues(*queue_names):
@@ -91,28 +132,6 @@ def get_unique_connection_configs(config=None):
         if value not in connection_configs:
             connection_configs.append(value)
     return connection_configs
-
-
-def get_failed_queues():
-    """
-    Get failed queues from config (one failed queue from each connection)
-    """
-    connection_configs = get_unique_connection_configs()
-    queues = []
-
-    for key, value in QUEUES.items():
-        if value not in connection_configs:
-            connection_configs.append(value)
-
-    for config in connection_configs:
-        if 'URL' in config:
-            connection = redis.from_url(config['URL'], db=config['DB'])
-        connection = redis.Redis(host=config['HOST'],
-            port=config['PORT'], db=config['DB'],
-            password=config.get('PASSWORD', None))
-        queues.append(Queue(name='failed', connection=connection))
-        queue = Queue(name='failed', connection=connection)
-    return queues
 
 
 """
