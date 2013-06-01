@@ -168,6 +168,22 @@ class QueuesTest(TestCase):
         self.assertEqual(get_unique_connection_configs(config),
                          [connection_params_1])
 
+    def test_async(self):
+        """
+        Checks whether asynchronous settings work
+        """
+        # Make sure async is not set by default
+        defaultQueue = get_queue('default')
+        self.assertTrue(defaultQueue._async)
+
+        # Make sure async override works
+        defaultQueueAsync = get_queue('default', async=False)
+        self.assertFalse(defaultQueueAsync._async)
+
+        # Make sure async setting works
+        asyncQueue = get_queue('async')
+        self.assertFalse(asyncQueue._async)
+
 
 class DecoratorTest(TestCase):
     def test_job_decorator(self):
