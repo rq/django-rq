@@ -298,6 +298,14 @@ To run ``django_rq``'s test suite::
 Changelog
 =========
 
+0.5.0
+-----
+* Added ``ASYNC`` option to ``RQ_QUEUES``
+* Added ``get_failed_queue`` shortcut
+* Django-RQ can now reuse existing ``django-redis`` cache connections
+* Added an experimental (and undocumented) ``AUTOCOMMIT`` option, use at your own risk
+
+
 0.4.7
 -----
 * Make admin template override optional.

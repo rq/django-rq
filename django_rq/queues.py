@@ -8,6 +8,16 @@ import thread_queue
 
 
 def get_commit_mode():
+    """
+    Disabling AUTOCOMMIT causes enqueued jobs to be stored in a temporary queue.
+    Jobs in this queue are only enqueued after the request is completed and are
+    discarded if the request causes an exception (similar to db transactions).
+
+    To disable autocommit, put this in settings.py:
+    RQ = {
+        'AUTOCOMMIT': False,
+    }
+    """
     RQ = getattr(settings, 'RQ', {})
     return RQ.get('AUTOCOMMIT', True)
 
