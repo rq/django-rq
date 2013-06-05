@@ -80,7 +80,7 @@ LOGGING = {
     'loggers': {
         "rq.worker": {
             "handlers": ['null'],
-            "level": "ERROR" 
+            "level": "ERROR"
         },
     }
 }
@@ -121,6 +121,10 @@ RQ_QUEUES = {
         'PORT': 6379,
         'DB': 0,
     },
+}
+
+RQ = {
+    'AUTOCOMMIT': False,
 }
 
 if REDIS_CACHE_TYPE == 'django-redis':

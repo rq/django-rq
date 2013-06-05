@@ -1,7 +1,35 @@
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
 import redis
 from rq.queue import FailedQueue, Queue
+
+import thread_queue
+
+
+def get_commit_mode():
+    RQ = getattr(settings, 'RQ', {})
+    return RQ.get('AUTOCOMMIT', True)
+
+
+class DjangoRQ(Queue):
+    """
+    A subclass of RQ's QUEUE that allows jobs to be stored temporarily to be
+    enqueued later at the end of Django's request/response cycle.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self._autocommit = get_commit_mode()
+        return super(DjangoRQ, self).__init__(*args, **kwargs)
+
+    def original_enqueue(self, *args, **kwargs):
+        return super(DjangoRQ, self).enqueue(*args, **kwargs)
+
+    def enqueue(self, f, *args, **kwargs):
+        if self._autocommit:
+            return self.original_enqueue(f, *args, **kwargs)
+        else:
+            thread_queue.add(self, f, args, kwargs)
 
 
 def get_redis_connection(config):
@@ -28,8 +56,8 @@ def get_redis_connection(config):
             return cache._client
 
     return redis.Redis(host=config['HOST'],
-        port=config['PORT'], db=config['DB'],
-        password=config.get('PASSWORD', None))
+                       port=config['PORT'], db=config['DB'],
+                       password=config.get('PASSWORD', None))
 
 
 def get_connection(name='default'):
@@ -58,28 +86,22 @@ def get_queue(name='default', default_timeout=None, async=None):
     if async is None:
         async = QUEUES[name].get('ASYNC', True)
 
-    return Queue(name, default_timeout=default_timeout,
-                 connection=get_connection(name), async=async)
+    return DjangoRQ(name, default_timeout=default_timeout,
+                    connection=get_connection(name), async=async)
 
 
 def get_queue_by_index(index):
     """
     Returns an rq Queue using parameters defined in ``QUEUES_LIST``
     """
-    from .settings import QUEUES_LIST    
+    from .settings import QUEUES_LIST
     config = QUEUES_LIST[int(index)]
     if config['name'] == 'failed':
         return FailedQueue(connection=get_redis_connection(config['connection_config']))
-    return Queue(config['name'],
-                 connection=get_redis_connection(config['connection_config']),
-                 async=config.get('ASYNC', True))
-
-
-def get_failed_queue(name='default'):
-    """
-    Returns the rq failed Queue using parameters defined in ``RQ_QUEUES``
-    """
-    return FailedQueue(connection=get_connection(name))
+    return DjangoRQ(
+        config['name'],
+        connection=get_redis_connection(config['connection_config']),
+        async=config.get('ASYNC', True))
 
 
 def get_failed_queue(name='default'):

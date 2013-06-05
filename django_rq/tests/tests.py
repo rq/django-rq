@@ -12,7 +12,11 @@ from rq import get_current_job, Queue
 from rq.job import Job
 
 from django_rq.decorators import job
-from django_rq.queues import get_connection, get_queue, get_queue_by_index, get_queues, get_unique_connection_configs
+from django_rq.queues import (
+    get_connection, get_queue, get_queue_by_index, get_queues,
+    get_unique_connection_configs
+)
+from django_rq import thread_queue
 from django_rq.workers import get_worker
 
 
@@ -31,6 +35,10 @@ def access_self():
     return job.id
 
 
+def divide(a, b):
+    return a / b
+
+
 def get_failed_queue_index(name='default'):
     """
     Returns the position of FailedQueue for the named queue in QUEUES_LIST
@@ -39,7 +47,7 @@ def get_failed_queue_index(name='default'):
     queue_index = None
     connection = get_connection(name)
     connection_kwargs = connection.connection_pool.connection_kwargs
-    for i in range(0, 100):            
+    for i in range(0, 100):
         q = get_queue_by_index(i)
         if q.name == 'failed' and q.connection.connection_pool.connection_kwargs == connection_kwargs:
             queue_index = i
@@ -55,7 +63,7 @@ def get_queue_index(name='default'):
     queue_index = None
     connection = get_connection(name)
     connection_kwargs = connection.connection_pool.connection_kwargs
-    for i in range(0, 100):            
+    for i in range(0, 100):
         q = get_queue_by_index(i)
         if q.name == name and q.connection.connection_pool.connection_kwargs == connection_kwargs:
             queue_index = i
@@ -63,6 +71,7 @@ def get_queue_index(name='default'):
     return queue_index
 
 
+@override_settings(RQ={'AUTOCOMMIT': True})
 class QueuesTest(TestCase):
 
     def test_get_connection_default(self):
@@ -215,6 +224,7 @@ class ConfigTest(TestCase):
         self.assertRaises(ImproperlyConfigured, get_connection)
 
 
+@override_settings(RQ={'AUTOCOMMIT': True})
 class WorkersTest(TestCase):
     def test_get_worker_default(self):
         """
@@ -244,12 +254,13 @@ class WorkersTest(TestCase):
         call_command('rqworker', burst=True)
         failed_queue = Queue(name='failed', connection=queue.connection)
         self.assertFalse(job.id in failed_queue.job_ids)
-        job.delete()        
+        job.delete()
 
 
+@override_settings(RQ={'AUTOCOMMIT': True})
 class ViewTest(TestCase):
 
-    def setUp(self):        
+    def setUp(self):
         user = User.objects.create_user('foo', password='pass')
         user.is_staff = True
         user.is_active = True
@@ -288,6 +299,72 @@ class ViewTest(TestCase):
                          {'post': 'yes'})
         self.assertFalse(Job.exists(job.id, connection=queue.connection))
         self.assertNotIn(job.id, queue.job_ids)
+
+
+class ThreadQueueTest(TestCase):
+
+    @override_settings(RQ={'AUTOCOMMIT': True})
+    def test_enqueue_autocommit_on(self):
+        """
+        Running ``enqueue`` when AUTOCOMMIT is on should
+        immediately persist job into Redis.
+        """
+        queue = get_queue()
+        job = queue.enqueue(divide, 1, 1)
+        self.assertTrue(job.id in queue.job_ids)
+        job.delete()
+
+    @override_settings(RQ={'AUTOCOMMIT': False})
+    def test_enqueue_autocommit_off(self):
+        """
+        Running ``enqueue`` when AUTOCOMMIT is off should
+        put the job in the delayed queue instead of enqueueing it right away.
+        """
+        queue = get_queue()
+        job = queue.enqueue(divide, 1, b=1)
+        self.assertTrue(job is None)
+        delayed_queue = thread_queue.get_queue()
+        self.assertEqual((queue, divide, (1,), {'b': 1}), delayed_queue[0])
+
+    def test_commit(self):
+        """
+        Ensure that commit_delayed_jobs properly enqueue jobs and clears
+        delayed_queue.
+        """
+        queue = get_queue()
+        delayed_queue = thread_queue.get_queue()
+        delayed_queue.append((queue, divide, (1,), {'b': 1}))
+        queue.empty()
+        self.assertEqual(queue.count, 0)
+        thread_queue.commit()
+        self.assertEqual(queue.count, 1)
+        self.assertEqual(len(delayed_queue), 0)
+
+    def test_clear(self):
+        queue = get_queue()
+        delayed_queue = thread_queue.get_queue()
+        delayed_queue.append((queue, divide, (1,), {'b': 1}))
+        thread_queue.clear()
+        delayed_queue = thread_queue.get_queue()
+        self.assertEqual(delayed_queue, [])
+
+    @override_settings(RQ={'AUTOCOMMIT': False})
+    def test_success(self):
+        queue = get_queue()
+        queue.empty()
+        thread_queue.clear()
+        self.assertEqual(queue.count, 0)
+        self.client.get(reverse('success'))
+        self.assertEqual(queue.count, 1)
+
+    @override_settings(RQ={'AUTOCOMMIT': False})
+    def test_error(self):
+        queue = get_queue()
+        queue.empty()
+        self.assertEqual(queue.count, 0)
+        url = reverse('error')
+        self.assertRaises(ValueError, self.client.get, url)
+        self.assertEqual(queue.count, 0)
 
 
 class SchedulerTest(TestCase):
