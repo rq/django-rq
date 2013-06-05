@@ -1,4 +1,4 @@
-VERSION = (0, 4, 6)
+VERSION = (0, 5, 0)
 
 from .decorators import job
 from .queues import enqueue, get_connection, get_queue, get_scheduler, get_failed_queue
