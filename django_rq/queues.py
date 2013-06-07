@@ -32,14 +32,15 @@ class DjangoRQ(Queue):
         self._autocommit = get_commit_mode()
         return super(DjangoRQ, self).__init__(*args, **kwargs)
 
-    def original_enqueue(self, *args, **kwargs):
-        return super(DjangoRQ, self).enqueue(*args, **kwargs)
+    def original_enqueue_call(self, *args, **kwargs):
+        return super(DjangoRQ, self).enqueue_call(*args, **kwargs)
 
-    def enqueue(self, f, *args, **kwargs):
+    def enqueue_call(self, *args, **kwargs):
+        # print args, kwargs
         if self._autocommit:
-            return self.original_enqueue(f, *args, **kwargs)
+            return self.original_enqueue_call(*args, **kwargs)
         else:
-            thread_queue.add(self, f, args, kwargs)
+            thread_queue.add(self, args, kwargs)
 
 
 def get_redis_connection(config):

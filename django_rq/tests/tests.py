@@ -194,6 +194,7 @@ class QueuesTest(TestCase):
         self.assertFalse(asyncQueue._async)
 
 
+@override_settings(RQ={'AUTOCOMMIT': True})
 class DecoratorTest(TestCase):
     def test_job_decorator(self):
         # Ensure that decorator passes in the right queue from settings.py
@@ -324,7 +325,11 @@ class ThreadQueueTest(TestCase):
         job = queue.enqueue(divide, 1, b=1)
         self.assertTrue(job is None)
         delayed_queue = thread_queue.get_queue()
-        self.assertEqual((queue, divide, (1,), {'b': 1}), delayed_queue[0])
+        self.assertEqual(delayed_queue[0], (
+            queue,
+            (),
+            {'args': (1,), 'result_ttl': None, 'timeout': None, 'func': divide, 'kwargs': {'b': 1}}
+        ))
 
     def test_commit(self):
         """
@@ -333,9 +338,9 @@ class ThreadQueueTest(TestCase):
         """
         queue = get_queue()
         delayed_queue = thread_queue.get_queue()
-        delayed_queue.append((queue, divide, (1,), {'b': 1}))
         queue.empty()
         self.assertEqual(queue.count, 0)
+        queue.enqueue_call(divide, args=(1,), kwargs={'b': 1})
         thread_queue.commit()
         self.assertEqual(queue.count, 1)
         self.assertEqual(len(delayed_queue), 0)

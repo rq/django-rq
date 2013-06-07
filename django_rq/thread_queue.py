@@ -8,12 +8,12 @@ def get_queue():
     """
     Returns a temporary queue to store jobs before they're committed
     later in the request/responsce cycle. Each job is stored as a tuple
-    containing the queue, job callable, args and kwargs.
+    containing the queue, args and kwargs.
 
-    For example, if we call ``foo.delay(bar, baz=baz)`` during the
+    For example, if we call ``queue.enqueue_call(foo, kwargs={'bar': 'baz'})`` during the
     request/response cycle, job_queue will look like:
 
-    job_queue = [(default_queue, foo, (bar,), {baz: baz})]
+    job_queue = [(default_queue, foo, {'kwargs': {'bar': 'baz'}})]
 
     This implementation is heavily inspired by
     https://github.com/chrisdoble/django-celery-transactions
@@ -21,8 +21,8 @@ def get_queue():
     return _thread_data.__dict__.setdefault("job_queue", [])
 
 
-def add(queue, f, args, kwargs):
-    get_queue().append((queue, f, args, kwargs))
+def add(queue, args, kwargs):
+    get_queue().append((queue, args, kwargs))
 
 
 def commit(*args, **kwargs):
@@ -32,8 +32,8 @@ def commit(*args, **kwargs):
     delayed_queue = get_queue()
     try:
         while delayed_queue:
-            queue, f, args, kwargs = delayed_queue.pop(0)
-            queue.original_enqueue(f, *args, **kwargs)
+            queue, args, kwargs = delayed_queue.pop(0)
+            queue.original_enqueue_call(*args, **kwargs)
     finally:
         clear()
 
