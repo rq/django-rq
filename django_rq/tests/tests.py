@@ -193,6 +193,26 @@ class QueuesTest(TestCase):
         asyncQueue = get_queue('async')
         self.assertFalse(asyncQueue._async)
 
+    @override_settings(RQ={'AUTOCOMMIT': False})
+    def test_autocommit(self):
+        """
+        Checks whether autocommit is set properly.
+        """
+        queue = get_queue(autocommit=True)
+        self.assertTrue(queue._autocommit)
+        queue = get_queue(autocommit=False)
+        self.assertFalse(queue._autocommit)
+        # Falls back to default AUTOCOMMIT mode
+        queue = get_queue()
+        self.assertFalse(queue._autocommit)
+
+        queues = get_queues(autocommit=True)
+        self.assertTrue(queues[0]._autocommit)
+        queues = get_queues(autocommit=False)
+        self.assertFalse(queues[0]._autocommit)
+        queues = get_queues()
+        self.assertFalse(queues[0]._autocommit)
+
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class DecoratorTest(TestCase):

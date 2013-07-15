@@ -29,7 +29,8 @@ class DjangoRQ(Queue):
     """
 
     def __init__(self, *args, **kwargs):
-        self._autocommit = get_commit_mode()
+        autocommit = kwargs.pop('autocommit', None)
+        self._autocommit = get_commit_mode() if autocommit is None else autocommit
         return super(DjangoRQ, self).__init__(*args, **kwargs)
 
     def original_enqueue_call(self, *args, **kwargs):
@@ -87,7 +88,8 @@ def get_connection_by_index(index):
     return get_redis_connection(QUEUES_LIST[index]['connection_config'])
 
 
-def get_queue(name='default', default_timeout=None, async=None):
+def get_queue(name='default', default_timeout=None, async=None,
+              autocommit=None):
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
@@ -98,7 +100,8 @@ def get_queue(name='default', default_timeout=None, async=None):
         async = QUEUES[name].get('ASYNC', True)
 
     return DjangoRQ(name, default_timeout=default_timeout,
-                    connection=get_connection(name), async=async)
+                    connection=get_connection(name), async=async,
+                    autocommit=autocommit)
 
 
 def get_queue_by_index(index):
@@ -122,24 +125,25 @@ def get_failed_queue(name='default'):
     return FailedQueue(connection=get_connection(name))
 
 
-def get_queues(*queue_names):
+def get_queues(*queue_names, **kwargs):
     """
     Return queue instances from specified queue names.
     All instances must use the same Redis connection.
     """
     from .settings import QUEUES
+    autocommit = kwargs.get('autocommit', None)
     if len(queue_names) == 0:
         # Return "default" queue if no queue name is specified
-        return [get_queue()]
+        return [get_queue(autocommit=autocommit)]
     if len(queue_names) > 1:
         connection_params = QUEUES[queue_names[0]]
         for name in queue_names:
             if QUEUES[name] != connection_params:
                 raise ValueError(
-                    'Queues in a single command must have the same '
-                    'redis connection. Queues "{0}" and "{1}" have '
+                    'Queues must have the same redis connection.'
+                    '"{0}" and "{1}" have '
                     'different connections'.format(name, queue_names[0]))
-    return [get_queue(name) for name in queue_names]
+    return [get_queue(name, autocommit=autocommit) for name in queue_names]
 
 
 def enqueue(func, *args, **kwargs):
