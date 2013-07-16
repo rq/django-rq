@@ -9,7 +9,7 @@ env:
   - DJANGO=django==1.4.5
 
 install:
-  - pip install $DJANGO
+  - pip install $DJANGO times
   - python setup.py install
 
 script: make test
