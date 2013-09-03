@@ -8,6 +8,8 @@ class Command(BaseCommand):
     Runs RQ scheduler
     """
     help = __doc__
+    args = '<queue>'
+
     option_list = BaseCommand.option_list + (
         make_option(
             '--interval',
@@ -19,6 +21,6 @@ class Command(BaseCommand):
         ),
     )
 
-    def handle(self, *args, **options):
-        scheduler = get_scheduler(interval=options.get('interval'))
+    def handle(self, queue='default', *args, **options):
+        scheduler = get_scheduler(name=queue, interval=options.get('interval'))
         scheduler.run()
