@@ -1,3 +1,7 @@
 *.pyc
 *.sw*
 .env
+.python-version
+dist/
+django_rq.egg-info/
+
