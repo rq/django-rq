@@ -173,18 +173,19 @@ def get_unique_connection_configs(config=None):
 
 """
 If rq_scheduler is installed, provide a ``get_scheduler`` function that
-behaveslike ``get_connection``, except that it returns a ``Scheduler``
+behaves like ``get_connection``, except that it returns a ``Scheduler``
 instance instead of a ``Queue`` instance.
 """
 try:
     from rq_scheduler import Scheduler
 
-    def get_scheduler(name='default'):
+    def get_scheduler(name='default', interval=60):
         """
         Returns an RQ Scheduler instance using parameters defined in
         ``RQ_QUEUES``
         """
-        return Scheduler(name, connection=get_connection(name))
+        return Scheduler(name, interval=interval,
+                         connection=get_connection(name))
 except ImportError:
-    def get_scheduler(name='default'):
+    def get_scheduler(*args, **kwargs):
         raise ImproperlyConfigured('rq_scheduler not installed')
