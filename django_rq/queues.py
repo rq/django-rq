@@ -4,7 +4,7 @@ from django.core.exceptions import ImproperlyConfigured
 import redis
 from rq.queue import FailedQueue, Queue
 
-import thread_queue
+from django_rq import thread_queue
 
 
 def get_commit_mode():
