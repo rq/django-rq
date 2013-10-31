@@ -298,6 +298,18 @@ To run ``django_rq``'s test suite::
 Changelog
 =========
 
+0.6.0
+-----
+* Python 3 compatibility
+* Added ``rqscheduler`` management command
+* ``get_queue`` and ``get_queues`` now accept ``autocommit`` argument
+
+
+0.5.1
+-----
+* Bugfix to ``DjangoRQ`` class
+
+
 0.5.0
 -----
 * Added ``ASYNC`` option to ``RQ_QUEUES``
