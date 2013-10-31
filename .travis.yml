@@ -6,8 +6,8 @@ python:
   - "3.3"
 
 env:
-  - DJANGO=django==1.5.1
-  - DJANGO=django==1.4.5
+  - DJANGO=1.5.1
+  - DJANGO=1.4.5
 
 matrix:
   exclude:
@@ -15,7 +15,7 @@ matrix:
       env: DJANGO=1.4.5
 
 install:
-  - pip install $DJANGO times
+  - pip install Django==$DJANGO times
   - python setup.py install
 
 script: make test
