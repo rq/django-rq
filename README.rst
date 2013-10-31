@@ -2,7 +2,7 @@
 Django-RQ
 =========
 
-.. image:: https://secure.travis-ci.org/ui/django-rq.png
+|Build Status|
 
 Django integration with `RQ <https://github.com/nvie/rq>`_, a `Redis <http://redis.io/>`_
 based Python queuing library. `Django-RQ <https://github.com/ui/django-rq>`_ is a
@@ -383,3 +383,7 @@ Version 0.3.0
 Version 0.2.2
 -------------
 * "PASSWORD" key in RQ_QUEUES will now be used when connecting to Redis.
+
+
+.. |Build Status| image:: https://secure.travis-ci.org/ui/django-rq.png?branch=master
+   :target: https://travis-ci.org/ui/django-rq
