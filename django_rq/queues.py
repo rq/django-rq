@@ -60,7 +60,13 @@ def get_redis_connection(config):
             # is a pluggable backend that return its Redis connection as
             # its `client`
             try:
-                return cache.client.client
+                # To get Redis connection on django-redis >= 3.4.0
+                # we need to use cache.client.get_client() instead of
+                # cache.client.client used in older versions
+                try:
+                    return cache.client.get_client()
+                except AttributeError:
+                    return cache.client.client
             except NotImplementedError:
                 pass
         else:
