@@ -298,6 +298,10 @@ To run ``django_rq``'s test suite::
 Changelog
 =========
 
+0.6.1
+-----
+* Adds compatibility with ``django-redis`` >= 3.4.0
+
 0.6.0
 -----
 * Python 3 compatibility
