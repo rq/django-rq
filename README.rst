@@ -143,6 +143,11 @@ If you want to run ``rqworker`` in burst mode, you can pass in the ``--burst`` f
 
     python manage.py rqworker high default low --burst
 
+If you need to use a custom worker class, you can pass in the ``--worker-class`` flag
+with the path to your worker::
+    
+    python manage.py rqworker high default low --worker-class 'path.to.GeventWorker'
+    
 Support for RQ Scheduler
 ------------------------
 

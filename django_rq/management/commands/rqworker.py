@@ -6,10 +6,10 @@ from django.utils.log import dictConfig
 
 from redis.exceptions import ConnectionError
 
-from django_rq.workers import get_worker
+from django_rq.queues import get_queues
 
 from rq import use_connection
-
+from rq.utils import import_attribute
 
 # Setup logging for RQWorker if not already configured
 logger = logging.getLogger('rq.worker')
@@ -58,12 +58,23 @@ class Command(BaseCommand):
             default=False,
             help='Run worker in burst mode'
         ),
+        make_option(
+            '--worker-class',
+            action='store',
+            dest='worker_class',
+            default='rq.Worker',
+            help='RQ Worker class to use'
+        ),
     )
     args = '<queue queue ...>'
 
     def handle(self, *args, **options):
         try:
-            w = get_worker(*args)
+            # Instantiate a worker
+            worker_class = import_attribute(options.get('worker_class', 'rq.Worker'))
+            queues = get_queues(*args)
+            w = worker_class(queues, connection=queues[0].connection)
+
             # Call use_connection to push the redis connection into LocalStack
             # without this, jobs using RQ's get_current_job() will fail
             use_connection(w.connection)
