@@ -9,7 +9,7 @@ from redis.exceptions import ConnectionError
 from django_rq.queues import get_queues
 
 from rq import use_connection
-from rq.utils import import_attribute
+import importlib
 
 # Setup logging for RQWorker if not already configured
 logger = logging.getLogger('rq.worker')
@@ -40,6 +40,13 @@ if not logger.handlers:
             "level": "DEBUG"
         }
     })
+
+    
+def import_attribute(name):
+    """Return an attribute from a dotted path name (e.g. "path.to.func")."""
+    module_name, attribute = name.rsplit('.', 1)
+    module = importlib.import_module(module_name)
+    return getattr(module, attribute)
 
 
 class Command(BaseCommand):
