@@ -42,7 +42,13 @@
                         </th>
                         <td>{{ job.created_at }}</td>
                         <td>{{ job.enqueued_at }}</td>
-                        <td>{{ job.status }}</td>
+                        <td>
+                            {% if job.get_status %}
+                                {{ job.get_status }}
+                            {% else %}
+                                {{ job.status }}
+                            {% endif %}
+                        </td>
                         <td>{{ job.func_name }}</td>
                     </tr>
                 {% endfor %}

@@ -78,7 +78,13 @@
         <div class="form-row">
             <div>
                 <label class="required">Status:</label>
-                <div class="data">{{ job.status }}</div>
+                <div class="data">
+                    {% if job.get_status %}
+                        {{ job.get_status }}
+                    {% else %}
+                        {{ job.status }}
+                    {% endif %}
+                </div>
             </div>
         </div>
 
