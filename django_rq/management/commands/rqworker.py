@@ -73,6 +73,13 @@ class Command(BaseCommand):
             default='rq.Worker',
             help='RQ Worker class to use'
         ),
+        make_option(
+            '--name',
+            action='store',
+            dest='name',
+            default=None,
+            help='Name of the worker'
+        ),
     )
     args = '<queue queue ...>'
 
@@ -81,7 +88,7 @@ class Command(BaseCommand):
             # Instantiate a worker
             worker_class = import_attribute(options.get('worker_class', 'rq.Worker'))
             queues = get_queues(*args)
-            w = worker_class(queues, connection=queues[0].connection)
+            w = worker_class(queues, connection=queues[0].connection, name=options.get('name', None))
 
             # Call use_connection to push the redis connection into LocalStack
             # without this, jobs using RQ's get_current_job() will fail
