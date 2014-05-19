@@ -212,6 +212,16 @@ You can also add a link to this dashboard link in ``/admin`` by adding
 override the default admin template so it may interfere with other apps that
 modifies the default admin template.
 
+Settings
+--------
+
+The following settings can be configured in ``settings.py``:
+
+``RQ_DEFAULT_TIMEOUT`` is the number of seconds before a job times out and is
+moved to the failed queue. Timeout values set in ``enqueue_call()`` or during
+``Queue`` creation take precedence over this value.
+
+``RQ_RESULT_TTL`` is the number of seconds before the job result expires from redis.
 
 Configuring Logging
 -------------------
