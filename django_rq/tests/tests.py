@@ -295,7 +295,7 @@ class ViewTest(TestCase):
         """
         def failing_job():
             raise ValueError
-        
+
         queue = get_queue('default')
         queue_index = get_failed_queue_index('default')
         job = queue.enqueue(failing_job)
@@ -317,6 +317,16 @@ class ViewTest(TestCase):
         queue_index = get_queue_index('django_rq_test')
         job = queue.enqueue(access_self)
         self.client.post(reverse('rq_delete_job', args=[queue_index, job.id]),
+                         {'post': 'yes'})
+        self.assertFalse(Job.exists(job.id, connection=queue.connection))
+        self.assertNotIn(job.id, queue.job_ids)
+
+    def test_clear_queue(self):
+        """Test that the queue clear actually clears the queue."""
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+        job = queue.enqueue(access_self)
+        self.client.post(reverse('rq_clear', args=[queue_index]),
                          {'post': 'yes'})
         self.assertFalse(Job.exists(job.id, connection=queue.connection))
         self.assertNotIn(job.id, queue.job_ids)

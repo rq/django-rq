@@ -3,6 +3,7 @@ from django.conf.urls import patterns, url
 urlpatterns = patterns('django_rq.views',
     url(r'^$', 'stats', name='rq_home'),
     url(r'^queues/(?P<queue_index>[\d]+)/$', 'jobs', name='rq_jobs'),
+    url(r'^queues/(?P<queue_index>[\d]+)/empty/$', 'clear_queue', name='rq_clear'),
     url(r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[-\w]+)/$', 'job_detail',
         name='rq_job_detail'),
     url(r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[-\w]+)/delete/$',
