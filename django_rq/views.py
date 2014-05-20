@@ -95,3 +95,18 @@ def requeue_job_view(request, queue_index, job_id):
         'queue': queue,
     }
     return render(request, 'django_rq/delete_job.html', context_data)
+
+
+@staff_member_required
+def clear_queue(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    if request.POST:
+        queue.empty()
+        messages.info(request, 'You have successfully cleared the queue %s' % queue.name)
+        return redirect('rq_jobs', queue_index)
+    context_data = {
+        'queue_index': queue_index,
+        'queue': queue,
+    }
+    return render(request, 'django_rq/clear_queue.html', context_data)
