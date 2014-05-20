@@ -306,6 +306,7 @@ Changelog
 Unreleased
 ----------
 * Adds the ability to clear a queue from admin interface. Thanks @hvdklauw!
+* ``rq_job_detail`` now returns a 404 instead of 500 when fetching a non existing job.
 
 0.6.1
 -----
