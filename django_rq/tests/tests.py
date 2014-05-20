@@ -345,11 +345,14 @@ class ThreadQueueTest(TestCase):
         job = queue.enqueue(divide, 1, b=1)
         self.assertTrue(job is None)
         delayed_queue = thread_queue.get_queue()
-        self.assertEqual(delayed_queue[0], (
-            queue,
-            (),
-            {'args': (1,), 'result_ttl': None, 'timeout': None, 'func': divide, 'kwargs': {'b': 1}}
-        ))
+        self.assertEqual(delayed_queue[0][0], queue)
+        self.assertEqual(delayed_queue[0][1], ())
+        kwargs = delayed_queue[0][2]
+        self.assertEqual(kwargs['args'], (1,))
+        self.assertEqual(kwargs['result_ttl'], None)
+        self.assertEqual(kwargs['kwargs'], {'b': 1})
+        self.assertEqual(kwargs['func'], divide)
+        self.assertEqual(kwargs['timeout'], None)
 
     def test_commit(self):
         """
