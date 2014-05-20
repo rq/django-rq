@@ -303,6 +303,10 @@ To run ``django_rq``'s test suite::
 Changelog
 =========
 
+Unreleased
+----------
+* Adds the ability to clear a queue from admin interface. Thanks @hvdklauw!
+
 0.6.1
 -----
 * Adds compatibility with ``django-redis`` >= 3.4.0
