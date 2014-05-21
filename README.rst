@@ -66,6 +66,30 @@ Installation
     )
 
 
+====
+Deploying on Heroku
+====
+
+Add `django-rq` to your `requirements.txt` file with:
+
+.. code-block:: bash 
+
+    pip freeze > requirements.txt
+ 
+Update your `Procfile` to:
+
+.. code-block:: bash 
+
+    web: gunicorn --pythonpath="$PWD/your_app_name" config.wsgi:application
+
+    worker: python your_app_name/manage.py rqworker high default low
+
+Commit and re-deploy. Then add your new worker with:
+
+.. code-block:: bash 
+
+    heroku scale worker=1
+
 =====
 Usage
 =====
