@@ -339,10 +339,12 @@ Commit and re-deploy. Then add your new worker with:
 Changelog
 =========
 
-Unreleased
-----------
+0.6.2
+-----
+* Compatibility with ``RQ`` >= 0.4.0
 * Adds the ability to clear a queue from admin interface. Thanks @hvdklauw!
 * ``rq_job_detail`` now returns a 404 instead of 500 when fetching a non existing job.
+* ``rqworker`` command now supports ``-name`` and ``--worker-class`` parameters.
 
 0.6.1
 -----
