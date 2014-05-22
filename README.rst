@@ -66,30 +66,6 @@ Installation
     )
 
 
-====
-Deploying on Heroku
-====
-
-Add `django-rq` to your `requirements.txt` file with:
-
-.. code-block:: bash 
-
-    pip freeze > requirements.txt
- 
-Update your `Procfile` to:
-
-.. code-block:: bash 
-
-    web: gunicorn --pythonpath="$PWD/your_app_name" config.wsgi:application
-
-    worker: python your_app_name/manage.py rqworker high default low
-
-Commit and re-deploy. Then add your new worker with:
-
-.. code-block:: bash 
-
-    heroku scale worker=1
-
 =====
 Usage
 =====
@@ -276,6 +252,16 @@ you can easily configure ``rqworker``'s logging mechanism in django's
         }
     }
 
+Note: error logging to Sentry is known to be unreliable with RQ when using async
+transports (the default transport). Please configure `Raven` to use
+ `sync+https://` or `requests+https://` transport in `settings.py`:
+
+.. code-block:: python
+    RAVEN_CONFIG = {
+        'dsn': 'sync+https://public:secret@example.com/1',
+    }
+
+For more info, refer to `Raven's documentation <http://raven.readthedocs.org/>`_.
 
 Testing tip
 -----------
@@ -322,6 +308,32 @@ Running Tests
 To run ``django_rq``'s test suite::
 
     `which django-admin.py` test django_rq --settings=django_rq.test_settings --pythonpath=.
+
+
+===================
+Deploying on Heroku
+===================
+
+Add `django-rq` to your `requirements.txt` file with:
+
+.. code-block:: bash 
+
+    pip freeze > requirements.txt
+ 
+Update your `Procfile` to:
+
+.. code-block:: bash 
+
+    web: gunicorn --pythonpath="$PWD/your_app_name" config.wsgi:application
+
+    worker: python your_app_name/manage.py rqworker high default low
+
+Commit and re-deploy. Then add your new worker with:
+
+.. code-block:: bash 
+
+    heroku scale worker=1
+
 
 =========
 Changelog
