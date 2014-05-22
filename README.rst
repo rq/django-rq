@@ -253,8 +253,8 @@ you can easily configure ``rqworker``'s logging mechanism in django's
     }
 
 Note: error logging to Sentry is known to be unreliable with RQ when using async
-transports (the default transport). Please configure `Raven` to use
- `sync+https://` or `requests+https://` transport in `settings.py`:
+transports (the default transport). Please configure ``Raven`` to use
+ ``sync+https://`` or ``requests+https://`` transport in ``settings.py``:
 
 .. code-block:: python
     RAVEN_CONFIG = {
