@@ -116,3 +116,39 @@ def clear_queue(request, queue_index):
         'queue': queue,
     }
     return render(request, 'django_rq/clear_queue.html', context_data)
+
+
+@staff_member_required
+def actions(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+
+    if request.POST.get('action', False):
+        # confirm action
+        if request.POST.get('_selected_action', False):
+            context_data = {
+                'queue_index': queue_index,
+                'action': request.POST['action'],
+                'job_ids': u"||".join(request.POST.getlist('_selected_action')),
+                'queue': queue,
+            }
+            return render(request, 'django_rq/confirm_action.html', context_data)
+
+        # do confirmed action
+        elif request.POST.get('job_ids', False):
+            job_ids = request.POST['job_ids'].split(u'||')
+
+            if request.POST['action'] == 'delete':
+                for job_id in job_ids:
+                    job = Job.fetch(job_id, connection=queue.connection)
+                    queue.connection._lrem(queue.key, 0, job.id)
+                    job.delete()
+
+                messages.info(request, 'You have successfully deleted %s jobs!' % len(job_ids))
+            elif request.POST['action'] == 'requeue':
+                for job_id in job_ids:
+                    requeue_job(job_id, connection=queue.connection)
+
+                messages.info(request, 'You have successfully requeued %s jobs!' % len(job_ids))
+
+    return redirect('rq_jobs', queue_index)

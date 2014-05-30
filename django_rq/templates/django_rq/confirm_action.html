@@ -19,8 +19,7 @@
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
         <a href="{% url 'rq_home' %}">Django RQ</a> &rsaquo;
         <a href = "{% url 'rq_jobs' queue_index %}">{{ queue.name }}</a> &rsaquo;
-        <a href = "{% url 'rq_job_detail' queue_index job.id %}">{{ job.id }}</a> &rsaquo;
-        Delete
+        {{ action|capfirst }}
     </div>
 {% endblock %}
 
@@ -30,13 +29,14 @@
 
 <div id="content-main">
     <p>
-        Are you sure you want to delete <a href = "{% url 'rq_job_detail' queue_index job.id %}">{{ job.id }}</a> from <a href = "{% url 'rq_jobs' queue_index %}">{{ queue.name }}</a>?
+        Are you sure you want to execute <b>{{ action|capfirst }}</b> action on selected jobs from <a href = "{% url 'rq_jobs' queue_index %}">{{ queue.name }}</a>?
         This action can not be undone.
     </p>
     <form action="" method="post">
         {% csrf_token %}
         <div>
-            <input type="hidden" name="confirm" value="yes" />
+            <input type="hidden" name="job_ids" value="{{ job_ids }}" />
+            <input type="hidden" name="action" value="{{ action }}" />
             <input type="submit" value="Yes, I'm sure" />
         </div>
     </form>
