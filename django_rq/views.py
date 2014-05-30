@@ -1,8 +1,10 @@
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.http import Http404
 from django.shortcuts import redirect, render
 
 from rq import requeue_job, Worker
+from rq.exceptions import NoSuchJobError
 from rq.job import Job
 
 from .queues import get_connection, get_queue_by_index
@@ -49,7 +51,11 @@ def jobs(request, queue_index):
 def job_detail(request, queue_index, job_id):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
-    job = Job.fetch(job_id, connection=queue.connection)
+    try:
+        job = Job.fetch(job_id, connection=queue.connection)
+    except NoSuchJobError:
+        raise Http404("Couldn't find job with this ID: %s" % job_id)
+    
     context_data = {
         'queue_index': queue_index,
         'job': job,
@@ -95,3 +101,18 @@ def requeue_job_view(request, queue_index, job_id):
         'queue': queue,
     }
     return render(request, 'django_rq/delete_job.html', context_data)
+
+
+@staff_member_required
+def clear_queue(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    if request.POST:
+        queue.empty()
+        messages.info(request, 'You have successfully cleared the queue %s' % queue.name)
+        return redirect('rq_jobs', queue_index)
+    context_data = {
+        'queue_index': queue_index,
+        'queue': queue,
+    }
+    return render(request, 'django_rq/clear_queue.html', context_data)

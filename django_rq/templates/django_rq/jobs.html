@@ -20,7 +20,9 @@
 {% block content %}
 
 <div id="content-main">
-
+    <ul class="object-tools">
+        <li><a href="{% url 'rq_clear' queue_index %}" class="deletelink">Empty Queue</a></li>
+    </ul>
     <div class="module">
         <table>
             <thead>

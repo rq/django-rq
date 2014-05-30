@@ -295,7 +295,7 @@ class ViewTest(TestCase):
         """
         def failing_job():
             raise ValueError
-        
+
         queue = get_queue('default')
         queue_index = get_failed_queue_index('default')
         job = queue.enqueue(failing_job)
@@ -317,6 +317,16 @@ class ViewTest(TestCase):
         queue_index = get_queue_index('django_rq_test')
         job = queue.enqueue(access_self)
         self.client.post(reverse('rq_delete_job', args=[queue_index, job.id]),
+                         {'post': 'yes'})
+        self.assertFalse(Job.exists(job.id, connection=queue.connection))
+        self.assertNotIn(job.id, queue.job_ids)
+
+    def test_clear_queue(self):
+        """Test that the queue clear actually clears the queue."""
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+        job = queue.enqueue(access_self)
+        self.client.post(reverse('rq_clear', args=[queue_index]),
                          {'post': 'yes'})
         self.assertFalse(Job.exists(job.id, connection=queue.connection))
         self.assertNotIn(job.id, queue.job_ids)
@@ -345,11 +355,14 @@ class ThreadQueueTest(TestCase):
         job = queue.enqueue(divide, 1, b=1)
         self.assertTrue(job is None)
         delayed_queue = thread_queue.get_queue()
-        self.assertEqual(delayed_queue[0], (
-            queue,
-            (),
-            {'args': (1,), 'result_ttl': None, 'timeout': None, 'func': divide, 'kwargs': {'b': 1}}
-        ))
+        self.assertEqual(delayed_queue[0][0], queue)
+        self.assertEqual(delayed_queue[0][1], ())
+        kwargs = delayed_queue[0][2]
+        self.assertEqual(kwargs['args'], (1,))
+        self.assertEqual(kwargs['result_ttl'], None)
+        self.assertEqual(kwargs['kwargs'], {'b': 1})
+        self.assertEqual(kwargs['func'], divide)
+        self.assertEqual(kwargs['timeout'], None)
 
     def test_commit(self):
         """
