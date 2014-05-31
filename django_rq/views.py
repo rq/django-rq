@@ -38,12 +38,12 @@ def stats(request):
 def jobs(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
+
     context_data = {
         'queue': queue,
         'queue_index': queue_index,
         'jobs': queue.jobs,
     }
-
     return render(request, 'django_rq/jobs.html', context_data)
 
 
@@ -70,7 +70,7 @@ def delete_job(request, queue_index, job_id):
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection)
 
-    if request.POST:
+    if request.method == 'POST':
         # Remove job id from queue and delete the actual job
         queue.connection._lrem(queue.key, 0, job.id)
         job.delete()
@@ -90,7 +90,8 @@ def requeue_job_view(request, queue_index, job_id):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection)
-    if request.POST:
+
+    if request.method == 'POST':
         requeue_job(job_id, connection=queue.connection)
         messages.info(request, 'You have successfully requeued %s' % job.id)
         return redirect('rq_job_detail', queue_index, job_id)
@@ -107,10 +108,12 @@ def requeue_job_view(request, queue_index, job_id):
 def clear_queue(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
-    if request.POST:
+
+    if request.method == 'POST':
         queue.empty()
         messages.info(request, 'You have successfully cleared the queue %s' % queue.name)
         return redirect('rq_jobs', queue_index)
+
     context_data = {
         'queue_index': queue_index,
         'queue': queue,
