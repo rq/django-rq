@@ -123,7 +123,7 @@ def actions(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
 
-    if request.POST.get('action', False):
+    if request.method == 'POST' and request.POST.get('action', False):
         # confirm action
         if request.POST.get('_selected_action', False):
             context_data = {
