@@ -47,7 +47,9 @@
                     <select name="action">
                         <option value="" selected="selected">---------</option>
                         <option value="delete">Delete</option>
-                        <option value="requeue">Requeue</option>
+                        {% if queue.name == 'failed' %}
+                            <option value="requeue">Requeue</option>
+                        {% endif %}
                     </select>
                 </label>
                 <button type="submit" class="button" title="Execute selected action" name="index" value="0">Go</button>

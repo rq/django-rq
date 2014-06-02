@@ -145,18 +145,10 @@ def actions(request, queue_index):
                 for job_id in job_ids:
                     job = Job.fetch(job_id, connection=queue.connection)
                     job.delete()
-
                 messages.info(request, 'You have successfully deleted %s jobs!' % len(job_ids))
             elif request.POST['action'] == 'requeue':
-                requeued = 0
                 for job_id in job_ids:
-                    try:
-                        requeue_job(job_id, connection=queue.connection)
-                        requeued += 1
-                    except InvalidJobOperationError:
-                        pass
-
-                messages.info(request, 'You have successfully requeued %d of %d selected jobs!' % (requeued,
-                                                                                                   len(job_ids)))
+                    requeue_job(job_id, connection=queue.connection)
+                messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
 
     return redirect('rq_jobs', queue_index)
