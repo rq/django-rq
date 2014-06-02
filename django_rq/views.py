@@ -4,7 +4,7 @@ from django.http import Http404
 from django.shortcuts import redirect, render
 
 from rq import requeue_job, Worker
-from rq.exceptions import NoSuchJobError
+from rq.exceptions import NoSuchJobError, InvalidJobOperationError
 from rq.job import Job
 
 from .queues import get_connection, get_queue_by_index
@@ -132,26 +132,31 @@ def actions(request, queue_index):
             context_data = {
                 'queue_index': queue_index,
                 'action': request.POST['action'],
-                'job_ids': u"||".join(request.POST.getlist('_selected_action')),
+                'job_ids': request.POST.getlist('_selected_action'),
                 'queue': queue,
             }
             return render(request, 'django_rq/confirm_action.html', context_data)
 
         # do confirmed action
         elif request.POST.get('job_ids', False):
-            job_ids = request.POST['job_ids'].split(u'||')
+            job_ids = request.POST.getlist('job_ids')
 
             if request.POST['action'] == 'delete':
                 for job_id in job_ids:
                     job = Job.fetch(job_id, connection=queue.connection)
-                    queue.connection._lrem(queue.key, 0, job.id)
                     job.delete()
 
                 messages.info(request, 'You have successfully deleted %s jobs!' % len(job_ids))
             elif request.POST['action'] == 'requeue':
+                requeued = 0
                 for job_id in job_ids:
-                    requeue_job(job_id, connection=queue.connection)
+                    try:
+                        requeue_job(job_id, connection=queue.connection)
+                        requeued += 1
+                    except InvalidJobOperationError:
+                        pass
 
-                messages.info(request, 'You have successfully requeued %s jobs!' % len(job_ids))
+                messages.info(request, 'You have successfully requeued %d of %d selected jobs!' % (requeued,
+                                                                                                   len(job_ids)))
 
     return redirect('rq_jobs', queue_index)
