@@ -4,7 +4,7 @@ from django.http import Http404
 from django.shortcuts import redirect, render
 
 from rq import requeue_job, Worker
-from rq.exceptions import NoSuchJobError, InvalidJobOperationError
+from rq.exceptions import NoSuchJobError
 from rq.job import Job
 
 from .queues import get_connection, get_queue_by_index
