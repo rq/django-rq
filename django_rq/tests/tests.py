@@ -151,7 +151,6 @@ class QueuesTest(TestCase):
         """
         self.assertRaises(ValueError, get_queues, 'default', 'test')
 
-
     def test_get_unique_connection_configs(self):
         connection_params_1 = {
             'HOST': 'localhost',
@@ -320,6 +319,52 @@ class ViewTest(TestCase):
                          {'post': 'yes'})
         self.assertFalse(Job.exists(job.id, connection=queue.connection))
         self.assertNotIn(job.id, queue.job_ids)
+
+    def test_action_delete_jobs(self):
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        job_ids = []
+        for _ in range(0, 3):
+            job = queue.enqueue(access_self)
+            job_ids.append(job.id)
+
+        self.client.post(reverse('rq_actions', args=[queue_index]),
+                         {'action': 'delete', 'job_ids': job_ids})
+
+        for job_id in job_ids:
+            self.assertFalse(Job.exists(job_id, connection=queue.connection))
+
+    def test_action_requeue_jobs(self):
+        def failing_job():
+            raise ValueError
+
+        queue = get_queue('django_rq_test')
+        failed_queue_index = get_failed_queue_index('django_rq_test')
+
+        # enqueue some jobs that will fail
+        jobs = []
+        job_ids = []
+        for _ in range(0, 3):
+            job = queue.enqueue(failing_job)
+            jobs.append(job)
+            job_ids.append(job.id)
+
+        # do those jobs = fail them
+        worker = get_worker('django_rq_test')
+        worker.work(burst=True)
+
+        # check if all jobs are really failed
+        for job in jobs:
+            self.assertTrue(job.is_failed)
+
+        # renqueue failed jobs from failed queue
+        self.client.post(reverse('rq_actions', args=[failed_queue_index]),
+                         {'action': 'requeue', 'job_ids': job_ids})
+
+        # check if we requeue all failed jobs
+        for job in jobs:
+            self.assertFalse(job.is_failed)
 
     def test_clear_queue(self):
         """Test that the queue clear actually clears the queue."""
