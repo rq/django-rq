@@ -144,6 +144,8 @@ def actions(request, queue_index):
             if request.POST['action'] == 'delete':
                 for job_id in job_ids:
                     job = Job.fetch(job_id, connection=queue.connection)
+                    # Remove job id from queue and delete the actual job
+                    queue.connection._lrem(queue.key, 0, job.id)
                     job.delete()
                 messages.info(request, 'You have successfully deleted %s jobs!' % len(job_ids))
             elif request.POST['action'] == 'requeue':

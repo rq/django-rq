@@ -324,16 +324,20 @@ class ViewTest(TestCase):
         queue = get_queue('django_rq_test')
         queue_index = get_queue_index('django_rq_test')
 
+        # enqueue some jobs
         job_ids = []
         for _ in range(0, 3):
             job = queue.enqueue(access_self)
             job_ids.append(job.id)
 
+        # remove those jobs using view
         self.client.post(reverse('rq_actions', args=[queue_index]),
                          {'action': 'delete', 'job_ids': job_ids})
 
+        # check if jobs are removed
         for job_id in job_ids:
             self.assertFalse(Job.exists(job_id, connection=queue.connection))
+            self.assertNotIn(job_id, queue.job_ids)
 
     def test_action_requeue_jobs(self):
         def failing_job():
