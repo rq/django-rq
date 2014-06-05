@@ -1,0 +1,51 @@
+{% extends "admin/base_site.html" %}
+
+{% load url from future %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        .data {
+            display: inline-block;
+            float: left;
+            width: 80%;
+        }
+    </style>
+    <link href="{{ STATIC_URL }}admin/css/forms.css" type="text/css" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+        <a href="{% url 'rq_home' %}">Django RQ</a> &rsaquo;
+        <a href = "{% url 'rq_jobs' queue_index %}">{{ queue.name }}</a> &rsaquo;
+        {{ action|capfirst }}
+    </div>
+{% endblock %}
+
+{% block content_title %}<h1>Are you sure?</h1>{% endblock %}
+
+{% block content %}
+
+<div id="content-main">
+    <p>
+        Are you sure you want to <b>{{ action|capfirst }}</b> the selected jobs from <a href="{% url 'rq_jobs' queue_index %}" target="_blank">{{ queue.name }}</a>? These jobs are selected:
+    </p>
+    <ul>
+    {% for job_id in job_ids %}
+        <li><a href="{% url 'rq_job_detail' queue_index job_id %}" target="_blank">{{ job_id }}</a></li>
+    {% endfor %}
+    </ul>
+    <form action="" method="post">
+        {% csrf_token %}
+        <div>
+            {% for job_id in job_ids %}
+                <input type="hidden" name="job_ids" value="{{ job_id }}">
+            {% endfor %}
+            <input type="hidden" name="action" value="{{ action }}" />
+            <input type="submit" value="Yes, I'm sure" />
+        </div>
+    </form>
+</div>
+
+{% endblock %}
