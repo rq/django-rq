@@ -1,27 +1,11 @@
 {% extends "admin/base_site.html" %}
 
-{% load admin_static %}
 {% load url from future %}
 
 {% block extrastyle %}
     {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+    <style>table {width: 100%;}</style>
 {% endblock %}
-
-{% block extrahead %}
-    {{ block.super }}
-    <script type="text/javascript" src="{% static "admin/js/jquery.js" %}"></script>
-    <script type="text/javascript" src="{% static "admin/js/jquery.init.js" %}"></script>
-    <script type="text/javascript" src="{% static "admin/js/actions.js" %}"></script>
-    <script type="text/javascript">
-    (function($) {
-        $(document).ready(function($) {
-            $("tr input.action-select").actions();
-        });
-    })(django.jQuery);
-    </script>
-{% endblock %}
-
 
 {% block breadcrumbs %}
     <div class="breadcrumbs">
@@ -39,65 +23,39 @@
     <ul class="object-tools">
         <li><a href="{% url 'rq_clear' queue_index %}" class="deletelink">Empty Queue</a></li>
     </ul>
-    <div class="module" id="changelist">
-        <form id="changelist-form" action="{% url 'rq_actions' queue_index %}" method="post">
-            {% csrf_token %}
-            <div class="actions">
-                <label>Actions:
-                    <select name="action">
-                        <option value="" selected="selected">---------</option>
-                        <option value="delete">Delete</option>
-                        {% if queue.name == 'failed' %}
-                            <option value="requeue">Requeue</option>
-                        {% endif %}
-                    </select>
-                </label>
-                <button type="submit" class="button" title="Execute selected action" name="index" value="0">Go</button>
-            </div>
-            <div class="results">
-                <table id="result_list">
-                    <thead>
-                        <tr>
-                            <th scope="col" class="action-checkbox-column">
-                                <div class="text">
-                                    <span><input type="checkbox" id="action-toggle" style="display: inline-block;"></span>
-                                </div>
-                                <div class="clear"></div>
-                            </th>
-                            <th>ID</th>
-                            <th>Created</th>
-                            <th>Enqueued</th>
-                            <th>Status</th>
-                            <th>Callable</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for job in jobs %}
-                            <tr class = "{% cycle 'row1' 'row2' %}">
-                                <td class="action-checkbox">
-                                    <input class="action-select" name="_selected_action" type="checkbox" value="{{ job.id }}">
-                                </td>
-                                <td>
-                                    <a href = "{% url 'rq_job_detail' queue_index job.id %}">
-                                        {{ job.id }}
-                                    </a>
-                                </td>
-                                <td>{{ job.created_at }}</td>
-                                <td>{{ job.enqueued_at }}</td>
-                                <td>
-                                    {% if job.get_status %}
-                                        {{ job.get_status }}
-                                    {% else %}
-                                        {{ job.status }}
-                                    {% endif %}
-                                </td>
-                                <td>{{ job.func_name }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </form>
+    <div class="module">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Created</th>
+                    <th>Enqueued</th>
+                    <th>Status</th>
+                    <th>Callable</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                    <tr class = "{% cycle 'row1' 'row2' %}">
+                        <th>
+                            <a href = "{% url 'rq_job_detail' queue_index job.id %}">
+                                {{ job.id }}
+                            </a>
+                        </th>
+                        <td>{{ job.created_at }}</td>
+                        <td>{{ job.enqueued_at }}</td>
+                        <td>
+                            {% if job.get_status %}
+                                {{ job.get_status }}
+                            {% else %}
+                                {{ job.status }}
+                            {% endif %}
+                        </td>
+                        <td>{{ job.func_name }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
