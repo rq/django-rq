@@ -35,7 +35,7 @@ class DjangoRQ(Queue):
         if kwargs.get('default_timeout', None) is None:
             queues = getattr(settings, 'RQ_QUEUES', {})
             queue = queues.get(args[0], {})
-            kwargs['default_timeout'] = queue.get('DEFAULT_TIMEOUT', Queue.DEFAULT_TIMEOUT)
+            kwargs['default_timeout'] = queue.get('DEFAULT_TIMEOUT', None)
 
         return super(DjangoRQ, self).__init__(*args, **kwargs)
 
