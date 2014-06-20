@@ -31,12 +31,16 @@ class DjangoRQ(Queue):
     def __init__(self, *args, **kwargs):
         autocommit = kwargs.pop('autocommit', None)
         self._autocommit = get_commit_mode() if autocommit is None else autocommit
+        timeout = getattr(kwargs, 'default_timeout', getattr(settings, 'RQ_DEFAULT_TIMEOUT', None))
+        kwargs['default_timeout'] = timeout
         return super(DjangoRQ, self).__init__(*args, **kwargs)
 
     def original_enqueue_call(self, *args, **kwargs):
         return super(DjangoRQ, self).enqueue_call(*args, **kwargs)
 
     def enqueue_call(self, *args, **kwargs):
+        ttl = getattr(kwargs, 'result_ttl', getattr(settings, 'RQ_RESULT_TTL', None))
+        kwargs['result_ttl'] = ttl
         # print args, kwargs
         if self._autocommit:
             return self.original_enqueue_call(*args, **kwargs)
