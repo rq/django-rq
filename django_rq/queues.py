@@ -5,6 +5,7 @@ import redis
 from rq.queue import FailedQueue, Queue
 
 from django_rq import thread_queue
+from .settings import QUEUES
 
 
 def get_commit_mode():
@@ -33,9 +34,9 @@ class DjangoRQ(Queue):
         self._autocommit = get_commit_mode() if autocommit is None else autocommit
 
         if kwargs.get('default_timeout', None) is None:
-            queues = getattr(settings, 'RQ_QUEUES', {})
-            queue = queues.get(args[0], {})
-            kwargs['default_timeout'] = queue.get('DEFAULT_TIMEOUT', None)
+            queue = QUEUES.get(args[0], {})
+            kwargs['default_timeout'] = queue.get('DEFAULT_TIMEOUT',
+                                                  QUEUES.get('default').get('DEFAULT_TIMEOUT', None))
 
         return super(DjangoRQ, self).__init__(*args, **kwargs)
 
@@ -44,9 +45,9 @@ class DjangoRQ(Queue):
 
     def enqueue_call(self, *args, **kwargs):
         if kwargs.get('result_ttl', None) is None:
-            queues = getattr(settings, 'RQ_QUEUES', {})
-            queue = queues.get(self.name, {})
-            kwargs['result_ttl'] = queue.get('RESULT_TTL', None)
+            queue = QUEUES.get(self.name, {})
+            kwargs['result_ttl'] = queue.get('RESULT_TTL',
+                                             QUEUES.get('default').get('RESULT_TTL', None))
 
         if self._autocommit:
             return self.original_enqueue_call(*args, **kwargs)

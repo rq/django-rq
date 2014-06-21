@@ -45,10 +45,19 @@ Installation
             'PORT': 6379,
             'DB': 0,
             'PASSWORD': 'some-password',
+            # time in seconds after which the unfinished job should be failed
+            # default for all queues
+            'DEFAULT_TIMEOUT': 360,
+            # time in seconds the result should be kept
+            # default for all queues
+            'RESULT_TTL': 500,
         },
         'high': {
             'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379'), # If you're on Heroku
             'DB': 0,
+            # overwrite default's queue
+            'DEFAULT_TIMEOUT': 500,
+            'RESULT_TTL': 10,
         },
         'low': {
             'HOST': 'localhost',

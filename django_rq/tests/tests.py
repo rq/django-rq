@@ -212,6 +212,29 @@ class QueuesTest(TestCase):
         queues = get_queues()
         self.assertFalse(queues[0]._autocommit)
 
+    def test_default_timeout(self, set_default_queue_timeout=True):
+        if set_default_queue_timeout:
+            QUEUES['default']['DEFAULT_TIMEOUT'] = 500
+        QUEUES['test_timeout'] = QUEUES['test'].copy()
+        QUEUES['test_timeout']['DEFAULT_TIMEOUT'] = 400
+
+        # test default queue
+        queue = get_queue()
+        self.assertEqual(queue._default_timeout, QUEUES['default'].get('DEFAULT_TIMEOUT', None))
+
+        # test overriding QUEUES['default']['DEFAULT_TIMEOUT']
+        queue = get_queue('test_timeout')
+        self.assertEqual(queue._default_timeout, QUEUES['test_timeout']['DEFAULT_TIMEOUT'])
+
+        # test propagating QUEUES['default']['DEFAULT_TIMEOUT'] to other queues
+        queue = get_queue('test2')
+        self.assertEqual(queue._default_timeout, QUEUES['default'].get('DEFAULT_TIMEOUT', None))
+
+    def test_default_timeout_without_default_timeout_set(self):
+        del QUEUES['default']['DEFAULT_TIMEOUT']
+        # should assert everything correctly
+        self.test_default_timeout(False)
+
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class DecoratorTest(TestCase):
