@@ -6,8 +6,8 @@ from .queues import get_unique_connection_configs
 SHOW_ADMIN_LINK = getattr(settings, 'RQ_SHOW_ADMIN_LINK', False)
 
 QUEUES = getattr(settings, 'RQ_QUEUES', None)
-if not QUEUES or 'default' not in QUEUES:
-    raise ImproperlyConfigured("You have to define RQ_QUEUES with 'default' queue in settings.py!")
+if QUEUES is None:
+    raise ImproperlyConfigured("You have to define RQ_QUEUES in settings.py")
 NAME = getattr(settings, 'RQ_NAME', 'default')
 BURST = getattr(settings, 'RQ_BURST', False)
 
