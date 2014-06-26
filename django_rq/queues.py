@@ -6,8 +6,6 @@ from rq.queue import FailedQueue, Queue
 
 from django_rq import thread_queue
 
-QUEUES = settings.RQ_QUEUES
-
 
 def get_commit_mode():
     """
@@ -41,8 +39,9 @@ class DjangoRQ(Queue):
 
     def enqueue_call(self, *args, **kwargs):
         if kwargs.get('result_ttl', None) is None:
-            queue = QUEUES.get(self.name, {})
-            kwargs['result_ttl'] = queue.get('RESULT_TTL', QUEUES.get('default', {}).get('RESULT_TTL', None))
+            queue = settings.RQ_QUEUES.get(self.name, {})
+            kwargs['result_ttl'] = queue.get('RESULT_TTL', settings.RQ_QUEUES.get('default', {}).get('RESULT_TTL',
+                                                                                                     None))
 
         if self._autocommit:
             return self.original_enqueue_call(*args, **kwargs)
@@ -105,14 +104,16 @@ def get_queue(name='default', default_timeout=None, async=None,
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
-    from .settings import QUEUES
 
     # If async is provided, use it, otherwise, get it from the configuration
     if async is None:
-        async = QUEUES[name].get('ASYNC', True)
+        async = settings.RQ_QUEUES[name].get('ASYNC', True)
 
     if default_timeout is None:
-        default_timeout = QUEUES[name].get('DEFAULT_TIMEOUT', QUEUES.get('default', {}).get('DEFAULT_TIMEOUT', None))
+        default_timeout = settings.RQ_QUEUES[name].get(
+            'DEFAULT_TIMEOUT',
+            settings.RQ_QUEUES.get('default', {}).get('DEFAULT_TIMEOUT', None)
+        )
 
     return DjangoRQ(name, default_timeout=default_timeout,
                     connection=get_connection(name), async=async,
