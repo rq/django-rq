@@ -166,8 +166,13 @@ class QueuesTest(TestCase):
             'default': connection_params_1,
             'test': connection_params_2
         }
-        self.assertEqual(get_unique_connection_configs(config),
-                         [connection_params_1, connection_params_2])
+        unique_configs = get_unique_connection_configs(config)
+        self.assertEqual(len(unique_configs), 2)
+        self.assertIn(connection_params_1, unique_configs)
+        self.assertIn(connection_params_2, unique_configs)
+
+        # self.assertEqual(get_unique_connection_configs(config),
+        #                  [connection_params_1, connection_params_2])
         config = {
             'default': connection_params_1,
             'test': connection_params_1
