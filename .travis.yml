@@ -19,6 +19,5 @@ install:
   - pip install Django==$DJANGO times
   - python setup.py install
 
-script:
-  - `which django-admin.py` test django_rq --settings=django_rq.test_settings --pythonpath=.
+script: make test
 services: redis
