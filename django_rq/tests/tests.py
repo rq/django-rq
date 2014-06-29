@@ -217,72 +217,19 @@ class QueuesTest(TestCase):
         queues = get_queues()
         self.assertFalse(queues[0]._autocommit)
 
-    @override_settings(
-        RQ_QUEUES={
-            'default': {
-                'HOST': 'localhost',
-                'PORT': 6379,
-                'DB': 0,
-                'DEFAULT_TIMEOUT': 500
-            },
-            'test': {
-                'HOST': 'localhost',
-                'PORT': 1,
-                'DB': 1,
-                'DEFAULT_TIMEOUT': 400
-            },
-            'test2': {
-                'HOST': 'localhost',
-                'PORT': 1,
-                'DB': 1,
-            }
-        }
-    )
     def test_default_timeout(self):
         # test default queue
         queue = get_queue()
         self.assertEqual(queue._default_timeout, settings.RQ_QUEUES['default']['DEFAULT_TIMEOUT'])
 
         # test overriding RQ_QUEUES['default']['DEFAULT_TIMEOUT']
-        queue = get_queue('test')
-        self.assertEqual(queue._default_timeout, settings.RQ_QUEUES['test']['DEFAULT_TIMEOUT'])
+        queue = get_queue('test1')
+        self.assertEqual(queue._default_timeout, settings.RQ_QUEUES['test1']['DEFAULT_TIMEOUT'])
 
         # test propagating RQ_QUEUES['default']['DEFAULT_TIMEOUT'] to other queues
         queue = get_queue('test2')
         self.assertEqual(queue._default_timeout, settings.RQ_QUEUES['default']['DEFAULT_TIMEOUT'])
 
-    @override_settings(
-        RQ_QUEUES={
-            'default': {
-                'HOST': 'localhost',
-                'PORT': 6379,
-                'DB': 0,
-            },
-            'test': {
-                'HOST': 'localhost',
-                'PORT': 1,
-                'DB': 1,
-                'DEFAULT_TIMEOUT': 400
-            },
-            'test2': {
-                'HOST': 'localhost',
-                'PORT': 1,
-                'DB': 1,
-            }
-        }
-    )
-    def test_default_timeout_without_default_timeout_set(self):
-        # test default queue
-        queue = get_queue()
-        self.assertEqual(queue._default_timeout, None)
-
-        # test overriding RQ_QUEUES['default']['DEFAULT_TIMEOUT']
-        queue = get_queue('test')
-        self.assertEqual(queue._default_timeout, settings.RQ_QUEUES['test']['DEFAULT_TIMEOUT'])
-
-        # test propagating RQ_QUEUES['default']['DEFAULT_TIMEOUT'] to other queues
-        queue = get_queue('test2')
-        self.assertEqual(queue._default_timeout, None)
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class DecoratorTest(TestCase):

@@ -90,11 +90,18 @@ RQ_QUEUES = {
         'HOST': 'localhost',
         'PORT': 6379,
         'DB': 0,
+        'DEFAULT_TIMEOUT': 500
     },
     'test': {
         'HOST': 'localhost',
         'PORT': 1,
         'DB': 1,
+    },
+    'test1': {
+        'HOST': 'localhost',
+        'PORT': 1,
+        'DB': 1,
+        'DEFAULT_TIMEOUT': 400
     },
     'test2': {
         'HOST': 'localhost',
