@@ -106,10 +106,7 @@ def get_queue(name='default', default_timeout=None, async=None,
         async = QUEUES[name].get('ASYNC', True)
 
     if default_timeout is None:
-        default_timeout = QUEUES[name].get(
-            'DEFAULT_TIMEOUT',
-            QUEUES.get('default', {}).get('DEFAULT_TIMEOUT', None)
-        )
+        default_timeout = QUEUES[name].get('DEFAULT_TIMEOUT')
 
     return DjangoRQ(name, default_timeout=default_timeout,
                     connection=get_connection(name), async=async,
