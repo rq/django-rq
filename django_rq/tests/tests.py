@@ -31,8 +31,7 @@ QUEUES = settings.RQ_QUEUES
 
 
 def access_self():
-    job = get_current_job()
-    return job.id
+    return get_current_job().id
 
 
 def divide(a, b):
@@ -186,16 +185,16 @@ class QueuesTest(TestCase):
         Checks whether asynchronous settings work
         """
         # Make sure async is not set by default
-        defaultQueue = get_queue('default')
-        self.assertTrue(defaultQueue._async)
+        default_queue = get_queue('default')
+        self.assertTrue(default_queue._async)
 
         # Make sure async override works
-        defaultQueueAsync = get_queue('default', async=False)
-        self.assertFalse(defaultQueueAsync._async)
+        default_queue_async = get_queue('default', async=False)
+        self.assertFalse(default_queue_async._async)
 
         # Make sure async setting works
-        asyncQueue = get_queue('async')
-        self.assertFalse(asyncQueue._async)
+        async_queue = get_queue('async')
+        self.assertFalse(async_queue._async)
 
     @override_settings(RQ={'AUTOCOMMIT': False})
     def test_autocommit(self):
@@ -218,17 +217,11 @@ class QueuesTest(TestCase):
         self.assertFalse(queues[0]._autocommit)
 
     def test_default_timeout(self):
-        # test default queue
+        """Ensure DEFAULT_TIMEOUT are properly parsed."""
         queue = get_queue()
-        self.assertEqual(queue._default_timeout, settings.RQ_QUEUES['default']['DEFAULT_TIMEOUT'])
-
-        # test overriding RQ_QUEUES['default']['DEFAULT_TIMEOUT']
+        self.assertEqual(queue._default_timeout, 500)
         queue = get_queue('test1')
-        self.assertEqual(queue._default_timeout, settings.RQ_QUEUES['test1']['DEFAULT_TIMEOUT'])
-
-        # test propagating RQ_QUEUES['default']['DEFAULT_TIMEOUT'] to other queues
-        queue = get_queue('test2')
-        self.assertEqual(queue._default_timeout, settings.RQ_QUEUES['default']['DEFAULT_TIMEOUT'])
+        self.assertEqual(queue._default_timeout, 400)
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
@@ -518,7 +511,7 @@ class RedisCacheTest(TestCase):
         Test that the USE_REDIS_CACHE option for configuration works.
         """
         queueName = 'django-redis-cache'
-        queue = get_queue(queueName )
+        queue = get_queue(queueName)
         connection_kwargs = queue.connection.connection_pool.connection_kwargs
         self.assertEqual(queue.name, queueName)
 
