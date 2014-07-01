@@ -31,13 +31,13 @@ class DjangoRQ(Queue):
     def __init__(self, *args, **kwargs):
         autocommit = kwargs.pop('autocommit', None)
         self._autocommit = get_commit_mode() if autocommit is None else autocommit
+
         return super(DjangoRQ, self).__init__(*args, **kwargs)
 
     def original_enqueue_call(self, *args, **kwargs):
         return super(DjangoRQ, self).enqueue_call(*args, **kwargs)
 
     def enqueue_call(self, *args, **kwargs):
-        # print args, kwargs
         if self._autocommit:
             return self.original_enqueue_call(*args, **kwargs)
         else:
@@ -104,6 +104,12 @@ def get_queue(name='default', default_timeout=None, async=None,
     # If async is provided, use it, otherwise, get it from the configuration
     if async is None:
         async = QUEUES[name].get('ASYNC', True)
+
+    if default_timeout is None:
+        default_timeout = QUEUES[name].get(
+            'DEFAULT_TIMEOUT',
+            QUEUES.get('default', {}).get('DEFAULT_TIMEOUT', None)
+        )
 
     return DjangoRQ(name, default_timeout=default_timeout,
                     connection=get_connection(name), async=async,

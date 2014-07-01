@@ -217,6 +217,19 @@ class QueuesTest(TestCase):
         queues = get_queues()
         self.assertFalse(queues[0]._autocommit)
 
+    def test_default_timeout(self):
+        # test default queue
+        queue = get_queue()
+        self.assertEqual(queue._default_timeout, settings.RQ_QUEUES['default']['DEFAULT_TIMEOUT'])
+
+        # test overriding RQ_QUEUES['default']['DEFAULT_TIMEOUT']
+        queue = get_queue('test1')
+        self.assertEqual(queue._default_timeout, settings.RQ_QUEUES['test1']['DEFAULT_TIMEOUT'])
+
+        # test propagating RQ_QUEUES['default']['DEFAULT_TIMEOUT'] to other queues
+        queue = get_queue('test2')
+        self.assertEqual(queue._default_timeout, settings.RQ_QUEUES['default']['DEFAULT_TIMEOUT'])
+
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class DecoratorTest(TestCase):
