@@ -1,47 +1,27 @@
+import importlib
 import logging
 from optparse import make_option
 
 from django.core.management.base import BaseCommand
-from django.utils.log import dictConfig
-
-from redis.exceptions import ConnectionError
 
 from django_rq.queues import get_queues
 
+from redis.exceptions import ConnectionError
 from rq import use_connection
-import importlib
+from rq.utils import ColorizingStreamHandler
+
 
 # Setup logging for RQWorker if not already configured
 logger = logging.getLogger('rq.worker')
 if not logger.handlers:
-    dictConfig({
-        "version": 1,
-        "disable_existing_loggers": False,
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(fmt='%(asctime)s %(message)s',
+                                  datefmt='%H:%M:%S')
+    handler = ColorizingStreamHandler()
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
-        "formatters": {
-            "rq_console": {
-                "format": "%(asctime)s %(message)s",
-                "datefmt": "%H:%M:%S",
-            },
-        },
 
-        "handlers": {
-            "rq_console": {
-                "level": "DEBUG",
-                #"class": "logging.StreamHandler",
-                "class": "rq.utils.ColorizingStreamHandler",
-                "formatter": "rq_console",
-                "exclude": ["%(asctime)s"],
-            },
-        },
-
-        "worker": {
-            "handlers": ["rq_console"],
-            "level": "DEBUG"
-        }
-    })
-
-    
 # Copied from rq.utils
 def import_attribute(name):
     """Return an attribute from a dotted path name (e.g. "path.to.func")."""
