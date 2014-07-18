@@ -64,11 +64,11 @@
                                 </div>
                                 <div class="clear"></div>
                             </th>
-                            <th>ID</th>
-                            <th>Created</th>
-                            <th>Enqueued</th>
-                            <th>Status</th>
-                            <th>Callable</th>
+                            <th><div class = 'text'><span>ID</span></div></th>
+                            <th><div class = 'text'><span>Created</span></div></th>
+                            <th><div class = 'text'><span>Enqueued</span></div></th>
+                            <th><div class = 'text'><span>Status</span></div></th>
+                            <th><div class = 'text'><span>Callable</span></div></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -77,11 +77,11 @@
                                 <td class="action-checkbox">
                                     <input class="action-select" name="_selected_action" type="checkbox" value="{{ job.id }}">
                                 </td>
-                                <td>
+                                <th>
                                     <a href = "{% url 'rq_job_detail' queue_index job.id %}">
                                         {{ job.id }}
                                     </a>
-                                </td>
+                                </th>
                                 <td>{{ job.created_at }}</td>
                                 <td>{{ job.enqueued_at }}</td>
                                 <td>
