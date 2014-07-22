@@ -341,11 +341,11 @@ Commit and re-deploy. Then add your new worker with:
 Changelog
 =========
 
-Unreleased
-----------
+0.7.0
+-----
 * Added ``rqenqueue`` management command for easy scheduling of tasks (e.g via cron).
   Thanks @jezdez!
-* You can now bulk delete jobs from the admin interface. Thanks @lechup!
+* You can now bulk delete/requeue jobs from the admin interface. Thanks @lechup!
 * ``DEFAULT_TIMEOUT`` for each queue can now be configured via ``settings.py``.
   Thanks @lechup!
 
