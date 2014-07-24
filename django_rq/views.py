@@ -3,6 +3,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404
 from django.shortcuts import redirect, render
 
+from redis.exceptions import ResponseError
 from rq import requeue_job, Worker
 from rq.exceptions import NoSuchJobError
 from rq.job import Job
@@ -110,8 +111,14 @@ def clear_queue(request, queue_index):
     queue = get_queue_by_index(queue_index)
 
     if request.method == 'POST':
-        queue.empty()
-        messages.info(request, 'You have successfully cleared the queue %s' % queue.name)
+        try:
+            queue.empty()
+            messages.info(request, 'You have successfully cleared the queue %s' % queue.name)
+        except ResponseError as e:
+            if 'EVALSHA' in e.message:
+                messages.error(request, 'This action is not supported on Redis versions < 2.6.0, please use the bulk delete command instead')
+            else:
+                raise e
         return redirect('rq_jobs', queue_index)
 
     context_data = {
