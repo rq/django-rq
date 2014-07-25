@@ -1,3 +1,5 @@
+from math import ceil
+
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404
@@ -40,10 +42,29 @@ def jobs(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
 
+    items_per_page = 100
+    num_jobs = queue.count
+    page = 1
+    page_range = []
+    queue_jobs = []
+    if num_jobs > 0:
+        page_get = request.GET.get('page')
+        if page_get and page_get.isdigit():
+            page = int(page_get)
+        else:
+            page = 1
+        last_page = int(ceil(num_jobs / float(items_per_page)))
+        page_range = range(1, last_page + 1)
+        offset = items_per_page * (page - 1)
+        queue_jobs = queue.get_jobs(offset, items_per_page)
+
     context_data = {
         'queue': queue,
         'queue_index': queue_index,
-        'jobs': queue.jobs,
+        'jobs': queue_jobs,
+        'num_jobs': num_jobs,
+        'page': page,
+        'page_range': page_range,
     }
     return render(request, 'django_rq/jobs.html', context_data)
 
