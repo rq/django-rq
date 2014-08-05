@@ -1,3 +1,5 @@
+from __future__ import division
+
 from math import ceil
 
 from django.contrib import messages
@@ -44,24 +46,21 @@ def jobs(request, queue_index):
 
     items_per_page = 100
     num_jobs = queue.count
-    page = 1
-    page_range = []
-    queue_jobs = []
+    page = int(request.GET.get('page', 1))
+
     if num_jobs > 0:
-        page_get = request.GET.get('page')
-        if page_get and page_get.isdigit():
-            page = int(page_get)
-        else:
-            page = 1
-        last_page = int(ceil(num_jobs / float(items_per_page)))
+        last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
-        queue_jobs = queue.get_jobs(offset, items_per_page)
+        jobs = queue.get_jobs(offset, items_per_page)
+    else:
+        jobs = []
+        page_range = []
 
     context_data = {
         'queue': queue,
         'queue_index': queue_index,
-        'jobs': queue_jobs,
+        'jobs': jobs,
         'num_jobs': num_jobs,
         'page': page,
         'page_range': page_range,
@@ -77,7 +76,7 @@ def job_detail(request, queue_index, job_id):
         job = Job.fetch(job_id, connection=queue.connection)
     except NoSuchJobError:
         raise Http404("Couldn't find job with this ID: %s" % job_id)
-    
+
     context_data = {
         'queue_index': queue_index,
         'job': job,
