@@ -97,6 +97,18 @@
                     </tbody>
                 </table>
             </div>
+            <p class="paginator">
+                {% for p in page_range %}
+                    {% if p == page %}
+                        <span class="this-page">{{ p }}</span>
+                    {% elif forloop.last %}
+                        <a href="?page={{ p }}" class="end">{{ p }}</a>
+                    {% else %}
+                        <a href="?page={{ p }}">{{ p }}</a>
+                    {% endif %}
+                {% endfor %}
+                {{ num_jobs }} Jobs
+            </p>
         </form>
     </div>
 </div>
