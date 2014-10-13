@@ -74,7 +74,7 @@ def get_redis_connection(config):
             return cache._client
         
     if 'UNIX_SOCKET_PATH' in config:
-        return redis.Redis(unix_socket_path=config['UNIX_SOCKET_PATH'])
+        return redis.Redis(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
 
     return redis.Redis(host=config['HOST'],
                        port=config['PORT'], db=config['DB'],
