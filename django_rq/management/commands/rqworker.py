@@ -54,6 +54,12 @@ class Command(BaseCommand):
             help='RQ Worker class to use'
         ),
         make_option(
+            '--exception-handler',
+            action='store',
+            dest='exception_handler',
+            help='RQ exception handler function to use'
+        ),
+        make_option(
             '--name',
             action='store',
             dest='name',
@@ -67,8 +73,9 @@ class Command(BaseCommand):
         try:
             # Instantiate a worker
             worker_class = import_attribute(options.get('worker_class', 'rq.Worker'))
+            exc_handler = import_attribute(exception_handler) if exception_handler else None
             queues = get_queues(*args)
-            w = worker_class(queues, connection=queues[0].connection, name=options['name'])
+            w = worker_class(queues, connection=queues[0].connection, name=options['name'], exc_handler=exc_handler)
 
             # Call use_connection to push the redis connection into LocalStack
             # without this, jobs using RQ's get_current_job() will fail
