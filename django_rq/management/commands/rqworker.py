@@ -73,6 +73,7 @@ class Command(BaseCommand):
         try:
             # Instantiate a worker
             worker_class = import_attribute(options.get('worker_class', 'rq.Worker'))
+            exception_handler = options.get('exception_handler', None)
             exc_handler = import_attribute(exception_handler) if exception_handler else None
             queues = get_queues(*args)
             w = worker_class(queues, connection=queues[0].connection, name=options['name'], exc_handler=exc_handler)
