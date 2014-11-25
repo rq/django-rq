@@ -85,7 +85,7 @@
                                 <td>{{ job.created_at }}</td>
                                 <td>{{ job.enqueued_at }}</td>
                                 <td>
-                                    {% if job.get_status %}
+                                    {% if job.get_status|length != 0 %}
                                         {{ job.get_status }}
                                     {% else %}
                                         {{ job.status }}
