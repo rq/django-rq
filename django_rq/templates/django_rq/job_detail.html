@@ -82,7 +82,7 @@
                     {% if job.get_status %}
                         {{ job.get_status }}
                     {% else %}
-                        {{ job.status }}
+                        {{ job.get_status }}
                     {% endif %}
                 </div>
             </div>
