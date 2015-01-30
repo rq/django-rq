@@ -10,6 +10,8 @@ from django.conf import settings
 
 from rq import get_current_job, Queue
 from rq.job import Job
+from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
+                         StartedJobRegistry)
 
 from django_rq.decorators import job
 from django_rq.queues import (
@@ -390,6 +392,45 @@ class ViewTest(TestCase):
                          {'post': 'yes'})
         self.assertFalse(Job.exists(job.id, connection=queue.connection))
         self.assertNotIn(job.id, queue.job_ids)
+
+    def test_finished_jobs(self):
+        """Ensure that finished jobs page works properly."""
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        job = queue.enqueue(access_self)
+        registry = FinishedJobRegistry(queue.name, queue.connection)
+        registry.add(job, 2)
+        response = self.client.get(
+            reverse('rq_finished_jobs', args=[queue_index])
+        )
+        self.assertEqual(response.context['jobs'], [job])
+
+    def test_started_jobs(self):
+        """Ensure that active jobs page works properly."""
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        job = queue.enqueue(access_self)
+        registry = StartedJobRegistry(queue.name, queue.connection)
+        registry.add(job, 2)
+        response = self.client.get(
+            reverse('rq_started_jobs', args=[queue_index])
+        )
+        self.assertEqual(response.context['jobs'], [job])
+
+    def test_deferred_jobs(self):
+        """Ensure that active jobs page works properly."""
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        job = queue.enqueue(access_self)
+        registry = DeferredJobRegistry(queue.name, queue.connection)
+        registry.add(job, 2)
+        response = self.client.get(
+            reverse('rq_deferred_jobs', args=[queue_index])
+        )
+        self.assertEqual(response.context['jobs'], [job])
 
 
 class ThreadQueueTest(TestCase):

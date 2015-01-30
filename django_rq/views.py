@@ -83,6 +83,124 @@ def jobs(request, queue_index):
         'num_jobs': num_jobs,
         'page': page,
         'page_range': page_range,
+        'job_status': 'Queued',
+    }
+    return render(request, 'django_rq/jobs.html', context_data)
+
+
+@staff_member_required
+def finished_jobs(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+
+    registry = FinishedJobRegistry(queue.name, queue.connection)
+
+    items_per_page = 100
+    num_jobs = len(registry)
+    page = int(request.GET.get('page', 1))
+    jobs = []
+
+    if num_jobs > 0:
+        last_page = int(ceil(num_jobs / items_per_page))
+        page_range = range(1, last_page + 1)
+        offset = items_per_page * (page - 1)
+        job_ids = registry.get_job_ids(offset, items_per_page)
+
+        for job_id in job_ids:
+            try:
+                jobs.append(Job.fetch(job_id, connection=queue.connection))
+            except NoSuchJobError:
+                pass
+
+    else:
+        page_range = []
+
+    context_data = {
+        'queue': queue,
+        'queue_index': queue_index,
+        'jobs': jobs,
+        'num_jobs': num_jobs,
+        'page': page,
+        'page_range': page_range,
+        'job_status': 'Finished',
+    }
+    return render(request, 'django_rq/jobs.html', context_data)
+
+
+@staff_member_required
+def started_jobs(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+
+    registry = StartedJobRegistry(queue.name, queue.connection)
+
+    items_per_page = 100
+    num_jobs = len(registry)
+    page = int(request.GET.get('page', 1))
+    jobs = []
+
+    if num_jobs > 0:
+        last_page = int(ceil(num_jobs / items_per_page))
+        page_range = range(1, last_page + 1)
+        offset = items_per_page * (page - 1)
+        job_ids = registry.get_job_ids(offset, items_per_page)
+
+        for job_id in job_ids:
+            try:
+                jobs.append(Job.fetch(job_id, connection=queue.connection))
+            except NoSuchJobError:
+                pass
+
+    else:
+        page_range = []
+
+    context_data = {
+        'queue': queue,
+        'queue_index': queue_index,
+        'jobs': jobs,
+        'num_jobs': num_jobs,
+        'page': page,
+        'page_range': page_range,
+        'job_status': 'Started',
+    }
+    return render(request, 'django_rq/jobs.html', context_data)
+
+
+@staff_member_required
+def deferred_jobs(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+
+    registry = DeferredJobRegistry(queue.name, queue.connection)
+
+    items_per_page = 100
+    num_jobs = len(registry)
+    page = int(request.GET.get('page', 1))
+    jobs = []
+
+    if num_jobs > 0:
+        last_page = int(ceil(num_jobs / items_per_page))
+        page_range = range(1, last_page + 1)
+        offset = items_per_page * (page - 1)
+        job_ids = registry.get_job_ids(offset, items_per_page)
+
+        for job_id in job_ids:
+            try:
+                jobs.append(Job.fetch(job_id, connection=queue.connection))
+            except NoSuchJobError:
+                pass
+
+    else:
+        page_range = []
+
+    context_data = {
+        'queue': queue,
+        'queue_index': queue_index,
+        'jobs': jobs,
+        'num_jobs': num_jobs,
+        'page': page,
+        'page_range': page_range,
+        'job_status': 'Deferred',
     }
     return render(request, 'django_rq/jobs.html', context_data)
 

@@ -44,9 +44,33 @@
                             </a>
                         </th>
                         <td>{{ queue.jobs }}</td>
-                        <td>{{ queue.started_jobs }}</td>
-                        <td>{{ queue.deferred_jobs }}</td>
-                        <td>{{ queue.finished_jobs }}</td>
+                        <td>
+                            {% if queue.name != 'failed' %}
+                                <a href = "{% url 'rq_started_jobs' queue.index %}">
+                                    {{ queue.started_jobs }}
+                                </a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if queue.name != 'failed' %}
+                                <a href = "{% url 'rq_deferred_jobs' queue.index %}">
+                                    {{ queue.deferred_jobs }}
+                                </a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if queue.name != 'failed' %}
+                                <a href = "{% url 'rq_finished_jobs' queue.index %}">
+                                    {{ queue.finished_jobs }}
+                                </a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td>{{ queue.workers }}</td>
                         <td>{{ queue.connection_kwargs.host }}</td>
                         <td>{{ queue.connection_kwargs.port }}</td>
