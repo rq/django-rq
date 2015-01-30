@@ -27,6 +27,9 @@
                     <th>Name</th>
                     <th>Number of Jobs</th>
                     <th>Number of Workers</th>
+                    <th>Host</th>
+                    <th>Port</th>
+                    <th>DB</th>
                 </tr>
             </thead>
             <tbody>
@@ -39,6 +42,9 @@
                         </th>
                         <td>{{ queue.jobs }}</td>
                         <td>{{ queue.workers }}</td>
+                        <td>{{ queue.connection_kwargs.host }}</td>
+                        <td>{{ queue.connection_kwargs.port }}</td>
+                        <td>{{ queue.connection_kwargs.db }}</td>
                     </tr>
                 {% endfor %}
             </tbody>

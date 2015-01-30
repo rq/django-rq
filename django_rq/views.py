@@ -25,6 +25,7 @@ def stats(request):
             'name': queue.name,
             'jobs': queue.count,
             'index': index,
+            'connection_kwargs': queue.connection.connection_pool.connection_kwargs
         }
         if queue.name == 'failed':
             queue_data['workers'] = '-'
