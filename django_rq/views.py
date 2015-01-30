@@ -11,6 +11,8 @@ from redis.exceptions import ResponseError
 from rq import requeue_job, Worker
 from rq.exceptions import NoSuchJobError
 from rq.job import Job
+from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
+                         StartedJobRegistry)
 
 from .queues import get_connection, get_queue_by_index
 from .settings import QUEUES_LIST
@@ -20,20 +22,36 @@ from .settings import QUEUES_LIST
 def stats(request):
     queues = []
     for index, config in enumerate(QUEUES_LIST):
+
         queue = get_queue_by_index(index)
+        connection = queue.connection
+
         queue_data = {
             'name': queue.name,
             'jobs': queue.count,
             'index': index,
-            'connection_kwargs': queue.connection.connection_pool.connection_kwargs
+            'connection_kwargs': connection.connection_pool.connection_kwargs
         }
+
         if queue.name == 'failed':
             queue_data['workers'] = '-'
+            queue_data['finished_jobs'] = '-'
+            queue_data['started_jobs'] = '-'
+            queue_data['deferred_jobs'] = '-'
+
         else:
             connection = get_connection(queue.name)
             all_workers = Worker.all(connection=connection)
             queue_workers = [worker for worker in all_workers if queue in worker.queues]
             queue_data['workers'] = len(queue_workers)
+
+            finished_job_registry = FinishedJobRegistry(queue.name, connection)
+            started_job_registry = StartedJobRegistry(queue.name, connection)
+            deferred_job_registry = DeferredJobRegistry(queue.name, connection)
+            queue_data['finished_jobs'] = len(finished_job_registry)
+            queue_data['started_jobs'] = len(started_job_registry)
+            queue_data['deferred_jobs'] = len(deferred_job_registry)
+
         queues.append(queue_data)
 
     context_data = {'queues': queues}

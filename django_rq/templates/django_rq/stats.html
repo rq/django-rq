@@ -25,7 +25,10 @@
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th>Number of Jobs</th>
+                    <th>Queued Jobs</th>
+                    <th>Active Jobs</th>
+                    <th>Deferred Jobs</th>
+                    <th>Finished Jobs</th>
                     <th>Number of Workers</th>
                     <th>Host</th>
                     <th>Port</th>
@@ -41,6 +44,9 @@
                             </a>
                         </th>
                         <td>{{ queue.jobs }}</td>
+                        <td>{{ queue.started_jobs }}</td>
+                        <td>{{ queue.deferred_jobs }}</td>
+                        <td>{{ queue.finished_jobs }}</td>
                         <td>{{ queue.workers }}</td>
                         <td>{{ queue.connection_kwargs.host }}</td>
                         <td>{{ queue.connection_kwargs.port }}</td>
