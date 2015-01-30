@@ -88,7 +88,7 @@
                                     {% if job.get_status|length != 0 %}
                                         {{ job.get_status }}
                                     {% else %}
-                                        {{ job.status }}
+                                        {{ job.get_status }}
                                     {% endif %}
                                 </td>
                                 <td>{{ job.func_name }}</td>
