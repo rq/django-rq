@@ -79,7 +79,7 @@
             <div>
                 <label class="required">Status:</label>
                 <div class="data">
-                    {% if job.get_status %}
+                    {% if job.get_status|length != 0 %}
                         {{ job.get_status }}
                     {% else %}
                         {{ job.get_status }}
