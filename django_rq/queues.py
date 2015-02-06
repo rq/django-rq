@@ -44,7 +44,7 @@ class DjangoRQ(Queue):
             thread_queue.add(self, args, kwargs)
 
 
-def get_redis_connection(config):
+def get_redis_connection(config, strict_redis=False):
     """
     Returns a redis connection from a connection config
     """
@@ -72,21 +72,29 @@ def get_redis_connection(config):
         else:
             # We're using django-redis-cache
             return cache._client
-        
+
     if 'UNIX_SOCKET_PATH' in config:
-        return redis.Redis(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
+        if strict_redis:
+            return redis.StrictRedis(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
+        else: 
+            return redis.Redis(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
 
-    return redis.Redis(host=config['HOST'],
-                       port=config['PORT'], db=config['DB'],
-                       password=config.get('PASSWORD', None))
+    if strict_redis:
+        return redis.StrictRedis(host=config['HOST'],
+                                 port=config['PORT'], db=config['DB'],
+                                 password=config.get('PASSWORD', None))
+    else:
+        return redis.Redis(host=config['HOST'],
+                           port=config['PORT'], db=config['DB'],
+                           password=config.get('PASSWORD', None))
 
 
-def get_connection(name='default'):
+def get_connection(name='default', strict_redis=False):
     """
     Returns a Redis connection to use based on parameters in settings.RQ_QUEUES
     """
     from .settings import QUEUES
-    return get_redis_connection(QUEUES[name])
+    return get_redis_connection(QUEUES[name], strict_redis)
 
 
 def get_connection_by_index(index):
