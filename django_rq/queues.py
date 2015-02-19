@@ -48,8 +48,10 @@ def get_redis_connection(config, use_strict_redis=False):
     """
     Returns a redis connection from a connection config
     """
+    redis_cls = redis.StrictRedis if use_strict_redis else redis.Redis
+
     if 'URL' in config:
-        return redis.from_url(config['URL'], db=config['DB'])
+        return redis_cls.from_url(config['URL'], db=config['DB'])
     if 'USE_REDIS_CACHE' in config.keys():
 
         from django.core.cache import get_cache
@@ -74,19 +76,9 @@ def get_redis_connection(config, use_strict_redis=False):
             return cache._client
 
     if 'UNIX_SOCKET_PATH' in config:
-        if use_strict_redis:
-            return redis.StrictRedis(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
-        else: 
-            return redis.Redis(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
+        return redis_cls(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
 
-    if use_strict_redis:
-        return redis.StrictRedis(host=config['HOST'],
-                                 port=config['PORT'], db=config['DB'],
-                                 password=config.get('PASSWORD', None))
-    else:
-        return redis.Redis(host=config['HOST'],
-                           port=config['PORT'], db=config['DB'],
-                           password=config.get('PASSWORD', None))
+    return redis_cls(host=config['HOST'], port=config['PORT'], db=config['DB'], password=config.get('PASSWORD', None))
 
 
 def get_connection(name='default', use_strict_redis=False):
