@@ -1,11 +1,16 @@
 from django.contrib.auth.models import User
-from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
 from django.core.urlresolvers import reverse
 from django.test import TestCase
-from django.utils.unittest import skipIf
+try:
+    from unittest import skipIf
+except ImportError:
+    from django.utils.unittest import skipIf
 from django.test.client import Client
-from django.test.utils import override_settings
+try:
+    from django.test import override_settings
+except ImportError:
+    from django.test.utils import override_settings
 from django.conf import settings
 
 from rq import get_current_job, Queue
@@ -248,13 +253,6 @@ class DecoratorTest(TestCase):
         result = test.delay()
         self.assertEqual(result.origin, 'default')
         result.delete()
-
-
-class ConfigTest(TestCase):
-    @override_settings(RQ_QUEUES=None)
-    def test_empty_queue_setting_raises_exception(self):
-        # Raise an exception if RQ_QUEUES is not defined
-        self.assertRaises(ImproperlyConfigured, get_connection)
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
