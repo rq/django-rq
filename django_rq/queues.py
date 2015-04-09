@@ -136,18 +136,18 @@ def get_failed_queue(name='default'):
     """
     return FailedQueue(connection=get_connection(name))
 
-    
+
 def filter_connection_params(queue_params):
     """
     Filters the queue params to keep only the connection related params.
     """
     NON_CONNECTION_PARAMS = ('DEFAULT_TIMEOUT',)
-    
+
     #return {p:v for p,v in queue_params.items() if p not in NON_CONNECTION_PARAMS}
     # Dict comprehension compatible with python 2.6
     return dict((p,v) for (p,v) in queue_params.items() if p not in NON_CONNECTION_PARAMS)
 
-    
+
 def get_queues(*queue_names, **kwargs):
     """
     Return queue instances from specified queue names.
@@ -159,7 +159,7 @@ def get_queues(*queue_names, **kwargs):
         # Return "default" queue if no queue name is specified
         return [get_queue(autocommit=autocommit)]
     if len(queue_names) > 1:
-        queue_params = QUEUES[queue_names[0]]        
+        queue_params = QUEUES[queue_names[0]]
         connection_params = filter_connection_params(queue_params)
         for name in queue_names:
             if connection_params != filter_connection_params(QUEUES[name]):
