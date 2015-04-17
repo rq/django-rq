@@ -54,8 +54,12 @@ def get_redis_connection(config, use_strict_redis=False):
         return redis_cls.from_url(config['URL'], db=config['DB'])
     if 'USE_REDIS_CACHE' in config.keys():
 
-        from django.core.cache import get_cache
-        cache = get_cache(config['USE_REDIS_CACHE'])
+        try:
+            from django.core.cache import caches
+            cache = caches[config['USE_REDIS_CACHE']]
+        except ImportError:
+            from django.core.cache import get_cache
+            cache = get_cache(config['USE_REDIS_CACHE'])
 
         if hasattr(cache, 'client'):
             # We're using django-redis. The cache's `client` attribute
