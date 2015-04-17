@@ -345,6 +345,13 @@ Commit and re-deploy. Then add your new worker with:
 Changelog
 =========
 
+0.8.0
+-----
+* You can now view deferred, finished and currently active jobs from admin interface.
+* Better support for Django 1.8. Thanks @epicserve and @seiryuz!
+* Requires RQ >= 0.5.
+* You can now use `StrictRedis` with Django-RQ. Thanks @wastrachan!
+
 0.7.0
 -----
 * Added ``rqenqueue`` management command for easy scheduling of tasks (e.g via cron).
