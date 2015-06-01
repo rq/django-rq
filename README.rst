@@ -182,8 +182,9 @@ name of the desired cache in your ``RQ_QUEUES`` dict. It goes without saying
 that the chosen cache must exist and use the Redis backend. See your respective
 Redis cache package docs for configuration instructions. It's also important to
 point out that since the django-redis-cache ``ShardedClient`` splits the cache
-over multiple Redis connections, it does not work. Here is an example settings
-fragment for django-redis:
+over multiple Redis connections, it does not work.
+
+Here is an example settings fragment for `django-redis`:
 
 .. code-block:: python
 
@@ -192,7 +193,7 @@ fragment for django-redis:
             'BACKEND': 'redis_cache.cache.RedisCache',
             'LOCATION': 'localhost:6379:1',
             'OPTIONS': {
-                'CLIENT_CLASS': 'redis_cache.client.DefaultClient',
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
                 'MAX_ENTRIES': 5000,
             },
         },
