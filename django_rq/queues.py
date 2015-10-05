@@ -51,7 +51,7 @@ def get_redis_connection(config, use_strict_redis=False):
     redis_cls = redis.StrictRedis if use_strict_redis else redis.Redis
 
     if 'URL' in config:
-        return redis_cls.from_url(config['URL'], db=config['DB'])
+        return redis_cls.from_url(config['URL'], db=config.get('DB'))
     if 'USE_REDIS_CACHE' in config.keys():
 
         try:

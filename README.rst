@@ -48,8 +48,7 @@ Installation
             'DEFAULT_TIMEOUT': 360,
         },
         'high': {
-            'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379'), # If you're on Heroku
-            'DB': 0,
+            'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0'), # If you're on Heroku
             'DEFAULT_TIMEOUT': 500,
         },
         'low': {
