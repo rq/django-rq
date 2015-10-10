@@ -341,6 +341,12 @@ Commit and re-deploy. Then add your new worker with:
 
     heroku scale worker=1
 
+=======================
+Django Suit Integration
+=======================
+
+You can use `django-suit-rq <https://github.com/gsmke/django-suit-rq>`_ to make your
+admin fit in with the django-suit styles.
 
 =========
 Changelog
