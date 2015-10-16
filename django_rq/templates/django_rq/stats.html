@@ -29,6 +29,7 @@
                     <th>Active Jobs</th>
                     <th>Deferred Jobs</th>
                     <th>Finished Jobs</th>
+                    <th>Scheduled Jobs</th>
                     <th>Number of Workers</th>
                     <th>Host</th>
                     <th>Port</th>
@@ -66,6 +67,15 @@
                             {% if queue.name != 'failed' %}
                                 <a href = "{% url 'rq_finished_jobs' queue.index %}">
                                     {{ queue.finished_jobs }}
+                                </a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if queue.name != 'failed' %}
+                                <a href = "{% url 'rq_scheduled_jobs' queue.index %}">
+                                    {{ queue.scheduled_jobs }}
                                 </a>
                             {% else %}
                                 -

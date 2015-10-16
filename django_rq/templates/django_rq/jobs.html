@@ -66,28 +66,51 @@
                             </th>
                             <th><div class = 'text'><span>ID</span></div></th>
                             <th><div class = 'text'><span>Created</span></div></th>
+                            {% if job_status == 'Scheduled' %}
+                            <th><div class = 'text'><span>Scheduled</span></div></th>
+                            {% else %}
                             <th><div class = 'text'><span>Enqueued</span></div></th>
+                            {% endif %}
                             <th><div class = 'text'><span>Status</span></div></th>
                             <th><div class = 'text'><span>Callable</span></div></th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for job in jobs %}
-                            <tr class = "{% cycle 'row1' 'row2' %}">
-                                <td class="action-checkbox">
-                                    <input class="action-select" name="_selected_action" type="checkbox" value="{{ job.id }}">
-                                </td>
-                                <th>
-                                    <a href = "{% url 'rq_job_detail' queue_index job.id %}">
-                                        {{ job.id }}
-                                    </a>
-                                </th>
-                                <td>{{ job.created_at }}</td>
-                                <td>{{ job.enqueued_at }}</td>
-                                <td>{{ job.get_status }}</td>
-                                <td>{{ job.func_name }}</td>
-                            </tr>
-                        {% endfor %}
+                        {% if job_status == 'Scheduled' %}
+                            {% for job, scheduled_at in jobs %}
+                                <tr class = "{% cycle 'row1' 'row2' %}">
+                                    <td class="action-checkbox">
+                                        <input class="action-select" name="_selected_action" type="checkbox" value="{{ job.id }}">
+                                    </td>
+                                    <th>
+                                        <a href = "{% url 'rq_job_detail' queue_index job.id %}">
+                                            {{ job.id }}
+                                        </a>
+                                    </th>
+                                    <td>{{ job.created_at }}</td>
+                                    <td>{{ scheduled_at }}</td>
+                                    <td>{{ job.get_status }}</td>
+                                    <td>{{ job.func_name }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            {% for job in jobs %}
+                                <tr class = "{% cycle 'row1' 'row2' %}">
+                                    <td class="action-checkbox">
+                                        <input class="action-select" name="_selected_action" type="checkbox" value="{{ job.id }}">
+                                    </td>
+                                    <th>
+                                        <a href = "{% url 'rq_job_detail' queue_index job.id %}">
+                                            {{ job.id }}
+                                        </a>
+                                    </th>
+                                    <td>{{ job.created_at }}</td>
+                                    <td>{{ job.enqueued_at }}</td>
+                                    <td>{{ job.get_status }}</td>
+                                    <td>{{ job.func_name }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
                     </tbody>
                 </table>
             </div>

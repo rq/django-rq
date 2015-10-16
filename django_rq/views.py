@@ -4,17 +4,17 @@ from math import ceil
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core.exceptions import ImproperlyConfigured
 from django.http import Http404
 from django.shortcuts import redirect, render
-
 from redis.exceptions import ResponseError
-from rq import requeue_job, Worker
+from rq import Worker, requeue_job
 from rq.exceptions import NoSuchJobError
 from rq.job import Job
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
 
-from .queues import get_connection, get_queue_by_index
+from .queues import get_connection, get_queue_by_index, get_scheduler
 from .settings import QUEUES_LIST
 
 
@@ -38,6 +38,7 @@ def stats(request):
             queue_data['finished_jobs'] = '-'
             queue_data['started_jobs'] = '-'
             queue_data['deferred_jobs'] = '-'
+            queue_data['scheduled_jobs'] = '-'
 
         else:
             connection = get_connection(queue.name)
@@ -51,6 +52,11 @@ def stats(request):
             queue_data['finished_jobs'] = len(finished_job_registry)
             queue_data['started_jobs'] = len(started_job_registry)
             queue_data['deferred_jobs'] = len(deferred_job_registry)
+            try:
+                scheduler = get_scheduler(queue.name)
+                queue_data['scheduled_jobs'] = len(scheduler.get_jobs())
+            except ImproperlyConfigured:
+                queue_data['scheduled_jobs'] = 0
 
         queues.append(queue_data)
 
@@ -206,6 +212,25 @@ def deferred_jobs(request, queue_index):
 
 
 @staff_member_required
+def scheduled_jobs(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    scheduler = get_scheduler(queue.name)
+    jobs = scheduler.get_jobs(with_times=True)
+
+    context_data = {
+        'queue': queue,
+        'queue_index': queue_index,
+        'jobs': jobs,
+        'num_jobs': len(jobs),
+        'page': 1,
+        'page_range': [],
+        'job_status': 'Scheduled',
+    }
+    return render(request, 'django_rq/jobs.html', context_data)
+
+
+@staff_member_required
 def job_detail(request, queue_index, job_id):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
@@ -318,3 +343,4 @@ def actions(request, queue_index):
                 messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
 
     return redirect('rq_jobs', queue_index)
+
