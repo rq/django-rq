@@ -60,6 +60,14 @@ class Command(BaseCommand):
             default=None,
             help='Name of the worker'
         ),
+        make_option(
+            '--worker-ttl',
+            action='store',
+            type="int",
+            dest='worker_ttl',
+            default=240,
+            help='Default worker timeout to be used'
+        ),
     )
     args = '<queue queue ...>'
 
@@ -68,7 +76,10 @@ class Command(BaseCommand):
             # Instantiate a worker
             worker_class = import_attribute(options.get('worker_class', 'rq.Worker'))
             queues = get_queues(*args)
-            w = worker_class(queues, connection=queues[0].connection, name=options['name'])
+            w = worker_class(queues,
+                             connection=queues[0].connection,
+                             name=options['name'],
+                             default_worker_ttl=options['worker_ttl'])
 
             # Call use_connection to push the redis connection into LocalStack
             # without this, jobs using RQ's get_current_job() will fail
