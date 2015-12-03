@@ -13,6 +13,11 @@ try:
         REDIS_CACHE_TYPE = 'django-redis-cache'
 except ImportError:
     REDIS_CACHE_TYPE = 'none'
+try:
+    from django.utils.log import NullHandler
+    nullhandler = 'django.utils.log.NullHandler'
+except:
+    nullhandler = 'logging.NullHandler'
 
 INSTALLED_APPS = [
     'django.contrib.contenttypes',
@@ -74,7 +79,7 @@ LOGGING = {
         },
         'null': {
             'level': 'DEBUG',
-            'class': 'django.utils.log.NullHandler',
+            'class': nullhandler,
         },
     },
     'loggers': {
