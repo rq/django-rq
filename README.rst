@@ -13,7 +13,7 @@ and easily use them in your project.
 Requirements
 ============
 
-* `Django <https://www.djangoproject.com/>`_
+* `Django <https://www.djangoproject.com/>`_ (1.5+)
 * `RQ`_
 
 ============
