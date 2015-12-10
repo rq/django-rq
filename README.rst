@@ -352,6 +352,11 @@ admin fit in with the django-suit styles.
 Changelog
 =========
 
+0.9.0
+-----
+
+* Support for Django 1.9.
+
 0.8.0
 -----
 * You can now view deferred, finished and currently active jobs from admin interface.
