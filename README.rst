@@ -50,6 +50,7 @@ Installation
         'high': {
             'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0'), # If you're on Heroku
             'DEFAULT_TIMEOUT': 500,
+            'EXCEPTION_HANDLERS': ['path.to.my.handler'], # If you need custom exception handlers
         },
         'low': {
             'HOST': 'localhost',
@@ -65,7 +66,6 @@ Installation
     urlpatterns += patterns('',
         url(r'^django-rq/', include('django_rq.urls')),
     )
-
 
 =====
 Usage
@@ -350,6 +350,13 @@ admin fit in with the django-suit styles.
 =========
 Changelog
 =========
+
+0.9.0
+-----
+* Support for Django 1.9. Thanks @aaugustin and @viaregio!
+* ``rqworker`` management command now accepts ``--worker-ttl`` argument. Thanks pnuckowski!
+* You can now easily specify custom ``EXCEPTION_HANDLERS`` in ``settings.py``. Thanks @xuhcc! 
+* ``django-rq`` now requires RQ >= 0.5.5
 
 0.8.0
 -----
