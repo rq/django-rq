@@ -5,6 +5,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand
 
 from django_rq.queues import get_queues
+from django_rq.workers import get_exception_handlers
 
 from redis.exceptions import ConnectionError
 from rq import use_connection
@@ -68,7 +69,10 @@ class Command(BaseCommand):
             # Instantiate a worker
             worker_class = import_attribute(options.get('worker_class', 'rq.Worker'))
             queues = get_queues(*args)
-            w = worker_class(queues, connection=queues[0].connection, name=options['name'])
+            w = worker_class(queues,
+                             connection=queues[0].connection,
+                             name=options['name'],
+                             exception_handlers=get_exception_handlers() or None)
 
             # Call use_connection to push the redis connection into LocalStack
             # without this, jobs using RQ's get_current_job() will fail
