@@ -77,7 +77,11 @@ def get_redis_connection(config, use_strict_redis=False):
                 pass
         else:
             # We're using django-redis-cache
-            return cache._client
+            try:
+                return cache._client
+            except AttributeError:
+                # For django-redis-cache > 0.13.1
+                return cache.get_master_client()
 
     if 'UNIX_SOCKET_PATH' in config:
         return redis_cls(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
