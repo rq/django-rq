@@ -1,3 +1,4 @@
+import os
 import importlib
 import logging
 from optparse import make_option
@@ -69,10 +70,23 @@ class Command(BaseCommand):
             default=420,
             help='Default worker timeout to be used'
         ),
+        make_option(
+            '--pid',
+            action='store',
+            dest='pid',
+            default=None,
+            help='PID file to write the worker`s pid into'
+        ),
     )
     args = '<queue queue ...>'
 
     def handle(self, *args, **options):
+
+        pid = options.get('pid')
+        if pid:
+            with open(os.path.expanduser(pid), "w") as fp:
+                fp.write(str(os.getpid()))
+
         try:
             # Instantiate a worker
             worker_class = import_attribute(options.get('worker_class', 'rq.Worker'))
