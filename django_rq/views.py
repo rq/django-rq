@@ -1,13 +1,11 @@
 from __future__ import division
 
-from distutils.version import StrictVersion
 from math import ceil
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404
 from django.shortcuts import redirect, render
-from django.utils.version import get_main_version
 
 from redis.exceptions import ResponseError
 from rq import requeue_job, Worker
@@ -18,12 +16,6 @@ from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
 
 from .queues import get_connection, get_queue_by_index
 from .settings import QUEUES_LIST
-
-
-if StrictVersion(get_main_version()) >= StrictVersion('1.9'):
-    JQUERY_PATH = 'admin/js/vendor/jquery/jquery.js'
-else:
-    JQUERY_PATH = 'admin/js/jquery.js'
 
 
 @staff_member_required
@@ -92,7 +84,6 @@ def jobs(request, queue_index):
         'page': page,
         'page_range': page_range,
         'job_status': 'Queued',
-        'jquery_path': JQUERY_PATH,
     }
     return render(request, 'django_rq/jobs.html', context_data)
 
@@ -132,7 +123,6 @@ def finished_jobs(request, queue_index):
         'page': page,
         'page_range': page_range,
         'job_status': 'Finished',
-        'jquery_path': JQUERY_PATH,
     }
     return render(request, 'django_rq/jobs.html', context_data)
 
@@ -172,7 +162,6 @@ def started_jobs(request, queue_index):
         'page': page,
         'page_range': page_range,
         'job_status': 'Started',
-        'jquery_path': JQUERY_PATH,
     }
     return render(request, 'django_rq/jobs.html', context_data)
 
@@ -212,7 +201,6 @@ def deferred_jobs(request, queue_index):
         'page': page,
         'page_range': page_range,
         'job_status': 'Deferred',
-        'jquery_path': JQUERY_PATH,
     }
     return render(request, 'django_rq/jobs.html', context_data)
 
