@@ -13,6 +13,7 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
         make_option(
             '--interval',
+            '-i',
             type=int,
             dest='interval',
             default=60,
