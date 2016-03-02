@@ -6,6 +6,8 @@ from rq.queue import FailedQueue, Queue
 
 from django_rq import thread_queue
 
+from .job import TZAwareJob
+
 
 def get_commit_mode():
     """
@@ -32,7 +34,9 @@ class DjangoRQ(Queue):
         autocommit = kwargs.pop('autocommit', None)
         self._autocommit = get_commit_mode() if autocommit is None else autocommit
 
-        return super(DjangoRQ, self).__init__(*args, **kwargs)
+        job_class = kwargs.pop('job_class', TZAwareJob)
+
+        return super(DjangoRQ, self).__init__(job_class=job_class, *args, **kwargs)
 
     def original_enqueue_call(self, *args, **kwargs):
         return super(DjangoRQ, self).enqueue_call(*args, **kwargs)

@@ -10,12 +10,12 @@ from django.shortcuts import redirect, render
 from redis.exceptions import ResponseError
 from rq import requeue_job, Worker
 from rq.exceptions import NoSuchJobError
-from rq.job import Job
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
 
 from .queues import get_connection, get_queue_by_index
 from .settings import QUEUES_LIST
+from .job import TZAwareJob as Job
 
 
 @staff_member_required
