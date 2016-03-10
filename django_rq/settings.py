@@ -17,3 +17,6 @@ for key, value in sorted(QUEUES.items()):
     QUEUES_LIST.append({'name': key, 'connection_config': value})
 for config in get_unique_connection_configs():
     QUEUES_LIST.append({'name': 'failed', 'connection_config': config})
+
+# Get exception handlers
+EXCEPTION_HANDLERS = getattr(settings, 'RQ_EXCEPTION_HANDLERS', [])
