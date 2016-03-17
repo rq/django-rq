@@ -62,7 +62,8 @@ def stats(request):
 
             if DISPLAY_SCHEDULER:
                scheduler = get_scheduler(queue.name)
-               queue_data['scheduled_jobs'] = len(scheduler.get_jobs())
+               queue_data['scheduled_jobs'] = len([job for job in scheduler.get_jobs()
+                                                    if job.origin == queue.name])
 
         queues.append(queue_data)
 
