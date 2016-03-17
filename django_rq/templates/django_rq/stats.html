@@ -27,6 +27,9 @@
                     <th>Active Jobs</th>
                     <th>Deferred Jobs</th>
                     <th>Finished Jobs</th>
+                {% if display_scheduled_jobs %}
+                    <th>Scheduled Jobs</th>
+                {% endif %}
                     <th>Number of Workers</th>
                     <th>Host</th>
                     <th>Port</th>
@@ -69,6 +72,17 @@
                                 -
                             {% endif %}
                         </td>
+                    {% if display_scheduled_jobs %}
+                        <td>
+                            {% if queue.name != 'failed' %}
+                                <a href = "todo">
+                                    {{ queue.scheduled_jobs }}
+                                </a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    {% endif %}
                         <td>{{ queue.workers }}</td>
                         <td>{{ queue.connection_kwargs.host }}</td>
                         <td>{{ queue.connection_kwargs.port }}</td>

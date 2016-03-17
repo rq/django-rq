@@ -4,6 +4,7 @@ from math import ceil
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core.exceptions import ImproperlyConfigured
 from django.http import Http404
 from django.shortcuts import redirect, render
 
@@ -14,13 +15,20 @@ from rq.job import Job
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
 
-from .queues import get_connection, get_queue_by_index
+from .queues import get_connection, get_queue_by_index, get_scheduler
 from .settings import QUEUES_LIST
+
+try:
+    get_scheduler('default')
+    DISPLAY_SCHEDULER = True
+except ImproperlyConfigured:
+    DISPLAY_SCHEDULER = False
 
 
 @staff_member_required
 def stats(request):
     queues = []
+
     for index, config in enumerate(QUEUES_LIST):
 
         queue = get_queue_by_index(index)
@@ -52,9 +60,13 @@ def stats(request):
             queue_data['started_jobs'] = len(started_job_registry)
             queue_data['deferred_jobs'] = len(deferred_job_registry)
 
+            if DISPLAY_SCHEDULER:
+               scheduler = get_scheduler(queue.name)
+               queue_data['scheduled_jobs'] = len(scheduler.get_jobs())
+
         queues.append(queue_data)
 
-    context_data = {'queues': queues}
+    context_data = {'queues': queues, 'display_scheduled_jobs': DISPLAY_SCHEDULER}
     return render(request, 'django_rq/stats.html', context_data)
 
 
