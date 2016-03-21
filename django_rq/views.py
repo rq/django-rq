@@ -19,10 +19,11 @@ from .queues import get_connection, get_queue_by_index, get_scheduler
 from .settings import QUEUES_LIST
 
 try:
-    get_scheduler('default')
-    DISPLAY_SCHEDULER = True
-except ImproperlyConfigured:
-    DISPLAY_SCHEDULER = False
+    from rq_scheduler import Scheduler
+    from .queues import get_scheduler
+    RQ_SCHEDULER_INSTALLED = True
+except ImportError:
+    RQ_SCHEDULER_INSTALLED = False
 
 
 @staff_member_required
@@ -60,14 +61,14 @@ def stats(request):
             queue_data['started_jobs'] = len(started_job_registry)
             queue_data['deferred_jobs'] = len(deferred_job_registry)
 
-            if DISPLAY_SCHEDULER:
+            if RQ_SCHEDULER_INSTALLED:
                scheduler = get_scheduler(queue.name)
                queue_data['scheduled_jobs'] = len([job for job in scheduler.get_jobs()
                                                     if job.origin == queue.name])
 
         queues.append(queue_data)
 
-    context_data = {'queues': queues, 'display_scheduled_jobs': DISPLAY_SCHEDULER}
+    context_data = {'queues': queues, 'display_scheduled_jobs': RQ_SCHEDULER_INSTALLED}
     return render(request, 'django_rq/stats.html', context_data)
 
 
@@ -220,6 +221,9 @@ def deferred_jobs(request, queue_index):
 
 @staff_member_required
 def scheduled_jobs(request, queue_index):
+    if not RQ_SCHEDULER_INSTALLED:
+        return redirect('rq_jobs', queue_index)
+
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
 
