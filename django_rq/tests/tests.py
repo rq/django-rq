@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.urlresolvers import reverse
@@ -448,7 +450,7 @@ class ViewTest(TestCase):
         self.assertEqual(response.context['jobs'], [job])
 
     def test_deferred_jobs(self):
-        """Ensure that active jobs page works properly."""
+        """Ensure that deferred jobs page works properly."""
         queue = get_queue('django_rq_test')
         queue_index = get_queue_index('django_rq_test')
 
@@ -459,6 +461,25 @@ class ViewTest(TestCase):
             reverse('rq_deferred_jobs', args=[queue_index])
         )
         self.assertEqual(response.context['jobs'], [job])
+
+    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    def test_scheduled_jobs(self):
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        scheduler = get_scheduler('django_rq_test')
+        job = scheduler.enqueue_at(
+            datetime(2099, 1, 1),
+            divide,
+            [1, 2],
+        )
+
+        response = self.client.get(
+            reverse('rq_scheduled_jobs', args=[queue_index])
+        )
+        self.assertEqual(response.context['jobs'], [job])
+        job.delete()
+        scheduler.cancel(job)
 
 
 class ThreadQueueTest(TestCase):
