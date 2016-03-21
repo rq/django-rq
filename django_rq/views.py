@@ -219,6 +219,40 @@ def deferred_jobs(request, queue_index):
 
 
 @staff_member_required
+def scheduled_jobs(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+
+    scheduler = get_scheduler(queue.name)
+    all_jobs = [job for job in scheduler.get_jobs()
+            if job.origin == queue.name]
+
+    items_per_page = 100
+    num_jobs = len(all_jobs)
+    page = int(request.GET.get('page', 1))
+
+    if num_jobs > 0:
+        last_page = int(ceil(num_jobs / items_per_page))
+        page_range = range(1, last_page + 1)
+        offset = items_per_page * (page - 1)
+        jobs = all_jobs[offset:(offset + items_per_page)]
+    else:
+        jobs = []
+        page_range = []
+
+    context_data = {
+        'queue': queue,
+        'queue_index': queue_index,
+        'jobs': jobs,
+        'num_jobs': num_jobs,
+        'page': page,
+        'page_range': page_range,
+        'job_status': 'Scheduled',
+    }
+    return render(request, 'django_rq/jobs.html', context_data)
+
+
+@staff_member_required
 def job_detail(request, queue_index, job_id):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)

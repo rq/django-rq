@@ -75,7 +75,7 @@
                     {% if display_scheduled_jobs %}
                         <td>
                             {% if queue.name != 'failed' %}
-                                <a href = "todo">
+                                <a href = "{% url 'rq_scheduled_jobs' queue.index %}">
                                     {{ queue.scheduled_jobs }}
                                 </a>
                             {% else %}
