@@ -50,7 +50,6 @@ Installation
         'high': {
             'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0'), # If you're on Heroku
             'DEFAULT_TIMEOUT': 500,
-            'EXCEPTION_HANDLERS': ['path.to.my.handler'], # If you need custom exception handlers
         },
         'low': {
             'HOST': 'localhost',
@@ -58,6 +57,8 @@ Installation
             'DB': 0,
         }
     }
+
+    RQ_EXCEPTION_HANDLERS = ['path.to.my.handler'] # If you need custom exception handlers
 
 * Include ``django_rq.urls`` in your ``urls.py``:
 

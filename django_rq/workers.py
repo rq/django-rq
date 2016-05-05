@@ -1,9 +1,8 @@
-from django.conf import settings
-
 from rq import Worker
 from rq.utils import import_attribute
 
 from .queues import get_queues
+from .settings import EXCEPTION_HANDLERS
 
 
 def get_exception_handlers():
@@ -13,12 +12,7 @@ def get_exception_handlers():
         'EXCEPTION_HANDLERS': ['path.to.handler'],
     }
     """
-    RQ = getattr(settings, 'RQ', {})
-    exception_handlers = []
-    for path in RQ.get('EXCEPTION_HANDLERS', []):
-        handler = import_attribute(path)
-        exception_handlers.append(handler)
-    return exception_handlers
+    return [import_attribute(path) for path in EXCEPTION_HANDLERS]
 
 
 def get_worker(*queue_names):
