@@ -1,6 +1,6 @@
 {% extends "admin/base_site.html" %}
 
-{% load url from future %}
+{% load admin_static %}
 
 {% block extrastyle %}
     {{ block.super }}
@@ -11,7 +11,7 @@
             width: 80%;
         }
     </style>
-    <link href="{{ STATIC_URL }}admin/css/forms.css" type="text/css" rel="stylesheet">
+    <link href="{% static 'admin/css/forms.css' %}" type="text/css" rel="stylesheet">
 {% endblock %}
 
 {% block breadcrumbs %}

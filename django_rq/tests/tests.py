@@ -131,6 +131,36 @@ class QueuesTest(TestCase):
         self.assertEqual(connection_kwargs['db'], 4)
         self.assertEqual(connection_kwargs['password'], 'password')
 
+    def test_get_queue_url_with_db(self):
+        """
+        Test that get_queue use the right parameters for queues using URL for
+        connection, where URL contains the db number (either as querystring
+        or path segment).
+        """
+        config = QUEUES['url_with_db']
+        queue = get_queue('url_with_db')
+        connection_kwargs = queue.connection.connection_pool.connection_kwargs
+        self.assertEqual(queue.name, 'url_with_db')
+        self.assertEqual(connection_kwargs['host'], 'host')
+        self.assertEqual(connection_kwargs['port'], 1234)
+        self.assertEqual(connection_kwargs['db'], 5)
+        self.assertEqual(connection_kwargs['password'], 'password')
+
+    def test_get_queue_url_with_db_default(self):
+        """
+        Test that get_queue use the right parameters for queues using URL for
+        connection, where no DB given and URL does not contain the db number
+        (redis-py defaults to 0, should not break).
+        """
+        config = QUEUES['url_default_db']
+        queue = get_queue('url_default_db')
+        connection_kwargs = queue.connection.connection_pool.connection_kwargs
+        self.assertEqual(queue.name, 'url_default_db')
+        self.assertEqual(connection_kwargs['host'], 'host')
+        self.assertEqual(connection_kwargs['port'], 1234)
+        self.assertEqual(connection_kwargs['db'], 0)
+        self.assertEqual(connection_kwargs['password'], 'password')
+
     def test_get_queue_test(self):
         """
         Test that get_queue use the right parameters for `test`

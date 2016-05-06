@@ -13,7 +13,7 @@ and easily use them in your project.
 Requirements
 ============
 
-* `Django <https://www.djangoproject.com/>`_
+* `Django <https://www.djangoproject.com/>`_ (1.5+)
 * `RQ`_
 
 ============
@@ -48,8 +48,7 @@ Installation
             'DEFAULT_TIMEOUT': 360,
         },
         'high': {
-            'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379'), # If you're on Heroku
-            'DB': 0,
+            'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0'), # If you're on Heroku
             'DEFAULT_TIMEOUT': 500,
         },
         'low': {
@@ -59,14 +58,15 @@ Installation
         }
     }
 
+    RQ_EXCEPTION_HANDLERS = ['path.to.my.handler'] # If you need custom exception handlers
+
 * Include ``django_rq.urls`` in your ``urls.py``:
 
 .. code-block:: python
 
     urlpatterns += patterns('',
-        (r'^django-rq/', include('django_rq.urls')),
+        url(r'^django-rq/', include('django_rq.urls')),
     )
-
 
 =====
 Usage
@@ -182,8 +182,9 @@ name of the desired cache in your ``RQ_QUEUES`` dict. It goes without saying
 that the chosen cache must exist and use the Redis backend. See your respective
 Redis cache package docs for configuration instructions. It's also important to
 point out that since the django-redis-cache ``ShardedClient`` splits the cache
-over multiple Redis connections, it does not work. Here is an example settings
-fragment for django-redis:
+over multiple Redis connections, it does not work.
+
+Here is an example settings fragment for `django-redis`:
 
 .. code-block:: python
 
@@ -192,7 +193,7 @@ fragment for django-redis:
             'BACKEND': 'redis_cache.cache.RedisCache',
             'LOCATION': 'localhost:6379:1',
             'OPTIONS': {
-                'CLIENT_CLASS': 'redis_cache.client.DefaultClient',
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
                 'MAX_ENTRIES': 5000,
             },
         },
@@ -340,10 +341,23 @@ Commit and re-deploy. Then add your new worker with:
 
     heroku scale worker=1
 
+=======================
+Django Suit Integration
+=======================
+
+You can use `django-suit-rq <https://github.com/gsmke/django-suit-rq>`_ to make your
+admin fit in with the django-suit styles.
 
 =========
 Changelog
 =========
+
+0.9.0
+-----
+* Support for Django 1.9. Thanks @aaugustin and @viaregio!
+* ``rqworker`` management command now accepts ``--worker-ttl`` argument. Thanks pnuckowski!
+* You can now easily specify custom ``EXCEPTION_HANDLERS`` in ``settings.py``. Thanks @xuhcc! 
+* ``django-rq`` now requires RQ >= 0.5.5
 
 0.8.0
 -----

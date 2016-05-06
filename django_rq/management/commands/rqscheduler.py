@@ -13,14 +13,23 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
         make_option(
             '--interval',
+            '-i',
             type=int,
             dest='interval',
             default=60,
             help="How often the scheduler checks for new jobs to add to the "
                  "queue (in seconds).",
         ),
+        make_option(
+            '--queue',
+            type=str,
+            dest='queue',
+            default='default',
+            help="Name of the queue used for scheduling.",
+        ),
     )
 
-    def handle(self, queue='default', *args, **options):
-        scheduler = get_scheduler(name=queue, interval=options.get('interval'))
+    def handle(self, *args, **options):
+        scheduler = get_scheduler(
+            name=options.get('queue'), interval=options.get('interval'))
         scheduler.run()

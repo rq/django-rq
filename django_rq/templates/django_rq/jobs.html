@@ -1,7 +1,6 @@
 {% extends "admin/base_site.html" %}
 
-{% load admin_static %}
-{% load url from future %}
+{% load admin_static jquery_path %}
 
 {% block extrastyle %}
     {{ block.super }}
@@ -10,7 +9,7 @@
 
 {% block extrahead %}
     {{ block.super }}
-    <script type="text/javascript" src="{% static "admin/js/jquery.js" %}"></script>
+    <script type="text/javascript" src="{% get_jquery_path as jquery_path %}{% static jquery_path %}"></script>
     <script type="text/javascript" src="{% static "admin/js/jquery.init.js" %}"></script>
     <script type="text/javascript" src="{% static "admin/js/actions.js" %}"></script>
     <script type="text/javascript">
