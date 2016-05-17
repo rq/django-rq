@@ -3,13 +3,13 @@ from setuptools import setup
 
 setup(
     name='django-rq',
-    version='0.9.0',
+    version='0.9.1',
     author='Selwin Ong',
     author_email='selwin.ong@gmail.com',
     packages=['django_rq'],
     url='https://github.com/ui/django-rq',
     license='MIT',
-    description='A simple app that provides django integration for RQ (Redis Queue)',
+    description='An app that provides django integration for RQ (Redis Queue)',
     long_description=open('README.rst').read(),
     zip_safe=False,
     include_package_data=True,
