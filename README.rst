@@ -147,9 +147,9 @@ If you want to run ``rqworker`` in burst mode, you can pass in the ``--burst`` f
 
 If you need to use a custom worker class, you can pass in the ``--worker-class`` flag
 with the path to your worker::
-    
+
     python manage.py rqworker high default low --worker-class 'path.to.GeventWorker'
-    
+
 Support for RQ Scheduler
 ------------------------
 
@@ -323,13 +323,13 @@ Deploying on Heroku
 
 Add `django-rq` to your `requirements.txt` file with:
 
-.. code-block:: bash 
+.. code-block:: bash
 
     pip freeze > requirements.txt
- 
+
 Update your `Procfile` to:
 
-.. code-block:: bash 
+.. code-block:: bash
 
     web: gunicorn --pythonpath="$PWD/your_app_name" config.wsgi:application
 
@@ -337,7 +337,7 @@ Update your `Procfile` to:
 
 Commit and re-deploy. Then add your new worker with:
 
-.. code-block:: bash 
+.. code-block:: bash
 
     heroku scale worker=1
 
@@ -352,11 +352,22 @@ admin fit in with the django-suit styles.
 Changelog
 =========
 
+0.9.1
+-----
+* Added ``-i`` and ``--queue`` options to `rqscheduler` management command. Thanks @mbodock and @sbussetti!
+* Added ``--pid`` option to ``rqworker`` management command. Thanks @ydaniv!
+* Admin interface fixes for Django 1.9. Thanks @philippbosch!
+* Compatibility fix for ``django-redis-cache``. Thanks @scream4ik!
+* **Backward incompatible**: Exception handlers are now defined via ``RQ_EXCEPTION_HANDLERS`` in ``settings.py``. Thanks @sbussetti!
+* Queues in django-admin are now sorted by name. Thanks @pnuckowski! 
+
+
+
 0.9.0
 -----
 * Support for Django 1.9. Thanks @aaugustin and @viaregio!
 * ``rqworker`` management command now accepts ``--worker-ttl`` argument. Thanks pnuckowski!
-* You can now easily specify custom ``EXCEPTION_HANDLERS`` in ``settings.py``. Thanks @xuhcc! 
+* You can now easily specify custom ``EXCEPTION_HANDLERS`` in ``settings.py``. Thanks @xuhcc!
 * ``django-rq`` now requires RQ >= 0.5.5
 
 0.8.0
