@@ -277,7 +277,7 @@ For an easier testing process, you can run a worker synchronously this way:
 
 .. code-block:: python
 
-    from django.test impor TestCase
+    from django.test import TestCase
     from django_rq import get_worker
 
     class MyTest(TestCase):
