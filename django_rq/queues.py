@@ -1,8 +1,8 @@
 from django.conf import settings
-from django.utils.module_loading import import_string
 from django.core.exceptions import ImproperlyConfigured
 
 import redis
+from rq.utils import import_attribute
 from rq.queue import FailedQueue, Queue
 
 from django_rq import thread_queue
@@ -35,7 +35,7 @@ def get_queue_class(config):
         queue_class = RQ.get('QUEUE_CLASS')
 
     if isinstance(queue_class, basestring):
-        queue_class = import_string(queue_class)
+        queue_class = import_attribute(queue_class)
     return queue_class
 
 
