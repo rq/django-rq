@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import os
+REDIS_HOST = os.environ.get("REDIS_HOST", 'localhost')
 
 SECRET_KEY = 'a'
 
@@ -39,7 +41,7 @@ if REDIS_CACHE_TYPE == 'django-redis':
     CACHES = {
         'django-redis': {
             'BACKEND': 'redis_cache.cache.RedisCache',
-            'LOCATION': 'localhost:6379:2',
+            'LOCATION': '%s:6379:2' % REDIS_HOST,
             'KEY_PREFIX': 'django-rq-tests',
             'OPTIONS': {
                 'CLIENT_CLASS': 'redis_cache.client.DefaultClient',
@@ -51,7 +53,7 @@ elif REDIS_CACHE_TYPE == 'django-redis-cache':
     CACHES = {
         'django-redis-cache': {
             'BACKEND': 'redis_cache.cache.RedisCache',
-            'LOCATION': 'localhost:6379',
+            'LOCATION': '%s:6379' % REDIS_HOST,
             'KEY_PREFIX': 'django-rq-tests',
             'OPTIONS': {
                 'DB': 2,
@@ -90,36 +92,37 @@ LOGGING = {
     }
 }
 
+
 RQ_QUEUES = {
     'default': {
-        'HOST': 'localhost',
+        'HOST': REDIS_HOST,
         'PORT': 6379,
         'DB': 0,
         'DEFAULT_TIMEOUT': 500
     },
     'test': {
-        'HOST': 'localhost',
+        'HOST': REDIS_HOST,
         'PORT': 1,
         'DB': 1,
     },
     'test1': {
-        'HOST': 'localhost',
+        'HOST': REDIS_HOST,
         'PORT': 1,
         'DB': 1,
-        'DEFAULT_TIMEOUT': 400
+        'DEFAULT_TIMEOUT': 400,
     },
     'test2': {
-        'HOST': 'localhost',
+        'HOST': REDIS_HOST,
         'PORT': 1,
         'DB': 1,
     },
     'test3': {
-        'HOST': 'localhost',
+        'HOST': REDIS_HOST,
         'PORT': 6379,
         'DB': 1,
     },
     'async': {
-        'HOST': 'localhost',
+        'HOST': REDIS_HOST,
         'PORT': 6379,
         'DB': 1,
         'ASYNC': False,
@@ -135,12 +138,11 @@ RQ_QUEUES = {
         'URL': 'redis://username:password@host:1234',
     },
     'django_rq_test': {
-        'HOST': 'localhost',
+        'HOST': REDIS_HOST,
         'PORT': 6379,
         'DB': 0,
     },
 }
-
 RQ = {
     'AUTOCOMMIT': False,
 }
