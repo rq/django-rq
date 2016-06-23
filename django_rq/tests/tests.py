@@ -328,6 +328,7 @@ class ViewTest(TestCase):
         user.save()
         self.client = Client()
         self.client.login(username=user.username, password='pass')
+        get_queue('django_rq_test').connection.flushall()
 
     def test_requeue_job(self):
         """
