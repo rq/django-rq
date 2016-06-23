@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.utils.module_loading import import_string
 from django.core.exceptions import ImproperlyConfigured
 
 import redis
@@ -32,7 +33,7 @@ class DjangoRQ(Queue):
         autocommit = kwargs.pop('autocommit', None)
         self._autocommit = get_commit_mode() if autocommit is None else autocommit
 
-        return super(DjangoRQ, self).__init__(*args, **kwargs)
+        super(DjangoRQ, self).__init__(*args, **kwargs)
 
     def original_enqueue_call(self, *args, **kwargs):
         return super(DjangoRQ, self).enqueue_call(*args, **kwargs)
@@ -106,7 +107,7 @@ def get_connection_by_index(index):
 
 
 def get_queue(name='default', default_timeout=None, async=None,
-              autocommit=None):
+              autocommit=None, queue_class=DjangoRQ):
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
@@ -118,10 +119,14 @@ def get_queue(name='default', default_timeout=None, async=None,
 
     if default_timeout is None:
         default_timeout = QUEUES[name].get('DEFAULT_TIMEOUT')
+    if 'QUEUE_CLASS' in QUEUES[name]:
+        queue_class = QUEUES[name].get('QUEUE_CLASS')
+        if isinstance(queue_class, basestring):
+            queue_class = import_string(queue_class)
 
-    return DjangoRQ(name, default_timeout=default_timeout,
-                    connection=get_connection(name), async=async,
-                    autocommit=autocommit)
+    return queue_class(name, default_timeout=default_timeout,
+                       connection=get_connection(name), async=async,
+                       autocommit=autocommit)
 
 
 def get_queue_by_index(index):
