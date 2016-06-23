@@ -150,7 +150,7 @@ def get_queue_by_index(index):
     config = QUEUES_LIST[int(index)]
     if config['name'] == 'failed':
         return FailedQueue(connection=get_redis_connection(config['connection_config']))
-    return DjangoRQ(
+    return get_queue_class(config)(
         config['name'],
         connection=get_redis_connection(config['connection_config']),
         async=config.get('ASYNC', True))
