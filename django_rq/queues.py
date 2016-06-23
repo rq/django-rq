@@ -34,7 +34,13 @@ def get_queue_class(config):
     elif 'QUEUE_CLASS' in RQ:
         queue_class = RQ.get('QUEUE_CLASS')
 
-    if isinstance(queue_class, basestring):
+    try:
+        from django.utils import six
+        string_type = six.string_types
+    except ImportError:
+        string_type = basestring
+
+    if isinstance(queue_class, string_type):
         queue_class = import_attribute(queue_class)
     return queue_class
 
