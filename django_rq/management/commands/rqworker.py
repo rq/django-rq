@@ -56,6 +56,13 @@ class Command(BaseCommand):
             help='RQ Worker class to use'
         ),
         make_option(
+            '--queue-class',
+            action='store',
+            dest='queue_class',
+            default='django_rq.queues.DjangoRQ',
+            help='Queues class to use'
+        ),
+        make_option(
             '--name',
             action='store',
             dest='name',
@@ -89,8 +96,8 @@ class Command(BaseCommand):
 
         try:
             # Instantiate a worker
-            worker_class = import_attribute(options.get('worker_class', 'rq.Worker'))
-            queues = get_queues(*args)
+            worker_class = import_attribute(options['worker_class'])
+            queues = get_queues(*args, queue_class=import_attribute(options['queue_class']))
             w = worker_class(
                 queues,
                 connection=queues[0].connection,

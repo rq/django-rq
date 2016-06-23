@@ -23,6 +23,22 @@ def get_commit_mode():
     return RQ.get('AUTOCOMMIT', True)
 
 
+def get_queue_class(config):
+    """
+    Return queue class from config or from RQ settings, otherwise return DjangoRQ
+    """
+    RQ = getattr(settings, 'RQ', {})
+    queue_class = DjangoRQ
+    if 'QUEUE_CLASS' in config:
+        queue_class = config.get('QUEUE_CLASS')
+    elif 'QUEUE_CLASS' in RQ:
+        queue_class = RQ.get('QUEUE_CLASS')
+
+    if isinstance(queue_class, basestring):
+        queue_class = import_string(queue_class)
+    return queue_class
+
+
 class DjangoRQ(Queue):
     """
     A subclass of RQ's QUEUE that allows jobs to be stored temporarily to be
@@ -107,7 +123,7 @@ def get_connection_by_index(index):
 
 
 def get_queue(name='default', default_timeout=None, async=None,
-              autocommit=None, queue_class=DjangoRQ):
+              autocommit=None, queue_class=None):
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
@@ -119,11 +135,8 @@ def get_queue(name='default', default_timeout=None, async=None,
 
     if default_timeout is None:
         default_timeout = QUEUES[name].get('DEFAULT_TIMEOUT')
-    if 'QUEUE_CLASS' in QUEUES[name]:
-        queue_class = QUEUES[name].get('QUEUE_CLASS')
-        if isinstance(queue_class, basestring):
-            queue_class = import_string(queue_class)
-
+    if queue_class is None or queue_class == DjangoRQ:
+        queue_class = get_queue_class(QUEUES[name])
     return queue_class(name, default_timeout=default_timeout,
                        connection=get_connection(name), async=async,
                        autocommit=autocommit)
@@ -168,6 +181,7 @@ def get_queues(*queue_names, **kwargs):
     """
     from .settings import QUEUES
     autocommit = kwargs.get('autocommit', None)
+    queue_class = kwargs.get('queue_class', DjangoRQ)
     if len(queue_names) == 0:
         # Return "default" queue if no queue name is specified
         return [get_queue(autocommit=autocommit)]
@@ -180,7 +194,7 @@ def get_queues(*queue_names, **kwargs):
                     'Queues must have the same redis connection.'
                     '"{0}" and "{1}" have '
                     'different connections'.format(name, queue_names[0]))
-    return [get_queue(name, autocommit=autocommit) for name in queue_names]
+    return [get_queue(name, autocommit=autocommit, queue_class=queue_class) for name in queue_names]
 
 
 def enqueue(func, *args, **kwargs):
