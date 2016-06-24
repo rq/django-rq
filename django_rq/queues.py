@@ -141,7 +141,7 @@ def get_queue(name='default', default_timeout=None, async=None,
 
     if default_timeout is None:
         default_timeout = QUEUES[name].get('DEFAULT_TIMEOUT')
-    if queue_class is None or queue_class == DjangoRQ:
+    if queue_class is None:
         queue_class = get_queue_class(QUEUES[name])
     return queue_class(name, default_timeout=default_timeout,
                        connection=get_connection(name), async=async,
