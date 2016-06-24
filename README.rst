@@ -278,8 +278,8 @@ For more info, refer to `Raven's documentation <http://raven.readthedocs.org/>`_
 Custom queue class
 ------------------
 
-By default every queue provided by the `DjangoRQ` class, but If you want to use a custom class to your queues
-use `QUEUE_CLASS` option for a queue in `RQ_QUEUES` setting
+By default every queue provided by the ``DjangoRQ`` class, but If you want to use a custom class to your queues
+use ``QUEUE_CLASS`` option for a queue in ``RQ_QUEUES`` setting
 
 .. code-block:: python
 
@@ -292,7 +292,7 @@ use `QUEUE_CLASS` option for a queue in `RQ_QUEUES` setting
         }
     }
 
-or you can specify a custom class for every queue by `RQ` settings:
+or you can specify a custom class for every queue by ``RQ`` settings:
 
 .. code-block:: python
 
@@ -300,7 +300,7 @@ or you can specify a custom class for every queue by `RQ` settings:
         'QUEUE_CLASS': 'module.path.CustomClass',
     }
 
-Custom queue class should inherit `django_rq.queues.DjangoRQ`.
+Custom queue class should inherit ``django_rq.queues.DjangoRQ``.
 
 Testing tip
 -----------
