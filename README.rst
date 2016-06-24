@@ -150,6 +150,11 @@ with the path to your worker::
 
     python manage.py rqworker high default low --worker-class 'path.to.GeventWorker'
 
+If you need to use a custom queue class, you can pass in the ``--queue-class`` flag
+with the path to your queue class::
+
+    python manage.py rqworker high default low --queue-class 'path.to.CustomQueue'
+
 Support for RQ Scheduler
 ------------------------
 
@@ -269,6 +274,33 @@ transports (the default transport). Please configure ``Raven`` to use
     }
 
 For more info, refer to `Raven's documentation <http://raven.readthedocs.org/>`_.
+
+Custom queue class
+------------------
+
+By default every queue provided by the `DjangoRQ` class, but If you want to use a custom class to your queues
+use `QUEUE_CLASS` option for a queue in `RQ_QUEUES` setting
+
+.. code-block:: python
+
+    RQ_QUEUES = {
+        'default': {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 0,
+            'QUEUE_CLASS': 'module.path.CustomClass',
+        }
+    }
+
+or you can specify a custom class for every queue by `RQ` settings:
+
+.. code-block:: python
+
+    RQ = {
+        'QUEUE_CLASS': 'module.path.CustomClass',
+    }
+
+Custom queue class should inherit `django_rq.queues.DjangoRQ`.
 
 Testing tip
 -----------
