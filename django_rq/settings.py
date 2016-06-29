@@ -2,6 +2,7 @@ from operator import itemgetter
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.functional import lazy
 
 from .queues import get_unique_connection_configs
 
@@ -22,3 +23,10 @@ for config in get_unique_connection_configs():
 
 # Get exception handlers
 EXCEPTION_HANDLERS = getattr(settings, 'RQ_EXCEPTION_HANDLERS', [])
+
+
+# laizly get RQ_CRONJOBS from django settings
+# for override_settings support in tests
+def get_cronjobs():
+    return getattr(settings, 'RQ_CRONJOBS', [])
+CRONJOBS = lazy(get_cronjobs, list)()

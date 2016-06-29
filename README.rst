@@ -167,6 +167,33 @@ You can use also use the management command ``rqscheduler`` to start the schedul
 
     python manage.py rqscheduler
 
+Support for RQ Scheduler's cron
+-------------------------------
+
+If you have `RQ Scheduler <https://github.com/ui/rq-scheduler>`_ installed,
+you can easily manage Your cron entries using ``settings.RQ_CRONJOBS``:
+
+.. code-block:: python
+
+    RQ_CRONJOBS = [
+        ('*/10 * * * *', 'whatever.function'),
+        {
+            'cron_string': '*/10 * * * *',
+            'func': 'whatever.function',
+            'timeout': 50,
+            'args': ('foo', 'bar'),
+            'kwargs': {'foo':'bar'},
+            'queue': 'default',
+        },
+    ]
+
+Use the management command ``rqcronjobs`` after each deployment to reinstall all
+cronjobs in the scheduler::
+
+    python manage.py rqcronjobs
+
+Note, that this command will remove all previous jobs in the default scheduler.
+
 Support for django-redis and django-redis-cache
 -----------------------------------------------
 

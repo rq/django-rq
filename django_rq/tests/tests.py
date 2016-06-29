@@ -592,3 +592,52 @@ class RedisCacheTest(TestCase):
         self.assertEqual(connection_kwargs['port'], int(cachePort))
         self.assertEqual(connection_kwargs['db'], int(cacheDBNum))
         self.assertEqual(connection_kwargs['password'], None)
+
+
+class RqcronjobsTest(TestCase):
+    RQ_CRONJOBS = [
+        ('*/10 * * * *', 'whatever.function'),
+        {
+            'cron_string': '*/10 * * * *',
+            'func': 'whatever.function',
+            'timeout': 5,
+        },
+    ]
+
+    def setUp(self):
+        self.scheduler = get_scheduler()
+        self.clear_scheduler()
+
+    def tearDown(self):
+        self.clear_scheduler()
+
+    def clear_scheduler(self):
+        for scheduled_job in self.scheduler.get_jobs():
+            scheduled_job.delete()
+
+    def add_one_job_to_scheduler(self):
+        self.scheduler.cron(
+            *self.RQ_CRONJOBS[0]
+        )
+
+    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    def test_remove(self):
+        self.add_one_job_to_scheduler()
+        self.assertEqual(len(self.scheduler.get_jobs()), 1)
+        call_command('rqcronjobs', remove=True)
+        self.assertEqual(len(self.scheduler.get_jobs()), 0)
+
+    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    @override_settings(RQ_CRONJOBS=RQ_CRONJOBS)
+    def test_install(self):
+        self.assertEqual(len(self.scheduler.get_jobs()), 0)
+        call_command('rqcronjobs', install=True)
+        self.assertEqual(len(self.scheduler.get_jobs()), 2)
+
+    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    @override_settings(RQ_CRONJOBS=RQ_CRONJOBS)
+    def test_reinstall(self):
+        self.add_one_job_to_scheduler()
+        self.assertEqual(len(self.scheduler.get_jobs()), 1)
+        call_command('rqcronjobs')
+        self.assertEqual(len(self.scheduler.get_jobs()), 2)
