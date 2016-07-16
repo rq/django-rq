@@ -1,7 +1,6 @@
 import os
 import importlib
 import logging
-from optparse import make_option
 
 from django.core.management.base import BaseCommand
 
@@ -40,52 +39,21 @@ class Command(BaseCommand):
     Example usage:
     python manage.py rqworker high medium low
     """
-    option_list = BaseCommand.option_list + (
-        make_option(
-            '--burst',
-            action='store_true',
-            dest='burst',
-            default=False,
-            help='Run worker in burst mode'
-        ),
-        make_option(
-            '--worker-class',
-            action='store',
-            dest='worker_class',
-            default='rq.Worker',
-            help='RQ Worker class to use'
-        ),
-        make_option(
-            '--queue-class',
-            action='store',
-            dest='queue_class',
-            default='django_rq.queues.DjangoRQ',
-            help='Queues class to use'
-        ),
-        make_option(
-            '--name',
-            action='store',
-            dest='name',
-            default=None,
-            help='Name of the worker'
-        ),
-        make_option(
-            '--worker-ttl',
-            action='store',
-            type="int",
-            dest='worker_ttl',
-            default=420,
-            help='Default worker timeout to be used'
-        ),
-        make_option(
-            '--pid',
-            action='store',
-            dest='pid',
-            default=None,
-            help='PID file to write the worker`s pid into'
-        ),
-    )
+
     args = '<queue queue ...>'
+
+    def add_arguments(self, parser):
+        parser.add_argument('--worker-class', action='store', dest='worker_class',
+                            default='rq.Worker', help='RQ Worker class to use')
+        parser.add_argument('--pid', action='store', dest='pid',
+                            default=None, help='PID file to write the worker`s pid into')
+        parser.add_argument('--burst',action='store', dest='burst',
+                            default=False, help='Run worker in burst mode')
+        parser.add_argument('--name', action='store', dest='name',
+                            default=None, help='Name of the worker')
+        parser.add_argument('--worker-ttl', action='store', type=int,
+                            dest='worker_ttl', default=420,
+                            help='Default worker timeout to be used')
 
     def handle(self, *args, **options):
 

@@ -1,5 +1,4 @@
 from django.core.management.base import BaseCommand
-from optparse import make_option
 from django_rq import get_scheduler
 
 
@@ -10,24 +9,12 @@ class Command(BaseCommand):
     help = __doc__
     args = '<queue>'
 
-    option_list = BaseCommand.option_list + (
-        make_option(
-            '--interval',
-            '-i',
-            type=int,
-            dest='interval',
-            default=60,
-            help="How often the scheduler checks for new jobs to add to the "
-                 "queue (in seconds).",
-        ),
-        make_option(
-            '--queue',
-            type=str,
-            dest='queue',
-            default='default',
-            help="Name of the queue used for scheduling.",
-        ),
-    )
+    def add_arguments(self, parser):
+        parser.add_argument('--interval', '-i', type=int, dest='interval',
+                            default=60, help="""How often the scheduler checks for new jobs to add to the
+                            queue (in seconds).""")
+        parser.add_argument('--queue', dest='queue', default='default',
+                            help="Name of the queue used for scheduling.",)
 
     def handle(self, *args, **options):
         scheduler = get_scheduler(
