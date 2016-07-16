@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.utils import six
 
 import redis
 from rq.utils import import_attribute
@@ -34,13 +35,7 @@ def get_queue_class(config):
     elif 'QUEUE_CLASS' in RQ:
         queue_class = RQ.get('QUEUE_CLASS')
 
-    try:
-        from django.utils import six
-        string_type = six.string_types
-    except ImportError:
-        string_type = basestring
-
-    if isinstance(queue_class, string_type):
+    if isinstance(queue_class, six.string_types):
         queue_class = import_attribute(queue_class)
     return queue_class
 
