@@ -39,7 +39,7 @@ class Command(BaseCommand):
     Example usage:
     python manage.py rqworker high medium low
     """
-    
+
     args = '<queue queue ...>'
 
     def add_arguments(self, parser):
@@ -47,14 +47,16 @@ class Command(BaseCommand):
                             default='rq.Worker', help='RQ Worker class to use')
         parser.add_argument('--pid', action='store', dest='pid',
                             default=None, help='PID file to write the worker`s pid into')
-        parser.add_argument('--burst',action='store', dest='burst', 
+        parser.add_argument('--burst', action='store', dest='burst',
                             default=False, help='Run worker in burst mode')
         parser.add_argument('--name', action='store', dest='name',
                             default=None, help='Name of the worker')
+        parser.add_argument('--queue-class', action='store', dest='queue_class',
+                            default='django_rq.queues.DjangoRQ', help='Queues class to use')
         parser.add_argument('--worker-ttl', action='store', type=int,
                             dest='worker_ttl', default=420,
                             help='Default worker timeout to be used')
-        
+
     def handle(self, *args, **options):
 
         pid = options.get('pid')
@@ -64,8 +66,8 @@ class Command(BaseCommand):
 
         try:
             # Instantiate a worker
-            worker_class = import_attribute(options.get('worker_class', 'rq.Worker'))
-            queues = get_queues(*args)
+            worker_class = import_attribute(options['worker_class'])
+            queues = get_queues(*args, queue_class=import_attribute(options['queue_class']))
             w = worker_class(
                 queues,
                 connection=queues[0].connection,

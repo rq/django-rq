@@ -21,7 +21,7 @@ from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
 from django_rq.decorators import job
 from django_rq.queues import (
     get_connection, get_queue, get_queue_by_index, get_queues,
-    get_unique_connection_configs
+    get_unique_connection_configs, DjangoRQ
 )
 from django_rq import thread_queue
 from django_rq.workers import get_worker
@@ -328,6 +328,7 @@ class ViewTest(TestCase):
         user.save()
         self.client = Client()
         self.client.login(username=user.username, password='pass')
+        get_queue('django_rq_test').connection.flushall()
 
     def test_requeue_job(self):
         """
@@ -592,3 +593,22 @@ class RedisCacheTest(TestCase):
         self.assertEqual(connection_kwargs['port'], int(cachePort))
         self.assertEqual(connection_kwargs['db'], int(cacheDBNum))
         self.assertEqual(connection_kwargs['password'], None)
+
+
+class DummyQueue(DjangoRQ):
+    """Just Fake class for the following test"""
+
+
+class QueueClassTest(TestCase):
+
+    def test_default_queue_class(self):
+        queue = get_queue('test')
+        self.assertIsInstance(queue, DjangoRQ)
+
+    def test_for_queue(self):
+        queue = get_queue('test1')
+        self.assertIsInstance(queue, DummyQueue)
+
+    def test_in_kwargs(self):
+        queue = get_queue('test', queue_class=DummyQueue)
+        self.assertIsInstance(queue, DummyQueue)
