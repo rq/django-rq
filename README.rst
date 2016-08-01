@@ -155,6 +155,18 @@ with the path to your queue class::
 
     python manage.py rqworker high default low --queue-class 'path.to.CustomQueue'
 
+If you need to run multiple workers, you can pass in the ``--workers`` flag with the
+number of workers you want to spawn. If you don't pass in this flag, the number of
+workers with default the the environment variable ``RQ_CONCURRENCY``, or 1 if that
+is not set::
+
+    python manage.py rqworker high default low --workers 5
+
+If you would like to have your workers autoreload the same way django's runserver
+autoreloads, use the ``--autoreload`` flag::
+
+    python manage.py rqworker high default low --autoreload True
+
 Support for RQ Scheduler
 ------------------------
 
@@ -373,6 +385,9 @@ Commit and re-deploy. Then add your new worker with:
 
     heroku scale worker=1
 
+Add the environment variable ``RQ_CONCURRENCY`` to your config with the number of workers
+appropriate for (your dyno type)[https://devcenter.heroku.com/articles/optimizing-dyno-usage#python].
+
 =======================
 Django Suit Integration
 =======================
@@ -383,6 +398,11 @@ admin fit in with the django-suit styles.
 =========
 Changelog
 =========
+
+0.9.2
+-----
+* Added ``--workers`` option to `rqworker` management command.
+* Added ``--autoreload`` option to `rqworker` management command.
 
 0.9.1
 -----

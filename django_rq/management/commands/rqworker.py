@@ -1,8 +1,11 @@
 import os
+import sys
 import importlib
 import logging
+import subprocess
 
 from django.core.management.base import BaseCommand
+from django.utils.autoreload import reloader_thread
 
 from django_rq.queues import get_queues
 from django_rq.workers import get_exception_handlers
@@ -56,6 +59,10 @@ class Command(BaseCommand):
         parser.add_argument('--worker-ttl', action='store', type=int,
                             dest='worker_ttl', default=420,
                             help='Default worker timeout to be used')
+        parser.add_argument('--workers', '-w', action='store', type=int, dest='num_workers',
+                            default=None, help='Number of workers to spawn, defaults to RQ_CONCURRENCY, or 1')
+        parser.add_argument('--autoreload', action='store', type=bool, dest='autoreload',
+                            default=False, help='Enable autoreload of rqworkers for development')
 
     def handle(self, *args, **options):
 
@@ -64,6 +71,63 @@ class Command(BaseCommand):
             with open(os.path.expanduser(pid), "w") as fp:
                 fp.write(str(os.getpid()))
 
+        if os.environ.get('RUN_MAIN') == 'true':
+            try:
+                self.create_worker(*args, **options)
+            except KeyboardInterrupt:
+                pass
+        elif os.environ.get('RUN_RELOADER') == 'true':
+            try:
+                reloader_thread()
+            except KeyboardInterrupt:
+                pass
+        else:
+            num_workers = options['num_workers']
+            if not num_workers:
+                num_workers = int(os.environ.get('RQ_CONCURRENCY', 1))
+
+            workers = []
+            # need the number of workers - 1 because our main process will create one
+            for _ in range(num_workers - 1):
+                workers.append(self.create_worker_process())
+
+            if options['autoreload']:
+                workers.append(self.create_worker_process())
+                self.create_reloader(workers)
+            else:
+                self.create_worker(*args, **options)
+
+    def create_worker_process(self):
+        args = [sys.executable] + ['-W%s' % o for o in sys.warnoptions] + sys.argv
+        if sys.platform == "win32":
+            args = ['"%s"' % arg for arg in args]
+        new_environ = os.environ.copy()
+        new_environ['RUN_MAIN'] = 'true'
+        return subprocess.Popen(args, executable=sys.executable, env=new_environ)
+
+    def create_reloader(self, workers):
+        args = [sys.executable] + ['-W%s' % o for o in sys.warnoptions] + sys.argv
+        if sys.platform == "win32":
+            args = ['"%s"' % arg for arg in args]
+        new_environ = os.environ.copy()
+        new_environ['RUN_RELOADER'] = 'true'
+        reloader = subprocess.Popen(args, executable=sys.executable, env=new_environ)
+        try:
+            reloader.wait()
+        except KeyboardInterrupt:
+            pass
+        if reloader.returncode == 3:
+            new_workers = []
+            for worker in workers:
+                worker.terminate()
+                new_workers.append(self.create_worker_process())
+            self.create_reloader(new_workers)
+        else:
+            for worker in workers:
+                worker.terminate()
+            sys.exit(reloader.returncode)
+
+    def create_worker(self, *args, **options):
         try:
             # Instantiate a worker
             worker_class = import_attribute(options['worker_class'])
