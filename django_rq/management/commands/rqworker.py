@@ -56,6 +56,8 @@ class Command(BaseCommand):
         parser.add_argument('--worker-ttl', action='store', type=int,
                             dest='worker_ttl', default=420,
                             help='Default worker timeout to be used')
+        parser.add_argument('--workers', '-w', action='store', type=int, dest='num_workers',
+                            default=None, help='Number of workers to spawn, defaults to RQ_CONCURRENCY, or 1')
 
     def handle(self, *args, **options):
 
@@ -64,6 +66,21 @@ class Command(BaseCommand):
             with open(os.path.expanduser(pid), "w") as fp:
                 fp.write(str(os.getpid()))
 
+        num_workers = options['num_workers']
+        if not num_workers:
+            num_workers = int(os.environ.get('RQ_CONCURRENCY', 1))
+        newpid = None
+        # need the number of workers - 1 because our main process will create one
+        for _ in range(num_workers - 1):
+            newpid = os.fork()
+            if newpid == 0:
+                self.create_worker(*args, **options)
+                break
+
+        if newpid != 0:  # create the worker on the original process so we can block
+            self.create_worker(*args, **options)
+
+    def create_worker(self, *args, **options):
         try:
             # Instantiate a worker
             worker_class = import_attribute(options['worker_class'])
