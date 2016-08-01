@@ -162,6 +162,11 @@ is not set::
 
     python manage.py rqworker high default low --workers 5
 
+If you would like to have your workers autoreload the same way django's runserver
+autoreloads, use the ``--autoreload`` flag::
+
+    python manage.py rqworker high default low --autoreload True
+
 Support for RQ Scheduler
 ------------------------
 
@@ -397,6 +402,7 @@ Changelog
 0.9.2
 -----
 * Added ``--workers`` option to `rqworker` management command.
+* Added ``--autoreload`` option to `rqworker` management command.
 
 0.9.1
 -----
