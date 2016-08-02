@@ -286,6 +286,18 @@ def clear_queue(request, queue_index):
 
 
 @staff_member_required
+def requeue_all(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    jobs = queue.get_jobs()
+    for job in jobs:
+        requeue_job(job.id, connection=queue.connection)
+
+    messages.info(request, 'You have successfully requeued all %d  jobs!' % len(jobs))
+    return redirect('rq_jobs', queue_index)
+
+
+@staff_member_required
 def actions(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
