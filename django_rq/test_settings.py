@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+
 REDIS_HOST = os.environ.get("REDIS_HOST", 'localhost')
 
 SECRET_KEY = 'a'
@@ -155,9 +156,28 @@ elif REDIS_CACHE_TYPE == 'django-redis-cache':
 
 ROOT_URLCONF = 'django_rq.tests.urls'
 
-TEMPLATE_LOADERS = (
-    'django.template.loaders.app_directories.Loader',
-)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, "templates")],
+        'APP_DIRS': False,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+            'loaders': [
+                'django.template.loaders.filesystem.Loader',
+                'django.template.loaders.app_directories.Loader',
+            ],
+        },
+    },
+]
+
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
@@ -168,9 +188,4 @@ MIDDLEWARE_CLASSES = (
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-)
-
-TEMPLATE_CONTEXT_PROCESSORS = (
-    "django.contrib.auth.context_processors.auth",
-    "django.core.context_processors.request",
 )
