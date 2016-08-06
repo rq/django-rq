@@ -384,6 +384,11 @@ admin fit in with the django-suit styles.
 Changelog
 =========
 
+0.9.2
+-----
+* Support for Django 1.10. Thanks @jtburchfield!
+* Added ``--queue-class`` option to ``rqworker`` management command. Thanks @Krukov!
+
 0.9.1
 -----
 * Added ``-i`` and ``--queue`` options to `rqscheduler` management command. Thanks @mbodock and @sbussetti!
@@ -391,9 +396,7 @@ Changelog
 * Admin interface fixes for Django 1.9. Thanks @philippbosch!
 * Compatibility fix for ``django-redis-cache``. Thanks @scream4ik!
 * **Backward incompatible**: Exception handlers are now defined via ``RQ_EXCEPTION_HANDLERS`` in ``settings.py``. Thanks @sbussetti!
-* Queues in django-admin are now sorted by name. Thanks @pnuckowski! 
-
-
+* Queues in django-admin are now sorted by name. Thanks @pnuckowski!
 
 0.9.0
 -----
