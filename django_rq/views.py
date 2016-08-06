@@ -290,11 +290,22 @@ def requeue_all(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
     jobs = queue.get_jobs()
-    for job in jobs:
-        requeue_job(job.id, connection=queue.connection)
 
-    messages.info(request, 'You have successfully requeued all %d  jobs!' % len(jobs))
-    return redirect('rq_jobs', queue_index)
+    if request.method == 'POST':
+        # Confirmation received
+        for job in jobs:
+            requeue_job(job.id, connection=queue.connection)
+
+        messages.info(request, 'You have successfully requeued all %d jobs!' % len(jobs))
+        return redirect('rq_jobs', queue_index)
+
+    context_data = {
+        'queue_index': queue_index,
+        'queue': queue,
+        'total_jobs':len(jobs),
+    }
+
+    return render(request, 'django_rq/requeue_all.html', context_data)
 
 
 @staff_member_required
