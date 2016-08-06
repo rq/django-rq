@@ -14,7 +14,7 @@ env:
 matrix:
   exclude:
     - python: "3.3"
-      env: DJANGO=1.9.7
+      env: DJANGO=1.9.9
     - python: "3.3"
       env: DJANGO=1.10
 
