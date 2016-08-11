@@ -1,9 +1,11 @@
+from distutils.version import LooseVersion
 import os
 import importlib
 import logging
 import sys
 
 from django.core.management.base import BaseCommand
+from django.utils.version import get_version
 
 from django_rq.queues import get_queues
 from django_rq.workers import get_exception_handlers
@@ -59,6 +61,8 @@ class Command(BaseCommand):
         parser.add_argument('--worker-ttl', action='store', type=int,
                             dest='worker_ttl', default=420,
                             help='Default worker timeout to be used')
+        if LooseVersion(get_version()) >= LooseVersion('1.9'):
+            parser.add_argument('args', nargs='*')
 
     def handle(self, *args, **options):
         pid = options.get('pid')
