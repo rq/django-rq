@@ -15,6 +15,8 @@ urlpatterns = [
         views.deferred_jobs, name='rq_deferred_jobs'),
     url(r'^queues/(?P<queue_index>[\d]+)/empty/$',
         views.clear_queue, name='rq_clear'),
+    url(r'^queues/(?P<queue_index>[\d]+)/requeue-all/$',
+        views.requeue_all, name='rq_requeue_all'),
     url(r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[-\w]+)/$',
         views.job_detail, name='rq_job_detail'),
     url(r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[-\w]+)/delete/$',

@@ -1,0 +1,43 @@
+{% extends "admin/base_site.html" %}
+
+{% load admin_static %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        .data {
+            display: inline-block;
+            float: left;
+            width: 80%;
+        }
+    </style>
+    <link href="{% static 'admin/css/forms.css' %}" type="text/css" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+        <a href="{% url 'rq_home' %}">Django RQ</a> &rsaquo;
+        <a href = "{% url 'rq_jobs' queue_index %}">{{ queue.name }}</a> &rsaquo;
+        Requeue All
+    </div>
+{% endblock %}
+
+{% block content_title %}<h1>Are you sure?</h1>{% endblock %}
+
+{% block content %}
+
+<div id="content-main">
+    <p>
+        Are you sure you want to requeue all {{ total_jobs }} job{{ total_jobs|pluralize }} in the queue <a href = "{% url 'rq_jobs' queue_index %}">{{ queue.name }}</a>?
+        This action can not be undone.
+    </p>
+    <form action="" method="post">
+        {% csrf_token %}
+        <div>
+            <input type="submit" value="Yes, I'm sure" />
+        </div>
+    </form>
+</div>
+
+{% endblock %}
