@@ -1,6 +1,7 @@
 import os
 import importlib
 import logging
+import sys
 
 from django.core.management.base import BaseCommand
 
@@ -83,3 +84,4 @@ class Command(BaseCommand):
             w.work(burst=options.get('burst', False))
         except ConnectionError as e:
             print(e)
+            sys.exit(1)
