@@ -15,6 +15,6 @@ else:
     tag_decorator = register.assignment_tag
 
 
-@register.assignment_tag
+@tag_decorator
 def get_jquery_path():
     return JQUERY_PATH
