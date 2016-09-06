@@ -312,7 +312,7 @@ class WorkersTest(TestCase):
         """
         queue = get_queue()
         job = queue.enqueue(access_self)
-        call_command('rqworker', burst=True)
+        call_command('rqworker', '--burst')
         failed_queue = Queue(name='failed', connection=queue.connection)
         self.assertFalse(job.id in failed_queue.job_ids)
         job.delete()
