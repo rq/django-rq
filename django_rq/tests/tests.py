@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.urlresolvers import reverse
+from django.db import transaction
 from django.test import TestCase
 try:
     from unittest import skipIf
@@ -533,6 +534,73 @@ class ThreadQueueTest(TestCase):
         url = reverse('error')
         self.assertRaises(ValueError, self.client.get, url)
         self.assertEqual(queue.count, 0)
+
+
+class ThreadQueueWithTransactionAtomicTest(TestCase):
+
+    @override_settings(RQ={'AUTOCOMMIT': True})
+    def test_enqueue_autocommit_on(self):
+        """
+        Running ``enqueue`` when AUTOCOMMIT is on should
+        immediately persist job into Redis.
+        """
+        queue = get_queue()
+        queue.empty()
+        with transaction.atomic():
+            job = queue.enqueue(divide, 1, 1)
+        self.assertTrue(job.id in queue.job_ids)
+        job.delete()
+
+    @override_settings(RQ={'AUTOCOMMIT': False})
+    def test_enqueue_autocommit_off(self):
+        """
+        Running ``enqueue`` when AUTOCOMMIT is off should
+        puts the job in the delayed queue but ...
+        """
+        thread_queue.clear()
+        queue = get_queue()
+        queue.empty()
+        with transaction.atomic():
+            queue.enqueue(divide, 1, 1)
+
+        # the following call SHOULDN'T BE necessary
+        # it should be called by an on_commit hook
+        # https://docs.djangoproject.com/en/1.10/topics/db/transactions/#django.db.transaction.on_commit
+        thread_queue.commit()
+
+        job = queue.dequeue()
+        self.assertTrue(job)
+        self.assertTrue(job.func.func_name, "divide")
+        job.delete()
+        self.assertFalse(queue.dequeue())
+
+    @override_settings(RQ={'AUTOCOMMIT': False})
+    def test_enqueue_autocommit_offand_db_error(self):
+        """
+        Running ``enqueue`` when AUTOCOMMIT is off should
+        puts the job in the delayed queue only if dba transaction succedes
+        """
+        thread_queue.clear()
+        queue = get_queue()
+        queue.empty()
+
+        try:
+            with transaction.atomic():
+                queue.enqueue(divide, 1, 1)
+                # something went wrong on DB
+                assert False
+        except AssertionError:
+            # the following call SHOULDN'T BE necessary
+            # but if you don't make it, the final situation would be inconsistent:
+            #  DB transaction has failed but job is enqueued
+            thread_queue.clear()
+
+        # the following call SHOULDN'T BE necessary
+        thread_queue.commit()
+
+        job = queue.dequeue()
+        self.assertFalse(job)
+        self.assertFalse(queue.dequeue())
 
 
 class SchedulerTest(TestCase):
