@@ -52,7 +52,7 @@ class Command(BaseCommand):
                             default='rq.Worker', help='RQ Worker class to use')
         parser.add_argument('--pid', action='store', dest='pid',
                             default=None, help='PID file to write the worker`s pid into')
-        parser.add_argument('--burst', action='store', dest='burst',
+        parser.add_argument('--burst', action='store_true', dest='burst',
                             default=False, help='Run worker in burst mode')
         parser.add_argument('--name', action='store', dest='name',
                             default=None, help='Name of the worker')
