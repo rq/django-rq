@@ -518,5 +518,5 @@ Version 0.2.2
 * "PASSWORD" key in RQ_QUEUES will now be used when connecting to Redis.
 
 
-.. |Build Status| image:: https://secure.travis-ci.org/ui/django-rq.png?branch=master
+.. |Build Status| image:: https://secure.travis-ci.org/ui/django-rq.svg?branch=master
    :target: https://travis-ci.org/ui/django-rq
