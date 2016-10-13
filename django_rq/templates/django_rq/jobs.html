@@ -1,6 +1,6 @@
 {% extends "admin/base_site.html" %}
 
-{% load admin_static jquery_path %}
+{% load admin_static jquery_path time %}
 
 {% block extrastyle %}
     {{ block.super }}
@@ -84,8 +84,8 @@
                                         {{ job.id }}
                                     </a>
                                 </th>
-                                <td>{{ job.created_at }}</td>
-                                <td>{{ job.enqueued_at }}</td>
+                                <td>{{ job.created_at|to_localtime }}</td>
+                                <td>{{ job.enqueued_at|to_localtime }}</td>
                                 <td>{{ job.get_status }}</td>
                                 <td>{{ job.func_name }}</td>
                             </tr>
