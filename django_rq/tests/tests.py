@@ -625,4 +625,4 @@ class TemplateTagTest(TestCase):
             time = to_localtime(job.created_at)
 
             self.assertIsNotNone(time.tzinfo)
-            self.assertEqual(time.tzinfo.zone, 'Asia/Jakarta')
+            self.assertEqual(str(time.tzinfo), 'Asia/Jakarta')
