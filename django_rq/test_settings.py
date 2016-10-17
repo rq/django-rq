@@ -189,3 +189,6 @@ MIDDLEWARE_CLASSES = (
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
+
+
+TIME_ZONE = 'Asia/Jakarta'

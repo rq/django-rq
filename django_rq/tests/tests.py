@@ -24,6 +24,7 @@ from django_rq.queues import (
     get_unique_connection_configs, DjangoRQ
 )
 from django_rq import thread_queue
+from django_rq.templatetags.django_rq import to_localtime
 from django_rq.workers import get_worker
 
 
@@ -612,3 +613,15 @@ class QueueClassTest(TestCase):
     def test_in_kwargs(self):
         queue = get_queue('test', queue_class=DummyQueue)
         self.assertIsInstance(queue, DummyQueue)
+
+
+@override_settings(RQ={'AUTOCOMMIT': True})
+class TemplateTagTest(TestCase):
+
+    def test_to_localtime(self):
+        queue = get_queue()
+        job = queue.enqueue(access_self)
+        time = to_localtime(job.created_at)
+
+        self.assertIsNotNone(time.tzinfo)
+        self.assertEqual(time.tzinfo.zone, 'Asia/Jakarta')
