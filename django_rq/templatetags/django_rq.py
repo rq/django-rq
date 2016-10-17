@@ -12,5 +12,5 @@ def to_localtime(time):
         localtime base on settings
     '''
     utc_time = time.replace(tzinfo=timezone.utc)
-    to_zone = timezone.get_current_timezone()
+    to_zone = timezone.get_default_timezone()
     return utc_time.astimezone(to_zone)
