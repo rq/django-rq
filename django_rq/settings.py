@@ -22,5 +22,3 @@ for config in get_unique_connection_configs():
 
 # Get exception handlers
 EXCEPTION_HANDLERS = getattr(settings, 'RQ_EXCEPTION_HANDLERS', [])
-
-TIME_ZONE = 'Asia/Jakarta'
