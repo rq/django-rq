@@ -619,9 +619,10 @@ class QueueClassTest(TestCase):
 class TemplateTagTest(TestCase):
 
     def test_to_localtime(self):
-        queue = get_queue()
-        job = queue.enqueue(access_self)
-        time = to_localtime(job.created_at)
+        with self.settings(TIME_ZONE='Asia/Jakarta'):
+            queue = get_queue()
+            job = queue.enqueue(access_self)
+            time = to_localtime(job.created_at)
 
-        self.assertIsNotNone(time.tzinfo)
-        self.assertEqual(time.tzinfo.zone, 'Asia/Jakarta')
+            self.assertIsNotNone(time.tzinfo)
+            self.assertEqual(time.tzinfo.zone, 'Asia/Jakarta')
