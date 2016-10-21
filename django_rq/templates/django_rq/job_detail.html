@@ -1,6 +1,6 @@
 {% extends "admin/base_site.html" %}
 
-{% load admin_static %}
+{% load admin_static django_rq %}
 
 {% block extrastyle %}
     {{ block.super }}
@@ -64,14 +64,14 @@
         <div class="form-row">
             <div>
                 <label class="required">Created:</label>
-                <div class="data">{{ job.created_at }}</div>
+                <div class="data">{{ job.created_at|to_localtime }}</div>
             </div>
         </div>
 
         <div class="form-row">
             <div>
                 <label class="required">Queued:</label>
-                <div class="data">{{ job.enqueued_at }}</div>
+                <div class="data">{{ job.enqueued_at|to_localtime }}</div>
             </div>
         </div>
 
