@@ -46,8 +46,6 @@ class Command(BaseCommand):
     args = '<queue queue ...>'
 
     def add_arguments(self, parser):
-        parser.add_argument('queues', nargs='*', type=str,
-                            help='The queues to work on, separated by space')
         parser.add_argument('--worker-class', action='store', dest='worker_class',
                             default='rq.Worker', help='RQ Worker class to use')
         parser.add_argument('--pid', action='store', dest='pid',
@@ -61,8 +59,9 @@ class Command(BaseCommand):
         parser.add_argument('--worker-ttl', action='store', type=int,
                             dest='worker_ttl', default=420,
                             help='Default worker timeout to be used')
-        if LooseVersion(get_version()) >= LooseVersion('1.9'):
-            parser.add_argument('args', nargs='*')
+        if LooseVersion(get_version()) >= LooseVersion('1.10'):
+            parser.add_argument('args', nargs='*', type=str,
+                                help='The queues to work on, separated by space')
 
     def handle(self, *args, **options):
         pid = options.get('pid')
@@ -73,7 +72,7 @@ class Command(BaseCommand):
         try:
             # Instantiate a worker
             worker_class = import_attribute(options['worker_class'])
-            queues = get_queues(*options.get('queues'), queue_class=import_attribute(options['queue_class']))
+            queues = get_queues(*args, queue_class=import_attribute(options['queue_class']))
             w = worker_class(
                 queues,
                 connection=queues[0].connection,
