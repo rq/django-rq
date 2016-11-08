@@ -188,6 +188,12 @@ class QueuesTest(TestCase):
         """
         self.assertRaises(ValueError, get_queues, 'default', 'test')
 
+    def test_pass_queue_via_commandline_args(self):
+        """
+        Checks that passing queues via commandline arguments works
+        """
+        self.assertRaises(KeyError, lambda: call_command('rqworker', 'some_queue'))
+
     def test_get_unique_connection_configs(self):
         connection_params_1 = {
             'HOST': 'localhost',
