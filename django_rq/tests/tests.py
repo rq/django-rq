@@ -48,6 +48,7 @@ class RqWorkerLoggingCaptureMixin(object):
     """
     Capture the output from the 'rq.worker' logger and store it on the class's
     logger_output attribute.
+    Inspired by Django's `django.test.utils.LoggingCaptureMixin`.
     """
     def setUp(self):
         self.logger = logging.getLogger('rq.worker')
