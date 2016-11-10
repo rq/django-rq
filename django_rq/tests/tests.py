@@ -192,7 +192,20 @@ class QueuesTest(TestCase):
         """
         Checks that passing queues via commandline arguments works
         """
-        self.assertRaises(KeyError, lambda: call_command('rqworker', 'some_queue'))
+        queue_names = ['django_rq_test', 'django_rq_test']
+        jobs = []
+        for queue_name in queue_names:
+            queue = get_queue(queue_name)
+            jobs.append({
+                'job': queue.enqueue(divide, 42, 1),
+                'finished_job_registry': FinishedJobRegistry(queue.name, queue.connection),
+            })
+
+        call_command('rqworker', *queue_names, burst=True)
+
+        for job in jobs:
+            self.assertTrue(job['job'].is_finished)
+            self.assertIn(job['job'].id, job['finished_job_registry'].get_job_ids())
 
     def test_get_unique_connection_configs(self):
         connection_params_1 = {
