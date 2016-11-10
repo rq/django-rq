@@ -361,6 +361,20 @@ class WorkersTest(RqWorkerLoggingCaptureMixin, TestCase):
             green(", ".join(queues))),
             self.logger_output.getvalue())
 
+    def test_job_from_non_default_queue_completed(self):
+        """
+        Ensure that job from non default queue successfully completed
+        when run from rqworker.
+        """
+        queue_name = 'django_rq_test'
+        queue = get_queue(queue_name)
+        job = queue.enqueue(divide, 42, 1)
+        finished_job_registry = FinishedJobRegistry(queue.name,
+                                                    queue.connection)
+        call_command('rqworker', queue_name, burst=True)
+        self.assertTrue(job.is_finished)
+        self.assertIn(job.id, finished_job_registry.get_job_ids())
+
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class ViewTest(TestCase):
