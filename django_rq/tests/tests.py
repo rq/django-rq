@@ -192,7 +192,7 @@ class QueuesTest(TestCase):
         """
         Checks that passing queues via commandline arguments works
         """
-        queue_names = ['django_rq_test', 'django_rq_test']
+        queue_names = ['django_rq_test', 'django_rq_test2']
         jobs = []
         for queue_name in queue_names:
             queue = get_queue(queue_name)
