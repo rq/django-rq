@@ -144,6 +144,11 @@ RQ_QUEUES = {
         'PORT': 6379,
         'DB': 0,
     },
+    'django_rq_test2': {
+        'HOST': REDIS_HOST,
+        'PORT': 6379,
+        'DB': 0,
+    },
 }
 RQ = {
     'AUTOCOMMIT': False,
