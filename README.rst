@@ -384,6 +384,11 @@ admin fit in with the django-suit styles.
 Changelog
 =========
 
+0.9.4
+-----
+* Fixed ``rqworker`` positional arguments parsing in Django < 1.10. Thanks @hendi!
+
+
 0.9.3
 -----
 * Added a ``--pid`` option to ``rqscheduler`` management command. Thanks @vindemasi!
