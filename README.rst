@@ -168,7 +168,7 @@ instance for queues defined in settings.py's ``RQ_QUEUES``. For example:
     scheduler = django_rq.get_scheduler('default')
     job = scheduler.enqueue_at(datetime(2020, 10, 10), func)
 
-You can use also use the management command ``rqscheduler`` to start the scheduler::
+You can also use the management command ``rqscheduler`` to start the scheduler::
 
     python manage.py rqscheduler
 
