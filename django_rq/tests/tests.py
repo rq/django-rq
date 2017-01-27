@@ -237,6 +237,31 @@ class QueuesTest(TestCase):
         self.assertEqual(get_unique_connection_configs(config),
                          [connection_params_1])
 
+    def test_get_unique_connection_configs_with_different_timeout(self):
+        connection_params_1 = {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 0,
+        }
+        connection_params_2 = {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 1,
+        }
+        queue_params_a = dict(connection_params_1)
+        queue_params_b = dict(connection_params_2)
+        queue_params_c = dict(connection_params_2)
+        queue_params_c["DEFAULT_TIMEOUT"] = 1
+        config = {
+            'default': queue_params_a,
+            'test_b': queue_params_b,
+            'test_c': queue_params_c,
+        }
+        unique_configs = get_unique_connection_configs(config)
+        self.assertEqual(len(unique_configs), 2)
+        self.assertIn(connection_params_1, unique_configs)
+        self.assertIn(connection_params_2, unique_configs)
+
     def test_async(self):
         """
         Checks whether asynchronous settings work

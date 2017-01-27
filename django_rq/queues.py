@@ -218,6 +218,7 @@ def get_unique_connection_configs(config=None):
 
     connection_configs = []
     for key, value in config.items():
+        value = filter_connection_params(value)
         if value not in connection_configs:
             connection_configs.append(value)
     return connection_configs
