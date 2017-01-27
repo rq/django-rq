@@ -16,7 +16,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--queue', '-q', dest='queue', default='default',
                             help='Specify the queue [default]')
-        parser.add_argument('--timeout', '-t', type='int', dest='timeout',
+        parser.add_argument('--timeout', '-t', type=int, dest='timeout',
                             help='A timeout in seconds')
 
         if LooseVersion(get_version()) >= LooseVersion('1.9'):

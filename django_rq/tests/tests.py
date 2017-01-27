@@ -25,6 +25,7 @@ from django_rq.queues import (
     get_unique_connection_configs, DjangoRQ
 )
 from django_rq import thread_queue
+from django_rq.templatetags.django_rq import to_localtime
 from django_rq.workers import get_worker
 
 
@@ -188,6 +189,25 @@ class QueuesTest(TestCase):
         """
         self.assertRaises(ValueError, get_queues, 'default', 'test')
 
+    def test_pass_queue_via_commandline_args(self):
+        """
+        Checks that passing queues via commandline arguments works
+        """
+        queue_names = ['django_rq_test', 'django_rq_test2']
+        jobs = []
+        for queue_name in queue_names:
+            queue = get_queue(queue_name)
+            jobs.append({
+                'job': queue.enqueue(divide, 42, 1),
+                'finished_job_registry': FinishedJobRegistry(queue.name, queue.connection),
+            })
+
+        call_command('rqworker', *queue_names, burst=True)
+
+        for job in jobs:
+            self.assertTrue(job['job'].is_finished)
+            self.assertIn(job['job'].id, job['finished_job_registry'].get_job_ids())
+
     def test_get_unique_connection_configs(self):
         connection_params_1 = {
             'HOST': 'localhost',
@@ -313,7 +333,7 @@ class WorkersTest(TestCase):
         """
         queue = get_queue()
         job = queue.enqueue(access_self)
-        call_command('rqworker', burst=True)
+        call_command('rqworker', '--burst')
         failed_queue = Queue(name='failed', connection=queue.connection)
         self.assertFalse(job.id in failed_queue.job_ids)
         job.delete()
@@ -680,3 +700,16 @@ class QueueClassTest(TestCase):
     def test_in_kwargs(self):
         queue = get_queue('test', queue_class=DummyQueue)
         self.assertIsInstance(queue, DummyQueue)
+
+
+@override_settings(RQ={'AUTOCOMMIT': True})
+class TemplateTagTest(TestCase):
+
+    def test_to_localtime(self):
+        with self.settings(TIME_ZONE='Asia/Jakarta'):
+            queue = get_queue()
+            job = queue.enqueue(access_self)
+            time = to_localtime(job.created_at)
+
+            self.assertIsNotNone(time.tzinfo)
+            self.assertEqual(time.strftime("%z"), '+0700')

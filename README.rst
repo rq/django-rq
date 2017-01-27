@@ -384,6 +384,16 @@ admin fit in with the django-suit styles.
 Changelog
 =========
 
+0.9.3
+-----
+* Added a ``--pid`` option to ``rqscheduler`` management command. Thanks @vindemasi!
+* Added ``--queues`` option to ``rqworker`` management command. Thanks @gasket!
+* Job results are now shown on admin page. Thanks @mojeto!
+* Fixed a bug in interpreting ``--burst`` argument in ``rqworker`` management command. Thanks @claudep!
+* Added Requeue All feature in Failed Queue's admin page. Thanks @lucashowell!
+* Admin interface now shows time in local timezone. Thanks @randomguy91!
+* Other minor fixes by @jeromer and @sbussetti.
+
 0.9.2
 -----
 * Support for Django 1.10. Thanks @jtburchfield!
@@ -518,5 +528,5 @@ Version 0.2.2
 * "PASSWORD" key in RQ_QUEUES will now be used when connecting to Redis.
 
 
-.. |Build Status| image:: https://secure.travis-ci.org/ui/django-rq.png?branch=master
+.. |Build Status| image:: https://secure.travis-ci.org/ui/django-rq.svg?branch=master
    :target: https://travis-ci.org/ui/django-rq
