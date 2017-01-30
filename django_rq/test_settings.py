@@ -100,7 +100,6 @@ RQ_QUEUES = {
         'PORT': 6379,
         'DB': 0,
         'DEFAULT_TIMEOUT': 500,
-        'EXCEPTION_HANDLERS': ['test_exception_handler.my_custom_exception'],
     },
     'test': {
         'HOST': REDIS_HOST,
