@@ -77,7 +77,8 @@ class Command(BaseCommand):
                 queues,
                 connection=queues[0].connection,
                 name=options['name'],
-                exception_handlers=get_exception_handlers() or None,
+                exception_handlers=get_exception_handlers(
+                    queues[0].exception_handlers) or None,
                 default_worker_ttl=options['worker_ttl']
             )
 

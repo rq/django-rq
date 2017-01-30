@@ -49,6 +49,7 @@ class DjangoRQ(Queue):
     def __init__(self, *args, **kwargs):
         autocommit = kwargs.pop('autocommit', None)
         self._autocommit = get_commit_mode() if autocommit is None else autocommit
+        self.exception_handlers = kwargs.pop('exception_handlers', None)
 
         super(DjangoRQ, self).__init__(*args, **kwargs)
 
@@ -138,9 +139,13 @@ def get_queue(name='default', default_timeout=None, async=None,
         default_timeout = QUEUES[name].get('DEFAULT_TIMEOUT')
     if queue_class is None:
         queue_class = get_queue_class(QUEUES[name])
+
+    exception_handlers = QUEUES[name].get('EXCEPTION_HANDLERS', None)
+
     return queue_class(name, default_timeout=default_timeout,
                        connection=get_connection(name), async=async,
-                       autocommit=autocommit)
+                       autocommit=autocommit,
+                       exception_handlers=exception_handlers)
 
 
 def get_queue_by_index(index):
