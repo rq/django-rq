@@ -47,7 +47,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--worker-class', action='store', dest='worker_class',
-                            default='rq.Worker', help='RQ Worker class to use')
+                            default='django_rq.workers.DjangoWorker', help='RQ Worker class to use')
         parser.add_argument('--pid', action='store', dest='pid',
                             default=None, help='PID file to write the worker`s pid into')
         parser.add_argument('--burst', action='store_true', dest='burst',
