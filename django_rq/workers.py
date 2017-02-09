@@ -19,6 +19,12 @@ def get_exception_handlers(exception_handlers):
         }
     }
     """
+    try:
+        from django.settings import RQ_EXCEPTION_HANDLERS
+        exception_handlers.extends(RQ_EXCEPTION_HANDLERS)
+    except ImportError:
+        pass
+
     if exception_handlers:
         return [import_attribute(exception_handler) for exception_handler in
                 exception_handlers]
