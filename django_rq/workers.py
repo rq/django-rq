@@ -11,10 +11,7 @@ class DjangoWorker(rq.Worker):
     def perform_job(self, job, queue):
         reset_queries()
         close_old_connections()
-        try:
-            super(DjangoWorker, self).perform_job(job, queue)
-        finally:
-            close_old_connections()
+        super(DjangoWorker, self).perform_job(job, queue)
 
 
 def get_exception_handlers():
