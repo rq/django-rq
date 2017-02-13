@@ -1,8 +1,6 @@
 A sample project to test rqworker and site interraction
 
-# Prerequisites
-
-## PostgreSQL
+## Prerequisites
 
 Install PostgreSQL
 
@@ -20,13 +18,11 @@ Init database schema
 
     ./manage.py migrate
 
-## Packages
-
-To install required packages:
+Install required packages:
 
     pip install -r requirements.txt
     
-# Test
+## Test
 
 To run tests:
 
