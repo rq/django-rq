@@ -1,3 +1,5 @@
+import sys
+
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.urlresolvers import reverse
@@ -12,6 +14,7 @@ try:
     from django.test import override_settings
 except ImportError:
     from django.test.utils import override_settings
+from django.utils.six import StringIO
 from django.conf import settings
 
 from rq import get_current_job, Queue
@@ -77,6 +80,16 @@ def get_queue_index(name='default'):
             queue_index = i
             break
     return queue_index
+
+
+def stub_stdin(testcase_inst, inputs):
+    stdin = sys.stdin
+
+    def cleanup():
+        sys.stdin = stdin
+
+    testcase_inst.addCleanup(cleanup)
+    sys.stdin = StringIO(inputs)
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
@@ -306,17 +319,31 @@ class QueuesTest(TestCase):
         queue = get_queue('test1')
         self.assertEqual(queue._default_timeout, 400)
 
-    def test_rqclean_default(self):
+    def test_rqflush_default(self):
         queue = get_queue()
         queue.enqueue(divide, 42, 1)
-        call_command("rqclean", "--verbosity", "0")
+        call_command("rqflush", "--verbosity", "0", "--noinput")
         self.assertFalse(queue.jobs)
 
-    def test_rqclean_test(self):
+    def test_rqflush_test3(self):
         queue = get_queue("test3")
         queue.enqueue(divide, 42, 1)
-        call_command("rqclean", "--queue", "test3", "--verbosity", "0")
+        call_command("rqflush", "--queue", "test3", "--verbosity", "0", "--noinput")
         self.assertFalse(queue.jobs)
+
+    def test_rqflush_test3_interactive_yes(self):
+        queue = get_queue("test3")
+        queue.enqueue(divide, 42, 1)
+        stub_stdin(self, "yes")
+        call_command("rqflush", "--queue", "test3", "--verbosity", "0")
+        self.assertFalse(queue.jobs)
+
+    def test_rqflush_test3_interactive_no(self):
+        queue = get_queue("test3")
+        queue.enqueue(divide, 42, 1)
+        stub_stdin(self, "no")
+        call_command("rqflush", "--queue", "test3", "--verbosity", "0")
+        self.assertTrue(queue.jobs)
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
