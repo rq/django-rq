@@ -305,16 +305,16 @@ class QueuesTest(TestCase):
         queue = get_queue('test1')
         self.assertEqual(queue._default_timeout, 400)
 
-    def test_rqclean_default(self):
+    def test_rqflush_default(self):
         queue = get_queue()
         queue.enqueue(divide, 42, 1)
-        call_command("rqclean", "--verbosity", "0")
+        call_command("rqflush", "--verbosity", "0")
         self.assertFalse(queue.jobs)
 
-    def test_rqclean_test(self):
+    def test_rqflush_test(self):
         queue = get_queue("test3")
         queue.enqueue(divide, 42, 1)
-        call_command("rqclean", "--queue", "test3", "--verbosity", "0")
+        call_command("rqflush", "--queue", "test3", "--verbosity", "0")
         self.assertFalse(queue.jobs)
 
 
