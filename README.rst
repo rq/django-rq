@@ -155,6 +155,18 @@ with the path to your queue class::
 
     python manage.py rqworker high default low --queue-class 'path.to.CustomQueue'
 
+Queues cleanup
+---------------
+django_rq provides a management command that flushes the queue specified as argument::
+
+    python manage.py rqflush --queue high
+
+If you don't specify any queue it will flush the default
+
+You can suppress confirmation message if you use the option --noinput
+
+    python manage.py rqflush --queue high --noinput
+
 Support for RQ Scheduler
 ------------------------
 
