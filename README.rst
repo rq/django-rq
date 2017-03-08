@@ -13,7 +13,7 @@ and easily use them in your project.
 Requirements
 ============
 
-* `Django <https://www.djangoproject.com/>`_ (1.5+)
+* `Django <https://www.djangoproject.com/>`_ (1.8+)
 * `RQ`_
 
 ============
@@ -147,9 +147,14 @@ If you want to run ``rqworker`` in burst mode, you can pass in the ``--burst`` f
 
 If you need to use a custom worker class, you can pass in the ``--worker-class`` flag
 with the path to your worker::
-    
+
     python manage.py rqworker high default low --worker-class 'path.to.GeventWorker'
-    
+
+If you need to use a custom queue class, you can pass in the ``--queue-class`` flag
+with the path to your queue class::
+
+    python manage.py rqworker high default low --queue-class 'path.to.CustomQueue'
+
 Support for RQ Scheduler
 ------------------------
 
@@ -163,7 +168,7 @@ instance for queues defined in settings.py's ``RQ_QUEUES``. For example:
     scheduler = django_rq.get_scheduler('default')
     job = scheduler.enqueue_at(datetime(2020, 10, 10), func)
 
-You can use also use the management command ``rqscheduler`` to start the scheduler::
+You can also use the management command ``rqscheduler`` to start the scheduler::
 
     python manage.py rqscheduler
 
@@ -270,6 +275,33 @@ transports (the default transport). Please configure ``Raven`` to use
 
 For more info, refer to `Raven's documentation <http://raven.readthedocs.org/>`_.
 
+Custom queue classes
+--------------------
+
+By default, every queue will use ``DjangoRQ`` class. If you want to use a custom queue class, you can do so
+by adding a ``QUEUE_CLASS`` option on a per queue basis in ``RQ_QUEUES``:
+
+.. code-block:: python
+
+    RQ_QUEUES = {
+        'default': {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 0,
+            'QUEUE_CLASS': 'module.path.CustomClass',
+        }
+    }
+
+or you can specify ``DjangoRQ`` to use a custom class for all your queues in ``RQ`` settings:
+
+.. code-block:: python
+
+    RQ = {
+        'QUEUE_CLASS': 'module.path.CustomClass',
+    }
+
+Custom queue classes should inherit from ``django_rq.queues.DjangoRQ``.
+
 Testing tip
 -----------
 
@@ -277,7 +309,7 @@ For an easier testing process, you can run a worker synchronously this way:
 
 .. code-block:: python
 
-    from django.test impor TestCase
+    from django.test import TestCase
     from django_rq import get_worker
 
     class MyTest(TestCase):
@@ -323,13 +355,13 @@ Deploying on Heroku
 
 Add `django-rq` to your `requirements.txt` file with:
 
-.. code-block:: bash 
+.. code-block:: bash
 
     pip freeze > requirements.txt
- 
+
 Update your `Procfile` to:
 
-.. code-block:: bash 
+.. code-block:: bash
 
     web: gunicorn --pythonpath="$PWD/your_app_name" config.wsgi:application
 
@@ -337,7 +369,7 @@ Update your `Procfile` to:
 
 Commit and re-deploy. Then add your new worker with:
 
-.. code-block:: bash 
+.. code-block:: bash
 
     heroku scale worker=1
 
@@ -352,11 +384,35 @@ admin fit in with the django-suit styles.
 Changelog
 =========
 
+0.9.3
+-----
+* Added a ``--pid`` option to ``rqscheduler`` management command. Thanks @vindemasi!
+* Added ``--queues`` option to ``rqworker`` management command. Thanks @gasket!
+* Job results are now shown on admin page. Thanks @mojeto!
+* Fixed a bug in interpreting ``--burst`` argument in ``rqworker`` management command. Thanks @claudep!
+* Added Requeue All feature in Failed Queue's admin page. Thanks @lucashowell!
+* Admin interface now shows time in local timezone. Thanks @randomguy91!
+* Other minor fixes by @jeromer and @sbussetti.
+
+0.9.2
+-----
+* Support for Django 1.10. Thanks @jtburchfield!
+* Added ``--queue-class`` option to ``rqworker`` management command. Thanks @Krukov!
+
+0.9.1
+-----
+* Added ``-i`` and ``--queue`` options to `rqscheduler` management command. Thanks @mbodock and @sbussetti!
+* Added ``--pid`` option to ``rqworker`` management command. Thanks @ydaniv!
+* Admin interface fixes for Django 1.9. Thanks @philippbosch!
+* Compatibility fix for ``django-redis-cache``. Thanks @scream4ik!
+* **Backward incompatible**: Exception handlers are now defined via ``RQ_EXCEPTION_HANDLERS`` in ``settings.py``. Thanks @sbussetti!
+* Queues in django-admin are now sorted by name. Thanks @pnuckowski!
+
 0.9.0
 -----
 * Support for Django 1.9. Thanks @aaugustin and @viaregio!
 * ``rqworker`` management command now accepts ``--worker-ttl`` argument. Thanks pnuckowski!
-* You can now easily specify custom ``EXCEPTION_HANDLERS`` in ``settings.py``. Thanks @xuhcc! 
+* You can now easily specify custom ``EXCEPTION_HANDLERS`` in ``settings.py``. Thanks @xuhcc!
 * ``django-rq`` now requires RQ >= 0.5.5
 
 0.8.0
@@ -472,5 +528,5 @@ Version 0.2.2
 * "PASSWORD" key in RQ_QUEUES will now be used when connecting to Redis.
 
 
-.. |Build Status| image:: https://secure.travis-ci.org/ui/django-rq.png?branch=master
+.. |Build Status| image:: https://secure.travis-ci.org/ui/django-rq.svg?branch=master
    :target: https://travis-ci.org/ui/django-rq

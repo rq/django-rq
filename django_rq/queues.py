@@ -1,7 +1,9 @@
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.utils import six
 
 import redis
+from rq.utils import import_attribute
 from rq.queue import FailedQueue, Queue
 
 from django_rq import thread_queue
@@ -22,6 +24,22 @@ def get_commit_mode():
     return RQ.get('AUTOCOMMIT', True)
 
 
+def get_queue_class(config):
+    """
+    Return queue class from config or from RQ settings, otherwise return DjangoRQ
+    """
+    RQ = getattr(settings, 'RQ', {})
+    queue_class = DjangoRQ
+    if 'QUEUE_CLASS' in config:
+        queue_class = config.get('QUEUE_CLASS')
+    elif 'QUEUE_CLASS' in RQ:
+        queue_class = RQ.get('QUEUE_CLASS')
+
+    if isinstance(queue_class, six.string_types):
+        queue_class = import_attribute(queue_class)
+    return queue_class
+
+
 class DjangoRQ(Queue):
     """
     A subclass of RQ's QUEUE that allows jobs to be stored temporarily to be
@@ -32,7 +50,7 @@ class DjangoRQ(Queue):
         autocommit = kwargs.pop('autocommit', None)
         self._autocommit = get_commit_mode() if autocommit is None else autocommit
 
-        return super(DjangoRQ, self).__init__(*args, **kwargs)
+        super(DjangoRQ, self).__init__(*args, **kwargs)
 
     def original_enqueue_call(self, *args, **kwargs):
         return super(DjangoRQ, self).enqueue_call(*args, **kwargs)
@@ -106,7 +124,7 @@ def get_connection_by_index(index):
 
 
 def get_queue(name='default', default_timeout=None, async=None,
-              autocommit=None):
+              autocommit=None, queue_class=None):
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
@@ -118,10 +136,11 @@ def get_queue(name='default', default_timeout=None, async=None,
 
     if default_timeout is None:
         default_timeout = QUEUES[name].get('DEFAULT_TIMEOUT')
-
-    return DjangoRQ(name, default_timeout=default_timeout,
-                    connection=get_connection(name), async=async,
-                    autocommit=autocommit)
+    if queue_class is None:
+        queue_class = get_queue_class(QUEUES[name])
+    return queue_class(name, default_timeout=default_timeout,
+                       connection=get_connection(name), async=async,
+                       autocommit=autocommit)
 
 
 def get_queue_by_index(index):
@@ -132,7 +151,7 @@ def get_queue_by_index(index):
     config = QUEUES_LIST[int(index)]
     if config['name'] == 'failed':
         return FailedQueue(connection=get_redis_connection(config['connection_config']))
-    return DjangoRQ(
+    return get_queue_class(config)(
         config['name'],
         connection=get_redis_connection(config['connection_config']),
         async=config.get('ASYNC', True))
@@ -163,6 +182,7 @@ def get_queues(*queue_names, **kwargs):
     """
     from .settings import QUEUES
     autocommit = kwargs.get('autocommit', None)
+    queue_class = kwargs.get('queue_class', DjangoRQ)
     if len(queue_names) == 0:
         # Return "default" queue if no queue name is specified
         return [get_queue(autocommit=autocommit)]
@@ -175,7 +195,7 @@ def get_queues(*queue_names, **kwargs):
                     'Queues must have the same redis connection.'
                     '"{0}" and "{1}" have '
                     'different connections'.format(name, queue_names[0]))
-    return [get_queue(name, autocommit=autocommit) for name in queue_names]
+    return [get_queue(name, autocommit=autocommit, queue_class=queue_class) for name in queue_names]
 
 
 def enqueue(func, *args, **kwargs):
@@ -198,6 +218,7 @@ def get_unique_connection_configs(config=None):
 
     connection_configs = []
     for key, value in config.items():
+        value = filter_connection_params(value)
         if value not in connection_configs:
             connection_configs.append(value)
     return connection_configs

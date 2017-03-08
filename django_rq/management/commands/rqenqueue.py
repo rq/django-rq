@@ -1,5 +1,7 @@
+from distutils.version import LooseVersion
+
 from django.core.management.base import BaseCommand
-from optparse import make_option
+from django.utils.version import get_version
 
 from django_rq import get_queue
 
@@ -11,12 +13,14 @@ class Command(BaseCommand):
     help = __doc__
     args = '<function arg arg ...>'
 
-    option_list = BaseCommand.option_list + (
-        make_option('--queue', '-q', dest='queue', default='default',
-            help='Specify the queue [default]'),
-        make_option('--timeout', '-t', type='int', dest='timeout',
-            help='A timeout in seconds'),
-    )
+    def add_arguments(self, parser):
+        parser.add_argument('--queue', '-q', dest='queue', default='default',
+                            help='Specify the queue [default]')
+        parser.add_argument('--timeout', '-t', type=int, dest='timeout',
+                            help='A timeout in seconds')
+
+        if LooseVersion(get_version()) >= LooseVersion('1.9'):
+            parser.add_argument('args', nargs='*')
 
     def handle(self, *args, **options):
         """

@@ -21,9 +21,10 @@ from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
 from django_rq.decorators import job
 from django_rq.queues import (
     get_connection, get_queue, get_queue_by_index, get_queues,
-    get_unique_connection_configs
+    get_unique_connection_configs, DjangoRQ
 )
 from django_rq import thread_queue
+from django_rq.templatetags.django_rq import to_localtime
 from django_rq.workers import get_worker
 
 
@@ -187,6 +188,25 @@ class QueuesTest(TestCase):
         """
         self.assertRaises(ValueError, get_queues, 'default', 'test')
 
+    def test_pass_queue_via_commandline_args(self):
+        """
+        Checks that passing queues via commandline arguments works
+        """
+        queue_names = ['django_rq_test', 'django_rq_test2']
+        jobs = []
+        for queue_name in queue_names:
+            queue = get_queue(queue_name)
+            jobs.append({
+                'job': queue.enqueue(divide, 42, 1),
+                'finished_job_registry': FinishedJobRegistry(queue.name, queue.connection),
+            })
+
+        call_command('rqworker', *queue_names, burst=True)
+
+        for job in jobs:
+            self.assertTrue(job['job'].is_finished)
+            self.assertIn(job['job'].id, job['finished_job_registry'].get_job_ids())
+
     def test_get_unique_connection_configs(self):
         connection_params_1 = {
             'HOST': 'localhost',
@@ -216,6 +236,31 @@ class QueuesTest(TestCase):
         # Should return one connection config since it filters out duplicates
         self.assertEqual(get_unique_connection_configs(config),
                          [connection_params_1])
+
+    def test_get_unique_connection_configs_with_different_timeout(self):
+        connection_params_1 = {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 0,
+        }
+        connection_params_2 = {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 1,
+        }
+        queue_params_a = dict(connection_params_1)
+        queue_params_b = dict(connection_params_2)
+        queue_params_c = dict(connection_params_2)
+        queue_params_c["DEFAULT_TIMEOUT"] = 1
+        config = {
+            'default': queue_params_a,
+            'test_b': queue_params_b,
+            'test_c': queue_params_c,
+        }
+        unique_configs = get_unique_connection_configs(config)
+        self.assertEqual(len(unique_configs), 2)
+        self.assertIn(connection_params_1, unique_configs)
+        self.assertIn(connection_params_2, unique_configs)
 
     def test_async(self):
         """
@@ -312,7 +357,7 @@ class WorkersTest(TestCase):
         """
         queue = get_queue()
         job = queue.enqueue(access_self)
-        call_command('rqworker', burst=True)
+        call_command('rqworker', '--burst')
         failed_queue = Queue(name='failed', connection=queue.connection)
         self.assertFalse(job.id in failed_queue.job_ids)
         job.delete()
@@ -328,6 +373,7 @@ class ViewTest(TestCase):
         user.save()
         self.client = Client()
         self.client.login(username=user.username, password='pass')
+        get_queue('django_rq_test').connection.flushall()
 
     def test_requeue_job(self):
         """
@@ -592,3 +638,35 @@ class RedisCacheTest(TestCase):
         self.assertEqual(connection_kwargs['port'], int(cachePort))
         self.assertEqual(connection_kwargs['db'], int(cacheDBNum))
         self.assertEqual(connection_kwargs['password'], None)
+
+
+class DummyQueue(DjangoRQ):
+    """Just Fake class for the following test"""
+
+
+class QueueClassTest(TestCase):
+
+    def test_default_queue_class(self):
+        queue = get_queue('test')
+        self.assertIsInstance(queue, DjangoRQ)
+
+    def test_for_queue(self):
+        queue = get_queue('test1')
+        self.assertIsInstance(queue, DummyQueue)
+
+    def test_in_kwargs(self):
+        queue = get_queue('test', queue_class=DummyQueue)
+        self.assertIsInstance(queue, DummyQueue)
+
+
+@override_settings(RQ={'AUTOCOMMIT': True})
+class TemplateTagTest(TestCase):
+
+    def test_to_localtime(self):
+        with self.settings(TIME_ZONE='Asia/Jakarta'):
+            queue = get_queue()
+            job = queue.enqueue(access_self)
+            time = to_localtime(job.created_at)
+
+            self.assertIsNotNone(time.tzinfo)
+            self.assertEqual(time.strftime("%z"), '+0700')
