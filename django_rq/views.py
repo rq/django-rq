@@ -104,7 +104,7 @@ def finished_jobs(request, queue_index):
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, items_per_page)
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
 
         for job_id in job_ids:
             try:
@@ -143,7 +143,7 @@ def started_jobs(request, queue_index):
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, items_per_page)
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
 
         for job_id in job_ids:
             try:
@@ -182,7 +182,7 @@ def deferred_jobs(request, queue_index):
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, items_per_page)
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
 
         for job_id in job_ids:
             try:
