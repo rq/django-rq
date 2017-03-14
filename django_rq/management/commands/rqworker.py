@@ -43,8 +43,6 @@ class Command(BaseCommand):
     python manage.py rqworker high medium low
     """
 
-    args = '<queue queue ...>'
-
     def add_arguments(self, parser):
         parser.add_argument('--worker-class', action='store', dest='worker_class',
                             default='rq.Worker', help='RQ Worker class to use')
