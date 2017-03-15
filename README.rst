@@ -384,6 +384,13 @@ admin fit in with the django-suit styles.
 Changelog
 =========
 
+0.9.5
+-----
+* Fixed view paging for registry-based job lists. Thanks @smaccona!
+* Fixed an issue where multiple failed queues may appear for the same connection. Thanks @depaolim!
+* ``rqworker`` management command now closes all DB connections before executing jobs. Thanks @depaolim!
+* Fixed an argument parsing bug ``rqworker`` management command. Thanks @hendi!
+
 0.9.3
 -----
 * Added a ``--pid`` option to ``rqscheduler`` management command. Thanks @vindemasi!
