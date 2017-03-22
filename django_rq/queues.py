@@ -175,9 +175,10 @@ def filter_connection_params(queue_params):
     """
     NON_CONNECTION_PARAMS = ('DEFAULT_TIMEOUT',)
 
-    #return {p:v for p,v in queue_params.items() if p not in NON_CONNECTION_PARAMS}
+    # return {p:v for p,v in queue_params.items() if p not in NON_CONNECTION_PARAMS}
     # Dict comprehension compatible with python 2.6
-    return dict((p,v) for (p,v) in queue_params.items() if p not in NON_CONNECTION_PARAMS)
+    return dict((p, v) for (p, v) in queue_params.items()
+                if p not in NON_CONNECTION_PARAMS)
 
 
 def get_queues(*queue_names, **kwargs):
