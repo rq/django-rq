@@ -64,9 +64,9 @@ Installation
 
 .. code-block:: python
 
-    urlpatterns += patterns('',
+    urlpatterns += [
         url(r'^django-rq/', include('django_rq.urls')),
-    )
+    ]
 
 =====
 Usage
