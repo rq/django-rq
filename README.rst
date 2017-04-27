@@ -46,6 +46,7 @@ Installation
             'DB': 0,
             'PASSWORD': 'some-password',
             'DEFAULT_TIMEOUT': 360,
+            'EXCEPTION_HANDLERS': ['path.to.my.handler'], # If you need custom exception handlers in your queue. If not just delete this.
         },
         'high': {
             'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0'), # If you're on Heroku
@@ -58,7 +59,6 @@ Installation
         }
     }
 
-    RQ_EXCEPTION_HANDLERS = ['path.to.my.handler'] # If you need custom exception handlers
 
 * Include ``django_rq.urls`` in your ``urls.py``:
 
