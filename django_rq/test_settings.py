@@ -85,10 +85,17 @@ LOGGING = {
             'class': nullhandler,
         },
     },
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        }
+    },
     'loggers': {
         "rq.worker": {
-            "handlers": ['null'],
-            "level": "ERROR"
+            "handlers": ['rq_console'],
+            "level": "DEBUG",
+            'filters': ['require_debug_true'],
+            'propagate': False
         },
     }
 }

@@ -1,7 +1,10 @@
+import logging
+
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.urlresolvers import reverse
 from django.test import TestCase
+
 try:
     from unittest import skipIf
 except ImportError:
@@ -11,12 +14,15 @@ try:
     from django.test import override_settings
 except ImportError:
     from django.test.utils import override_settings
+
 from django.conf import settings
+from django.utils.six import StringIO
 
 from rq import get_current_job, Queue
 from rq.job import Job
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
+from rq.worker import green
 
 from django_rq.decorators import job
 from django_rq.queues import (
@@ -36,6 +42,22 @@ except ImportError:
     RQ_SCHEDULER_INSTALLED = False
 
 QUEUES = settings.RQ_QUEUES
+
+
+class RqWorkerLoggingCaptureMixin(object):
+    """
+    Capture the output from the 'rq.worker' logger and store it on the class's
+    logger_output attribute.
+    Inspired by Django's `django.test.utils.LoggingCaptureMixin`.
+    """
+    def setUp(self):
+        self.logger = logging.getLogger('rq.worker')
+        self.old_stream = self.logger.handlers[0].stream
+        self.logger_output = StringIO()
+        self.logger.handlers[0].stream = self.logger_output
+
+    def tearDown(self):
+        self.logger.handlers[0].stream = self.old_stream
 
 
 def access_self():
@@ -331,7 +353,7 @@ class DecoratorTest(TestCase):
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
-class WorkersTest(TestCase):
+class WorkersTest(RqWorkerLoggingCaptureMixin, TestCase):
     def test_get_worker_default(self):
         """
         By default, ``get_worker`` should return worker for ``default`` queue.
@@ -361,6 +383,41 @@ class WorkersTest(TestCase):
         failed_queue = Queue(name='failed', connection=queue.connection)
         self.assertFalse(job.id in failed_queue.job_ids)
         job.delete()
+
+    @override_settings(DEBUG=True)
+    def test_command_queues_default(self):
+        """
+        Ensure that used default queue if no arguments provided for
+        `rqworker` command
+        """
+        call_command('rqworker', burst=True)
+        self.assertIn("*** Listening on {}...\n".format(green("default")),
+                      self.logger_output.getvalue())
+
+    @override_settings(DEBUG=True)
+    def test_command_queues_same_connection_default_port(self):
+        """
+        Ensure that `rqworker` command correctly parse queues list
+        """
+        queues = ['default', 'django_rq_test']
+        call_command('rqworker', *queues, burst=True)
+        self.assertIn("*** Listening on {}...\n".format(
+            green(", ".join(queues))),
+            self.logger_output.getvalue())
+
+    def test_job_from_non_default_queue_completed(self):
+        """
+        Ensure that job from non default queue successfully completed
+        when run from rqworker.
+        """
+        queue_name = 'django_rq_test'
+        queue = get_queue(queue_name)
+        job = queue.enqueue(divide, 42, 1)
+        finished_job_registry = FinishedJobRegistry(queue.name,
+                                                    queue.connection)
+        call_command('rqworker', queue_name, burst=True)
+        self.assertTrue(job.is_finished)
+        self.assertIn(job.id, finished_job_registry.get_job_ids())
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
