@@ -27,6 +27,8 @@ from django_rq import thread_queue
 from django_rq.templatetags.django_rq import to_localtime
 from django_rq.workers import get_worker
 
+import django.db
+
 
 try:
     from rq_scheduler import Scheduler
@@ -44,6 +46,11 @@ def access_self():
 
 def divide(a, b):
     return a / b
+
+
+def checking_db_connection():
+    # check if the DB connection is clean
+    assert not django.db.connection.errors_occurred
 
 
 def get_failed_queue_index(name='default'):
@@ -349,6 +356,19 @@ class WorkersTest(TestCase):
         self.assertEqual(len(w.queues), 1)
         queue = w.queues[0]
         self.assertEqual(queue.name, 'test')
+
+    def test_reconnecting_worker(self):
+        """
+        Checks if a worker cleans up the DB connection
+        """
+        queue = get_queue('default')
+        job = queue.enqueue(checking_db_connection)
+        django.db.connection.autocommit = True
+        django.db.connection.errors_occurred = "ERRORS!!!"
+        w = get_worker('default')
+        w.work(burst=True)
+        job.refresh()
+        self.assertFalse(job.is_failed)
 
     def test_get_current_job(self):
         """
