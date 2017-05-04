@@ -1,3 +1,4 @@
+from unittest import mock
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.urlresolvers import reverse
@@ -24,8 +25,10 @@ from django_rq.queues import (
     get_unique_connection_configs, DjangoRQ
 )
 from django_rq import thread_queue
+from django_rq.settings import QUEUES_LIST
 from django_rq.templatetags.django_rq import to_localtime
 from django_rq.workers import get_worker
+from django_rq.views import _collect_workers_per_configuration, _get_all_workers
 
 
 try:
@@ -505,6 +508,28 @@ class ViewTest(TestCase):
             reverse('rq_deferred_jobs', args=[queue_index])
         )
         self.assertEqual(response.context['jobs'], [job])
+
+    @mock.patch('django_rq.views.get_connection')
+    @mock.patch('django_rq.views.Worker.all')
+    def test_collects_worker_various_connections_get_multiplr_collection(self, worker_all, get_conn):
+        _collect_workers_per_configuration(QUEUES_LIST)
+        self.assertEqual(worker_all.call_count, 10)
+
+    def test_get_all_workers(self):
+        worker1 = get_worker()
+        worker2 = get_worker('test')
+        workers_collections = [
+            {
+                'config': {'some_config': 1},
+                'all_workers': [worker1],
+            },
+            {
+                'config': {'some_config': 2},
+                'all_workers': [worker2],
+            }
+        ]
+        result = _get_all_workers({'some_config': 1}, workers_collections)
+        self.assertEqual(result, [worker1])
 
 
 class ThreadQueueTest(TestCase):
