@@ -1,4 +1,3 @@
-from unittest import mock
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.urlresolvers import reverse
@@ -509,11 +508,14 @@ class ViewTest(TestCase):
         )
         self.assertEqual(response.context['jobs'], [job])
 
-    @mock.patch('django_rq.views.get_connection')
-    @mock.patch('django_rq.views.Worker.all')
-    def test_collects_worker_various_connections_get_multiplr_collection(self, worker_all, get_conn):
-        _collect_workers_per_configuration(QUEUES_LIST)
-        self.assertEqual(worker_all.call_count, 10)
+    def test_collects_worker_various_connections_get_multiple_collection(self):
+        queues_list = [
+            {'name': 'default', 'connection_config': settings.RQ_QUEUES['default']},
+            {'name': 'django_rq_test', 'connection_config': settings.RQ_QUEUES['django_rq_test']},
+            {'name': 'django_rq_test2', 'connection_config': settings.RQ_QUEUES['django_rq_test2']},
+        ]
+        collections = _collect_workers_per_configuration(queues_list)
+        self.assertEqual(len(collections), 2)
 
     def test_get_all_workers(self):
         worker1 = get_worker()
