@@ -14,15 +14,15 @@ from rq.job import Job
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
 
-from .queues import get_connection, get_queue_by_index
+from .queues import get_connection, get_queue_by_index, filter_connection_params 
 from .settings import QUEUES_LIST
-from .workers import collect_workers_per_configuration
+from .workers import collect_workers_by_connection, get_all_workers_by_configuration
 
 
 @staff_member_required
 def stats(request):
     queues = []
-    workers_collections = collect_workers_per_configuration(QUEUES_LIST)
+    workers_collections = collect_workers_by_connection(QUEUES_LIST)
     for index, config in enumerate(QUEUES_LIST):
 
         queue = get_queue_by_index(index)
@@ -43,7 +43,10 @@ def stats(request):
 
         else:
             connection = get_connection(queue.name)
-            all_workers = _get_all_workers(config['connection_config'], workers_collections)
+            all_workers = get_all_workers_by_configuration(
+                config['connection_config'],
+                workers_collections
+            )
             queue_workers = [worker for worker in all_workers if queue in worker.queues]
             queue_data['workers'] = len(queue_workers)
 
@@ -58,12 +61,6 @@ def stats(request):
 
     context_data = {'queues': queues}
     return render(request, 'django_rq/stats.html', context_data)
-
-
-def _get_all_workers(config, workers_collections):
-    for collection in workers_collections:
-        if config == collection['config']:
-            return collection['all_workers']
 
 
 @staff_member_required

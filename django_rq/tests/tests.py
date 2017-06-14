@@ -26,8 +26,7 @@ from django_rq.queues import (
 from django_rq import thread_queue
 from django_rq.settings import QUEUES_LIST
 from django_rq.templatetags.django_rq import to_localtime
-from django_rq.workers import get_worker, collect_workers_per_configuration
-from django_rq.views import _get_all_workers
+from django_rq.workers import get_worker, collect_workers_by_connection, get_all_workers_by_configuration
 
 
 try:
@@ -365,12 +364,12 @@ class WorkersTest(TestCase):
         job.delete()
 
     def test_collects_worker_various_connections_get_multiple_collection(self):
-        queues_list = [
+        queues = [
             {'name': 'default', 'connection_config': settings.RQ_QUEUES['default']},
             {'name': 'django_rq_test', 'connection_config': settings.RQ_QUEUES['django_rq_test']},
             {'name': 'test3', 'connection_config': settings.RQ_QUEUES['test3']},
         ]
-        collections = collect_workers_per_configuration(queues_list)
+        collections = collect_workers_by_connection(queues)
         self.assertEqual(len(collections), 2)
 
 
@@ -521,16 +520,10 @@ class ViewTest(TestCase):
         worker1 = get_worker()
         worker2 = get_worker('test')
         workers_collections = [
-            {
-                'config': {'some_config': 1},
-                'all_workers': [worker1],
-            },
-            {
-                'config': {'some_config': 2},
-                'all_workers': [worker2],
-            }
+            {'config': {'some_config': 1}, 'all_workers': [worker1]},
+            {'config': {'some_config': 2}, 'all_workers': [worker2]},
         ]
-        result = _get_all_workers({'some_config': 1}, workers_collections)
+        result = get_all_workers_by_configuration({'some_config': 1}, workers_collections)
         self.assertEqual(result, [worker1])
 
 
