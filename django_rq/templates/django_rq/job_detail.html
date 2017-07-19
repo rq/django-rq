@@ -91,6 +91,19 @@
             </div>
         </div>
 
+        {% if job.dependency %}
+        <div class="form-row">
+            <div>
+                <label class="required">Dependency:</label>
+                <div class="data">
+                  <a href = "{% url 'rq_job_detail' queue_index job.dependency.id %}">
+                    {{ job.dependency.func_name }}
+                  </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="form-row">
             <div>
                 <label class="required">Args:</label>
