@@ -68,12 +68,14 @@
             </div>
         </div>
 
+        {% if job.enqueued_at %}
         <div class="form-row">
             <div>
                 <label class="required">Queued:</label>
                 <div class="data">{{ job.enqueued_at|to_localtime }}</div>
             </div>
         </div>
+        {% endif %}
 
         <div class="form-row">
             <div>
