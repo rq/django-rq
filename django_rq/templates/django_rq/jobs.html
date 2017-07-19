@@ -85,7 +85,13 @@
                                     </a>
                                 </th>
                                 <td>{{ job.created_at|to_localtime }}</td>
-                                <td>{{ job.enqueued_at|to_localtime }}</td>
+                                <td>
+                                  {% if job.enqueued_at %}
+                                    {{ job.enqueued_at|to_localtime }}
+                                  {% else %}
+                                    Deferred
+                                  {% endif %}
+                                </td>
                                 <td>{{ job.get_status }}</td>
                                 <td>{{ job.func_name }}</td>
                             </tr>
