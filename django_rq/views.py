@@ -10,7 +10,8 @@ from django.shortcuts import redirect, render
 from redis.exceptions import ResponseError
 from rq import requeue_job, Worker
 from rq.exceptions import NoSuchJobError
-from rq.job import Job
+from rq.job import Job, JobStatus
+from rq.queue import FailedQueue
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
 
@@ -218,6 +219,24 @@ def job_detail(request, queue_index, job_id):
         job = Job.fetch(job_id, connection=queue.connection)
     except NoSuchJobError:
         raise Http404("Couldn't find job with this ID: %s" % job_id)
+    # job should have dependency but it got deleted we need to cleanup
+    try:
+        job.dependency
+    except Exception as e:
+        dependency_id = job.__dict__['_dependency_id']
+        job.connection.srem(job.dependents_key_for(dependency_id), job.id)
+        job.__dict__['_dependency_id'] = None
+        job.set_status(JobStatus.FAILED)
+        job.save()
+        job.refresh()
+        registry = DeferredJobRegistry(
+            job.origin,
+            connection=job.connection,
+            job_class=job.__class__,
+        )
+        registry.remove(job)
+        failed_queue = FailedQueue(connection=job.connection, job_class=job.__class__)
+        failed_queue.push_job_id(job.id)
 
     context_data = {
         'queue_index': queue_index,
