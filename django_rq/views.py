@@ -223,18 +223,23 @@ def job_detail(request, queue_index, job_id):
     try:
         job.dependency
     except Exception as e:
-        dependency_id = job.__dict__['_dependency_id']
+        # remove the dependency association
         job.connection.srem(job.dependents_key_for(dependency_id), job.id)
-        job.__dict__['_dependency_id'] = None
+        # set this job as failed (for requeing WITHOUT dependency)
+        # This allows all other jobs dependent on this one to continue
         job.set_status(JobStatus.FAILED)
-        job.save()
+        # remove the 'dependency_id' from the jobs attributes
+        job.connection.hdel(job.key, 'dependency_id')
+        # refresh the job to without dependency
         job.refresh()
+        # remove job from deferred queue
         registry = DeferredJobRegistry(
             job.origin,
             connection=job.connection,
             job_class=job.__class__,
         )
         registry.remove(job)
+        # move to failed queue
         failed_queue = FailedQueue(connection=job.connection, job_class=job.__class__)
         failed_queue.push_job_id(job.id)
 
