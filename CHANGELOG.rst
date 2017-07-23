@@ -1,3 +1,8 @@
+0.9.6
+-----
+* More Django 1.10 compatibility fixes. Thanks @dmwyatt!
+* Improves performance when dealing with a large number of workers. Thanks @lucastamoios!
+
 0.9.5
 -----
 * Fixed view paging for registry-based job lists. Thanks @smaccona!
