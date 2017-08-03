@@ -85,13 +85,20 @@ Putting jobs in the queue
     import django_rq
     django_rq.enqueue(func, foo, bar=baz)
 
-* ``get_queue`` - accepts a single queue name argument (defaults to "default")
-  and returns an `RQ` ``Queue`` instance for you to queue jobs into:
+* ``get_queue`` - returns an ``Queue`` instance.
 
 .. code-block:: python
 
     import django_rq
     queue = django_rq.get_queue('high')
+    queue.enqueue(func, foo, bar=baz)
+
+In addition to ``name`` argument, ``get_queue`` also accepts ``default_timeout``,
+``async``, ``autocommit`` and ``queue_class`` arguments. For example:
+
+.. code-block:: python
+
+    queue = django_rq.get_queue('default', autocommit=True, async=True, default_timeout=360)
     queue.enqueue(func, foo, bar=baz)
 
 * ``get_connection`` - accepts a single queue name argument (defaults to "default")
