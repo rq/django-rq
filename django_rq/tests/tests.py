@@ -24,8 +24,9 @@ from django_rq.queues import (
     get_unique_connection_configs, DjangoRQ
 )
 from django_rq import thread_queue
+from django_rq.settings import QUEUES_LIST
 from django_rq.templatetags.django_rq import to_localtime
-from django_rq.workers import get_worker
+from django_rq.workers import get_worker, collect_workers_by_connection, get_all_workers_by_configuration
 
 
 try:
@@ -237,6 +238,31 @@ class QueuesTest(TestCase):
         self.assertEqual(get_unique_connection_configs(config),
                          [connection_params_1])
 
+    def test_get_unique_connection_configs_with_different_timeout(self):
+        connection_params_1 = {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 0,
+        }
+        connection_params_2 = {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 1,
+        }
+        queue_params_a = dict(connection_params_1)
+        queue_params_b = dict(connection_params_2)
+        queue_params_c = dict(connection_params_2)
+        queue_params_c["DEFAULT_TIMEOUT"] = 1
+        config = {
+            'default': queue_params_a,
+            'test_b': queue_params_b,
+            'test_c': queue_params_c,
+        }
+        unique_configs = get_unique_connection_configs(config)
+        self.assertEqual(len(unique_configs), 2)
+        self.assertIn(connection_params_1, unique_configs)
+        self.assertIn(connection_params_2, unique_configs)
+
     def test_async(self):
         """
         Checks whether asynchronous settings work
@@ -336,6 +362,15 @@ class WorkersTest(TestCase):
         failed_queue = Queue(name='failed', connection=queue.connection)
         self.assertFalse(job.id in failed_queue.job_ids)
         job.delete()
+
+    def test_collects_worker_various_connections_get_multiple_collection(self):
+        queues = [
+            {'name': 'default', 'connection_config': settings.RQ_QUEUES['default']},
+            {'name': 'django_rq_test', 'connection_config': settings.RQ_QUEUES['django_rq_test']},
+            {'name': 'test3', 'connection_config': settings.RQ_QUEUES['test3']},
+        ]
+        collections = collect_workers_by_connection(queues)
+        self.assertEqual(len(collections), 2)
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
@@ -480,6 +515,16 @@ class ViewTest(TestCase):
             reverse('rq_deferred_jobs', args=[queue_index])
         )
         self.assertEqual(response.context['jobs'], [job])
+
+    def test_get_all_workers(self):
+        worker1 = get_worker()
+        worker2 = get_worker('test')
+        workers_collections = [
+            {'config': {'some_config': 1}, 'all_workers': [worker1]},
+            {'config': {'some_config': 2}, 'all_workers': [worker2]},
+        ]
+        result = get_all_workers_by_configuration({'some_config': 1}, workers_collections)
+        self.assertEqual(result, [worker1])
 
 
 class ThreadQueueTest(TestCase):

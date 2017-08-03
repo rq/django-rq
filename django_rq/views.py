@@ -14,13 +14,15 @@ from rq.job import Job
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
 
-from .queues import get_connection, get_queue_by_index
+from .queues import get_connection, get_queue_by_index, filter_connection_params 
 from .settings import QUEUES_LIST
+from .workers import collect_workers_by_connection, get_all_workers_by_configuration
 
 
 @staff_member_required
 def stats(request):
     queues = []
+    workers_collections = collect_workers_by_connection(QUEUES_LIST)
     for index, config in enumerate(QUEUES_LIST):
 
         queue = get_queue_by_index(index)
@@ -41,7 +43,10 @@ def stats(request):
 
         else:
             connection = get_connection(queue.name)
-            all_workers = Worker.all(connection=connection)
+            all_workers = get_all_workers_by_configuration(
+                config['connection_config'],
+                workers_collections
+            )
             queue_workers = [worker for worker in all_workers if queue in worker.queues]
             queue_data['workers'] = len(queue_workers)
 
@@ -104,7 +109,7 @@ def finished_jobs(request, queue_index):
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, items_per_page)
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
 
         for job_id in job_ids:
             try:
@@ -143,7 +148,7 @@ def started_jobs(request, queue_index):
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, items_per_page)
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
 
         for job_id in job_ids:
             try:
@@ -182,7 +187,7 @@ def deferred_jobs(request, queue_index):
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, items_per_page)
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
 
         for job_id in job_ids:
             try:
