@@ -223,6 +223,7 @@ def job_detail(request, queue_index, job_id):
     try:
         job.dependency
     except Exception as e:
+        dependency_id = job.__dict__['_dependency_id']
         # remove the dependency association
         job.connection.srem(job.dependents_key_for(dependency_id), job.id)
         # set this job as failed (for requeing WITHOUT dependency)
