@@ -97,7 +97,7 @@
                 <label class="required">Dependency:</label>
                 <div class="data">
                   <a href = "{% url 'rq_job_detail' queue_index job.dependency.id %}">
-                    {{ job.dependency.func_name }}
+                    {{ job.dependency.id }} {{ job.dependency.func_name }}
                   </a>
                 </div>
             </div>
