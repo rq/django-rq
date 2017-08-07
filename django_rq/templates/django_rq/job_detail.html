@@ -84,6 +84,15 @@
         </div>
         {% endif %}
 
+        {% if job.ended_at %}
+        <div class="form-row">
+            <div>
+                <label class="required">Ended:</label>
+                <div class="data">{{ job.ended_at|to_localtime }}</div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="form-row">
             <div>
                 <label class="required">Status:</label>
