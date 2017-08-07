@@ -13,8 +13,9 @@ from rq.exceptions import NoSuchJobError
 from rq.job import Job
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
+from rq.worker import Worker
 
-from .queues import get_connection, get_queue_by_index, filter_connection_params 
+from .queues import get_connection, get_queue_by_index
 from .settings import QUEUES_LIST
 from .workers import collect_workers_by_connection, get_all_workers_by_configuration
 
@@ -169,6 +170,39 @@ def started_jobs(request, queue_index):
         'job_status': 'Started',
     }
     return render(request, 'django_rq/jobs.html', context_data)
+
+
+@staff_member_required
+def workers(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    all_workers = Worker.all(queue.connection)
+    workers = [worker for worker in all_workers
+               if queue.name in worker.queue_names()]
+
+    context_data = {
+        'queue': queue,
+        'queue_index': queue_index,
+        'workers': workers,
+    }
+    return render(request, 'django_rq/workers.html', context_data)
+
+
+@staff_member_required
+def worker_details(request, queue_index, key):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    worker = Worker.find_by_key(key, connection=queue.connection)
+    queue_names = ', '.join(worker.queue_names())
+
+    context_data = {
+        'queue': queue,
+        'queue_index': queue_index,
+        'worker': worker,
+        'queue_names': queue_names,
+        'job': worker.get_current_job()
+    }
+    return render(request, 'django_rq/worker_details.html', context_data)
 
 
 @staff_member_required

@@ -75,6 +75,15 @@
             </div>
         </div>
 
+        {% if job.started_at %}
+        <div class="form-row">
+            <div>
+                <label class="required">Started:</label>
+                <div class="data">{{ job.started_at|to_localtime }}</div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="form-row">
             <div>
                 <label class="required">Status:</label>

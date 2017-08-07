@@ -1,3 +1,6 @@
+import time
+import uuid
+
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.urlresolvers import reverse
@@ -45,6 +48,11 @@ def access_self():
 
 def divide(a, b):
     return a / b
+
+
+def long_running_job(timeout=10):
+    time.sleep(timeout)
+    return 'Done sleeping...'
 
 
 def get_failed_queue_index(name='default'):
@@ -313,6 +321,7 @@ class DecoratorTest(TestCase):
         # Ensure that decorator passes in the right queue from settings.py
         queue_name = 'test3'
         config = QUEUES[queue_name]
+
         @job(queue_name)
         def test():
             pass
@@ -525,6 +534,35 @@ class ViewTest(TestCase):
         ]
         result = get_all_workers_by_configuration({'some_config': 1}, workers_collections)
         self.assertEqual(result, [worker1])
+
+    def test_workers(self):
+        """Worker index page should show workers for a specific queue"""
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        worker1 = get_worker('django_rq_test', name=uuid.uuid4().hex)
+        worker1.register_birth()
+
+        worker2 = get_worker('test3')
+        worker2.register_birth()
+
+        response = self.client.get(
+            reverse('rq_workers', args=[queue_index])
+        )
+        self.assertEqual(response.context['workers'], [worker1])
+
+    def test_worker_details(self):
+        """Worker index page should show workers for a specific queue"""
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        worker = get_worker('django_rq_test', name=uuid.uuid4().hex)
+        worker.register_birth()
+
+        response = self.client.get(
+            reverse('rq_worker_details', args=[queue_index, worker.key])
+        )
+        self.assertEqual(response.context['worker'], worker)
 
 
 class ThreadQueueTest(TestCase):
