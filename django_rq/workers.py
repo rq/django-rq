@@ -15,14 +15,16 @@ def get_exception_handlers():
     return [import_attribute(path) for path in EXCEPTION_HANDLERS]
 
 
-def get_worker(*queue_names):
+def get_worker(*queue_names, **kwargs):
     """
     Returns a RQ worker for all queues or specified ones.
     """
     queues = get_queues(*queue_names)
+    name = kwargs.get('name')
     return Worker(queues,
                   connection=queues[0].connection,
-                  exception_handlers=get_exception_handlers() or None)
+                  exception_handlers=get_exception_handlers() or None,
+                  name=name)
 
 
 def collect_workers_by_connection(queues):
