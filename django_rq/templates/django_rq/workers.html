@@ -1,0 +1,69 @@
+{% extends "admin/base_site.html" %}
+
+{% load admin_static jquery_path django_rq l10n %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <script type="text/javascript" src="{% get_jquery_path as jquery_path %}{% static jquery_path %}"></script>
+    <script type="text/javascript" src="{% static "admin/js/jquery.init.js" %}"></script>
+    <script type="text/javascript" src="{% static "admin/js/actions.js" %}"></script>
+    <script type="text/javascript">
+    (function($) {
+        $(document).ready(function($) {
+            $("tr input.action-select").actions();
+        });
+    })(django.jQuery);
+    </script>
+{% endblock %}
+
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+        <a href="{% url 'rq_home' %}">Django RQ</a> &rsaquo;
+        <a href = "{% url 'rq_jobs' queue_index %}">{{ queue.name }} Workers</a>
+    </div>
+{% endblock %}
+
+{% block content_title %}<h1>{{ queue.name }} Workers</h1>{% endblock %}
+
+{% block content %}
+
+<div id="content-main">
+    <div class="module" id="changelist">
+        <form id="changelist-form" action="{% url 'rq_actions' queue_index %}" method="post">
+            {% csrf_token %}
+            <div class="results">
+                <table id="result_list">
+                    <thead>
+                        <tr>
+                            <th><div class = 'text'><span>Name</span></div></th>
+                            <th><div class = 'text'><span>State</span></div></th>
+                            <th><div class = 'text'><span>Birth</span></div></th>
+                            <th><div class = 'text'><span>PID</span></div></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for worker in workers %}
+                            <tr class = "{% cycle 'row1' 'row2' %}">
+                                <th>{{ worker.name }}</th>
+                                <td>
+                                    {{ worker.get_state }}
+                                </td>
+                                <td>{{ worker.birth_date }}</td>
+                                <td>{{ worker.pid|unlocalize }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

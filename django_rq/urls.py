@@ -7,6 +7,8 @@ urlpatterns = [
         views.stats, name='rq_home'),
     url(r'^queues/(?P<queue_index>[\d]+)/$',
         views.jobs, name='rq_jobs'),
+    url(r'^workers/(?P<queue_index>[\d]+)/$',
+        views.workers, name='rq_workers'),
     url(r'^queues/(?P<queue_index>[\d]+)/finished/$',
         views.finished_jobs, name='rq_finished_jobs'),
     url(r'^queues/(?P<queue_index>[\d]+)/started/$',
