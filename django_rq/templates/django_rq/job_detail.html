@@ -64,14 +64,14 @@
         <div class="form-row">
             <div>
                 <label class="required">Created:</label>
-                <div class="data">{{ job.created_at|to_localtime }}</div>
+                <div class="data">{{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
             </div>
         </div>
 
         <div class="form-row">
             <div>
                 <label class="required">Queued:</label>
-                <div class="data">{{ job.enqueued_at|to_localtime }}</div>
+                <div class="data">{{ job.enqueued_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
             </div>
         </div>
 
@@ -79,7 +79,7 @@
         <div class="form-row">
             <div>
                 <label class="required">Started:</label>
-                <div class="data">{{ job.started_at|to_localtime }}</div>
+                <div class="data">{{ job.started_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
             </div>
         </div>
         {% endif %}
@@ -88,7 +88,7 @@
         <div class="form-row">
             <div>
                 <label class="required">Ended:</label>
-                <div class="data">{{ job.ended_at|to_localtime }}</div>
+                <div class="data">{{ job.ended_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
             </div>
         </div>
         {% endif %}

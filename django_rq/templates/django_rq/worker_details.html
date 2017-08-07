@@ -50,7 +50,7 @@
         <div class="form-row">
             <div>
                 <label class="required">Birth:</label>
-                <div class="data">{{ worker.birth_date|to_localtime }}</div>
+                <div class="data">{{ worker.birth_date|to_localtime|date:"Y-m-d, H:i:s" }}</div>
             </div>
         </div>
 

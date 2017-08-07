@@ -59,7 +59,7 @@
                                 <td>
                                     {{ worker.get_state }}
                                 </td>
-                                <td>{{ worker.birth_date|to_localtime }}</td>
+                                <td>{{ worker.birth_date|to_localtime|date:"Y-m-d, H:i:s" }}</td>
                                 <td>{{ worker.pid|unlocalize }}</td>
                             </tr>
                         {% endfor %}
