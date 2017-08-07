@@ -1,0 +1,98 @@
+{% extends "admin/base_site.html" %}
+
+{% load admin_static django_rq %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        .data {
+            display: inline-block;
+            float: left;
+            width: 80%;
+            font-size: 12px;
+            padding-top: 3px;
+        }
+    </style>
+    <link href="{% static 'admin/css/forms.css' %}" type="text/css" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+        <a href="{% url 'rq_home' %}">Django RQ</a> &rsaquo;
+        <a href = "{% url 'rq_workers' queue_index %}">{{ queue.name }} Workers</a> &rsaquo;
+        <a href = "{% url 'rq_worker_details' queue_index worker.name %}">{{ worker.name }}</a>
+    </div>
+{% endblock %}
+
+{% block content_title %}<h1>Worker Info</h1>{% endblock %}
+
+{% block content %}
+
+<div id="content-main">
+
+    <fieldset class="module aligned ">
+
+        <div class="form-row">
+            <div>
+                <label class="required">Name:</label>
+                <div class="data">{{ worker.name }}</div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">State:</label>
+                <div class="data">{{ worker.get_state }}</div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">Birth:</label>
+                <div class="data">{{ worker.birth_date|to_localtime }}</div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">Queues:</label>
+                <div class="data">{{ queue_names }}</div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">PID:</label>
+                <div class="data">{{ worker.pid }}</div>
+            </div>
+        </div>
+
+        {% if job %}
+        <div class="form-row">
+            <div>
+                <label class="required">Current Job:</label>
+                <div class="data">
+                    {{ job.func_name }}
+                    (<a href = "{% url 'rq_job_detail' queue_index job.id %}">{{ job.id }}</a>)
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">Current Job:</label>
+                <div class="data">
+                    {{ job.func_name }}
+                    (<a href = "{% url 'rq_job_detail' queue_index job.id %}">{{ job.id }}</a>)
+                </div>
+            </div>
+        </div>
+        
+        {% endif %}
+
+    </fieldset>
+
+</div>
+
+{% endblock %}

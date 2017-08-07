@@ -51,7 +51,11 @@
                     <tbody>
                         {% for worker in workers %}
                             <tr class = "{% cycle 'row1' 'row2' %}">
-                                <th>{{ worker.name }}</th>
+                                <th>
+                                    <a href = '{% url 'rq_worker_details' queue_index worker.key %}'>
+                                        {{ worker.name }}
+                                    </a>
+                                </th>
                                 <td>
                                     {{ worker.get_state }}
                                 </td>

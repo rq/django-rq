@@ -1,3 +1,5 @@
+import time
+
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.urlresolvers import reverse
@@ -45,6 +47,11 @@ def access_self():
 
 def divide(a, b):
     return a / b
+
+
+def long_running_job(timeout=10):
+    time.sleep(timeout)
+    return 'Done sleeping...'
 
 
 def get_failed_queue_index(name='default'):
