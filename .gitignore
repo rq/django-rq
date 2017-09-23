@@ -5,3 +5,5 @@
 dist/
 django_rq.egg-info/
 
+# pycharm
+.idea
