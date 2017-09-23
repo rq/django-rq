@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import logging
 import os
@@ -11,10 +11,10 @@ import sys
 import time
 import unittest
 
-from django.conf import settings
 import psycopg2
 import requests
-from six.moves.urllib.parse import urlunsplit
+from django.conf import settings
+from django.utils.six.moves.urllib.parse import urlunsplit
 
 DJANGO_SETTINGS_MODULE = "integration_test.settings"
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", DJANGO_SETTINGS_MODULE)
