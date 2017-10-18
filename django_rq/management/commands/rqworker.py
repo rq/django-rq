@@ -15,7 +15,6 @@ from redis.exceptions import ConnectionError
 from rq import use_connection
 from rq.utils import ColorizingStreamHandler
 
-
 # Setup logging for RQWorker if not already configured
 logger = logging.getLogger('rq.worker')
 if not logger.handlers:
@@ -65,6 +64,9 @@ class Command(BaseCommand):
         parser.add_argument('--worker-ttl', action='store', type=int,
                             dest='worker_ttl', default=420,
                             help='Default worker timeout to be used')
+        parser.add_argument('--sentry-dsn', action='store', default=None, dest='sentry-dsn',
+                            help='Report exceptions to this Sentry DSN')
+
         if LooseVersion(get_version()) >= LooseVersion('1.10'):
             parser.add_argument('args', nargs='*', type=str,
                                 help='The queues to work on, separated by space')
@@ -74,7 +76,7 @@ class Command(BaseCommand):
         if pid:
             with open(os.path.expanduser(pid), "w") as fp:
                 fp.write(str(os.getpid()))
-
+        sentry_dsn = options.get('sentry-dsn')
         try:
             # Instantiate a worker
             worker_class = import_attribute(options['worker_class'])
@@ -92,7 +94,16 @@ class Command(BaseCommand):
             use_connection(w.connection)
             # Close any opened DB connection before any fork
             reset_db_connections()
+
+            if sentry_dsn:
+                from raven import Client
+                from raven.transport.http import HTTPTransport
+                from rq.contrib.sentry import register_sentry
+                client = Client(sentry_dsn, transport=HTTPTransport)
+                register_sentry(client, w)
+
             w.work(burst=options.get('burst', False))
         except ConnectionError as e:
             print(e)
             sys.exit(1)
+
