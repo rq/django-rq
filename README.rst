@@ -231,6 +231,9 @@ You can also add a link to this dashboard link in ``/admin`` by adding
 override the default admin template so it may interfere with other apps that
 modifies the default admin template.
 
+Configuring Sentry
+-------------------
+Use ``sentry-dsn`` parameter when running rqworker. ``./manage.py rqworker sentry-dsn=https://*****@sentry.io/222222`` 
 
 Configuring Logging
 -------------------
