@@ -96,11 +96,15 @@ class Command(BaseCommand):
             reset_db_connections()
 
             if sentry_dsn:
-                from raven import Client
-                from raven.transport.http import HTTPTransport
-                from rq.contrib.sentry import register_sentry
-                client = Client(sentry_dsn, transport=HTTPTransport)
-                register_sentry(client, w)
+                try:
+                    from raven import Client
+                    from raven.transport.http import HTTPTransport
+                    from rq.contrib.sentry import register_sentry
+                    client = Client(sentry_dsn, transport=HTTPTransport)
+                    register_sentry(client, w)
+                except ImportError:
+                    self.stdout.write(self.style.ERROR("Please install sentry. For example `pip install raven`"))
+                    sys.exit(1)
 
             w.work(burst=options.get('burst', False))
         except ConnectionError as e:

@@ -233,7 +233,7 @@ modifies the default admin template.
 
 Configuring Sentry
 -------------------
-Use ``sentry-dsn`` parameter when running rqworker. ``./manage.py rqworker sentry-dsn=https://*****@sentry.io/222222`` 
+Use ``sentry-dsn`` parameter when running rqworker. ``./manage.py rqworker --sentry-dsn=https://*****@sentry.io/222222`` 
 
 Configuring Logging
 -------------------
