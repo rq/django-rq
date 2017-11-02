@@ -84,8 +84,16 @@
                                         {{ job.id }}
                                     </a>
                                 </th>
-                                <td>{{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}</td>
-                                <td>{{ job.enqueued_at|to_localtime|date:"Y-m-d, H:i:s" }}</td>
+                                <td>
+                                    {% if job.created_at %}
+                                        {{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if job.enqueued_at %}
+                                        {{ job.enqueued_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                    {% endif %}
+                                </td>
                                 <td>{{ job.get_status }}</td>
                                 <td>{{ job.func_name }}</td>
                             </tr>

@@ -61,20 +61,24 @@
             </div>
         </div>
 
+        {% if job.created_at %}
         <div class="form-row">
             <div>
                 <label class="required">Created:</label>
                 <div class="data">{{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
             </div>
         </div>
+        {% endif %}
 
+        {% if job.enqueued_at %}
         <div class="form-row">
             <div>
                 <label class="required">Queued:</label>
                 <div class="data">{{ job.enqueued_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
             </div>
         </div>
-
+        {% endif %}
+        
         {% if job.started_at %}
         <div class="form-row">
             <div>
