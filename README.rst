@@ -247,7 +247,7 @@ There's also various statistics from Command Line Interface(CLI).
     python manage.py rqstats --json  # Output as JSON
     python manage.py rqstats --yaml  # Output as YAML
 
-
+.. image:: demo-django-cli-dashboard.gif
 
 Configuring Logging
 -------------------
