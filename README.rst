@@ -241,6 +241,7 @@ HTTP Client, you can define ``RQ_STATS_TOKEN`` and access it via
 There's also various statistics from Command Line Interface(CLI).
 
 .. code-block:: bash
+
     python manage.py rqstats
     python manage.py rqstats -live  # Live dashboard
     python manage.py rqstats -json  # Output as JSON
