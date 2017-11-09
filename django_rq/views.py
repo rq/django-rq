@@ -16,7 +16,7 @@ from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
 from rq.worker import Worker
 
 from .queues import get_queue_by_index
-from .statistics import get_statistics
+from .utils import get_statistics
 
 
 @staff_member_required
