@@ -21,7 +21,7 @@ Init database schema
 Install required packages:
 
     pip install -r requirements.txt
-    
+
 ## Test
 
 To run tests:

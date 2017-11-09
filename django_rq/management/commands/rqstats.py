@@ -57,11 +57,13 @@ class Command(BaseCommand):
 
         self._print_separator()
 
+        # Print every queues in a row
         for queue in statistics["queues"]:
             click.echo(
                 """| %-15s|%10s |%10s |%10s |%10s |%10s |""" %
-                (queue["name"], queue["jobs"], queue["started_jobs"],
-                 queue["deferred_jobs"], queue["finished_jobs"], queue["workers"])
+                (queue["name"], queue["jobs"],
+                 queue["started_jobs"], queue["deferred_jobs"],
+                 queue["finished_jobs"], queue["workers"])
             )
 
         self._print_separator()

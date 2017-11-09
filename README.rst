@@ -231,6 +231,22 @@ You can also add a link to this dashboard link in ``/admin`` by adding
 override the default admin template so it may interfere with other apps that
 modifies the default admin template.
 
+For accessing the raw statistics in JSON format, ``django_rq`` provides
+``/django-rq/stats.json`` which is accessible if you are logged in to admin
+interface. Alternatively, if you need to access the statistics via other
+HTTP Client, you can define ``RQ_STATS_TOKEN`` and access it via
+``/django-rq/stats.json/<STATS_TOKEN>``.
+
+
+There's also various statistics from Command Line Interface(CLI).
+
+.. code-block:: bash
+    python manage.py rqstats
+    python manage.py rqstats -live  # Live dashboard
+    python manage.py rqstats -json  # Output as JSON
+    python manage.py rqstats -yaml  # Output as YAML
+
+
 
 Configuring Logging
 -------------------
