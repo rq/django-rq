@@ -16,6 +16,7 @@ except ImportError:
     from django.test.utils import override_settings
 from django.conf import settings
 
+from mock import patch, PropertyMock
 from rq import get_current_job, Queue
 from rq.job import Job
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
@@ -386,12 +387,12 @@ class WorkersTest(TestCase):
 class ViewTest(TestCase):
 
     def setUp(self):
-        user = User.objects.create_user('foo', password='pass')
-        user.is_staff = True
-        user.is_active = True
-        user.save()
+        self.user = User.objects.create_user('foo', password='pass')
+        self.user.is_staff = True
+        self.user.is_active = True
+        self.user.save()
         self.client = Client()
-        self.client.login(username=user.username, password='pass')
+        self.client.login(username=self.user.username, password='pass')
         get_queue('django_rq_test').connection.flushall()
 
     def test_requeue_job(self):
@@ -566,11 +567,49 @@ class ViewTest(TestCase):
 
     def test_statistics_json_view(self):
         """Django-RQ's statistic as JSON only viewable by staff or with API_TOKEN"""
-        response = self.client.get(
-            reverse('rq_home')
-        )
-        self.assertEqual(response.status_code, 200)
 
+
+        # Override testing RQ_QUEUES
+        queues = [{
+            'connection_config': {
+                'DB': 0,
+                'HOST': 'localhost',
+                'PORT': 6379,
+            },
+            'name': 'default'
+        }]
+        with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
+            response = self.client.get(reverse('rq_home'))
+            self.assertEqual(response.status_code, 200)
+
+            response = self.client.get(reverse('rq_home_json'))
+            self.assertEqual(response.status_code, 200)
+
+            # Not staff, only token
+            self.user.is_staff = False
+            self.user.save()
+
+            response = self.client.get(reverse('rq_home'))
+            self.assertEqual(response.status_code, 302)
+
+            # Error, but with 200 code
+            response = self.client.get(reverse('rq_home_json'))
+            self.assertEqual(response.status_code, 200)
+            self.assertIn("error", response.content.decode('utf-8'))
+
+            # With token,
+            token = '12345abcde'
+            with patch('django_rq.views.API_TOKEN', new_callable=PropertyMock(return_value=token)):
+                response = self.client.get(reverse('rq_home_json', args=[token]))
+                self.assertEqual(response.status_code, 200)
+                self.assertIn("name", response.content.decode('utf-8'))
+                self.assertNotIn('"error": true', response.content.decode('utf-8'))
+
+                # Wrong token
+                response = self.client.get(reverse('rq_home_json', args=["wrong_token"]))
+                self.assertEqual(response.status_code, 200)
+                self.assertNotIn("name", response.content.decode('utf-8'))
+                self.assertIn('"error": true', response.content.decode('utf-8'))
 
 
 class ThreadQueueTest(TestCase):
