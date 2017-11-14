@@ -80,7 +80,11 @@ class Command(BaseCommand):
             return
 
         if options.get("yaml"):
-            import yaml
+            try:
+                import yaml
+            except ImportError:
+                click.echo("Aborting. LibYAML is not installed.")
+                return
             # Disable YAML alias
             yaml.Dumper.ignore_aliases = lambda *args: True
             click.echo(yaml.dump(get_statistics(), default_flow_style=False))

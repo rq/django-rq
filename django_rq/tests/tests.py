@@ -28,7 +28,6 @@ from django_rq.queues import (
     get_unique_connection_configs, DjangoRQ
 )
 from django_rq import thread_queue
-from django_rq.settings import QUEUES_LIST
 from django_rq.templatetags.django_rq import to_localtime
 from django_rq.workers import get_worker, collect_workers_by_connection, get_all_workers_by_configuration
 
@@ -86,6 +85,28 @@ def get_queue_index(name='default'):
             queue_index = i
             break
     return queue_index
+
+
+class RqstatsTest(TestCase):
+
+    def test_get_connection_default(self):
+        """
+        Test that rqstats returns the right statistics
+        """
+        # Override testing RQ_QUEUES
+        queues = [{
+            'connection_config': {
+                'DB': 0,
+                'HOST': 'localhost',
+                'PORT': 6379,
+            },
+            'name': 'default'
+        }]
+        with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
+            # Only to make sure it doesn't crash
+            call_command('rqstats')
+            call_command('rqstats', '-j')
+            call_command('rqstats', '-y')
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
@@ -566,8 +587,9 @@ class ViewTest(TestCase):
         self.assertEqual(response.context['worker'], worker)
 
     def test_statistics_json_view(self):
-        """Django-RQ's statistic as JSON only viewable by staff or with API_TOKEN"""
-
+        """
+        Django-RQ's statistic as JSON only viewable by staff or with API_TOKEN
+        """
 
         # Override testing RQ_QUEUES
         queues = [{
