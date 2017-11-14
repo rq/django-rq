@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='django-rq',
-    version='0.9.6',
+    version='0.9.7',
     author='Selwin Ong',
     author_email='selwin.ong@gmail.com',
     packages=['django_rq'],
@@ -15,6 +15,9 @@ setup(
     include_package_data=True,
     package_data={'': ['README.rst']},
     install_requires=['django>=1.8.0', 'rq>=0.5.5'],
+    extras_require = {
+        'Sentry':  ['raven>=6.1.0']
+    },
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
