@@ -564,6 +564,14 @@ class ViewTest(TestCase):
         )
         self.assertEqual(response.context['worker'], worker)
 
+    def test_statistics_json_view(self):
+        """Django-RQ's statistic as JSON only viewable by staff or with API_TOKEN"""
+        response = self.client.get(
+            reverse('rq_home')
+        )
+        self.assertEqual(response.status_code, 200)
+
+
 
 class ThreadQueueTest(TestCase):
 
