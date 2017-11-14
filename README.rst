@@ -251,6 +251,10 @@ Additionaly, these statistics are also accessible from  the command line.
 
 .. image:: demo-django-rq-cli-dashboard.gif
 
+Configuring Sentry
+-------------------
+Use ``sentry-dsn`` parameter when running rqworker. ``./manage.py rqworker --sentry-dsn=https://*****@sentry.io/222222``
+
 Configuring Logging
 -------------------
 
