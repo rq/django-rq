@@ -24,4 +24,4 @@ for config in get_unique_connection_configs():
 EXCEPTION_HANDLERS = getattr(settings, 'RQ_EXCEPTION_HANDLERS', [])
 
 # Token for querying statistics
-STATS_TOKEN = getattr(settings, 'RQ_STATS_TOKEN', 'asdasd')
+API_TOKEN = getattr(settings, 'RQ_API_TOKEN', '')

@@ -234,8 +234,8 @@ modifies the default admin template.
 These statistics are also available in JSON format via
 ``/django-rq/stats.json``, which is accessible to staff members.
 If you need to access this view via other
-HTTP clients (for monitoring purposes), you can define ``API_TOKEN`` and access it via
-``/django-rq/stats.json/<STATS_TOKEN>``.
+HTTP clients (for monitoring purposes), you can define ``RQ_API_TOKEN`` and access it via
+``/django-rq/stats.json/<API_TOKEN>``.
 
 .. image::  demo-django-rq-json-dashboard.png
 

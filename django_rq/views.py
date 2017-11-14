@@ -16,7 +16,7 @@ from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
 from rq.worker import Worker
 
 from .queues import get_queue_by_index
-from .settings import STATS_TOKEN
+from .settings import API_TOKEN
 from .utils import get_statistics
 
 
@@ -25,15 +25,14 @@ def stats(request):
     return render(request, 'django_rq/stats.html', get_statistics())
 
 
-def token_stats_json(request, token):
-    if token != STATS_TOKEN:
-        raise Http404
-    return JsonResponse(get_statistics())
+def stats_json(request, token=None):
+    if request.user.is_staff or (token and token == API_TOKEN):
+        return JsonResponse(get_statistics())
 
-
-@staff_member_required
-def staff_stats_json(request):
-    return JsonResponse(get_statistics())
+    return JsonResponse({
+        "error": True,
+        "description": "Please configure API_TOKEN in settings.py before accessing this view."
+    })
 
 
 @staff_member_required
