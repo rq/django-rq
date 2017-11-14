@@ -220,7 +220,7 @@ Here is an example settings fragment for `django-redis`:
         },
     }
 
-Queue statistics
+Queue Statistics
 ----------------
 
 ``django_rq`` also provides a dashboard to monitor the status of your queues at
@@ -231,14 +231,16 @@ You can also add a link to this dashboard link in ``/admin`` by adding
 override the default admin template so it may interfere with other apps that
 modifies the default admin template.
 
-For accessing the raw statistics in JSON format, ``django_rq`` provides
-``/django-rq/stats.json`` which is accessible if you are logged in to admin
-interface. Alternatively, if you need to access the statistics via other
-HTTP Client, you can define ``RQ_STATS_TOKEN`` and access it via
+These statistics are also available in JSON format via
+``/django-rq/stats.json``, which is accessible to staff members.
+If you need to access this view via other
+HTTP clients (for monitoring purposes), you can define ``API_TOKEN`` and access it via
 ``/django-rq/stats.json/<STATS_TOKEN>``.
 
+.. image::  demo-django-rq-json-dashboard.png
 
-There's also various statistics from Command Line Interface(CLI).
+
+Additionaly, these statistics are also accessible from  the command line.
 
 .. code-block:: bash
 
@@ -247,7 +249,7 @@ There's also various statistics from Command Line Interface(CLI).
     python manage.py rqstats --json  # Output as JSON
     python manage.py rqstats --yaml  # Output as YAML
 
-.. image:: demo-django-cli-dashboard.gif
+.. image:: demo-django-rq-cli-dashboard.gif
 
 Configuring Logging
 -------------------
