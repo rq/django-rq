@@ -5,6 +5,8 @@ from django_rq import views
 urlpatterns = [
     url(r'^$',
         views.stats, name='rq_home'),
+    url(r'^stats.json/(?P<token>[\w]+)?/?$',
+        views.stats_json, name='rq_home_json'),
     url(r'^queues/(?P<queue_index>[\d]+)/$',
         views.jobs, name='rq_jobs'),
     url(r'^workers/(?P<queue_index>[\d]+)/$',

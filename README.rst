@@ -220,7 +220,7 @@ Here is an example settings fragment for `django-redis`:
         },
     }
 
-Queue statistics
+Queue Statistics
 ----------------
 
 ``django_rq`` also provides a dashboard to monitor the status of your queues at
@@ -231,9 +231,29 @@ You can also add a link to this dashboard link in ``/admin`` by adding
 override the default admin template so it may interfere with other apps that
 modifies the default admin template.
 
+These statistics are also available in JSON format via
+``/django-rq/stats.json``, which is accessible to staff members.
+If you need to access this view via other
+HTTP clients (for monitoring purposes), you can define ``RQ_API_TOKEN`` and access it via
+``/django-rq/stats.json/<API_TOKEN>``.
+
+.. image::  demo-django-rq-json-dashboard.png
+
+
+Additionaly, these statistics are also accessible from  the command line.
+
+.. code-block:: bash
+
+    python manage.py rqstats
+    python manage.py rqstats --live  # Live dashboard
+    python manage.py rqstats --json  # Output as JSON
+    python manage.py rqstats --yaml  # Output as YAML
+
+.. image:: demo-django-rq-cli-dashboard.gif
+
 Configuring Sentry
 -------------------
-Use ``sentry-dsn`` parameter when running rqworker. ``./manage.py rqworker --sentry-dsn=https://*****@sentry.io/222222`` 
+Use ``sentry-dsn`` parameter when running rqworker. ``./manage.py rqworker --sentry-dsn=https://*****@sentry.io/222222``
 
 Configuring Logging
 -------------------
