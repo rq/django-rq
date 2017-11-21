@@ -88,7 +88,34 @@
                 </div>
             </div>
         </div>
-        
+
+        {% endif %}
+
+        {% if worker.successful_job_count %}
+            <div class="form-row">
+                <div>
+                    <label class="required">Successful job count:</label>
+                    <div class="data">{{ worker.successful_job_count }}</div>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if worker.failed_job_count %}
+            <div class="form-row">
+                <div>
+                    <label class="required">Failed job count:</label>
+                    <div class="data">{{ worker.failed_job_count }}</div>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if worker.total_working_time %}
+            <div class="form-row">
+                <div>
+                    <label class="required">Total working time:</label>
+                    <div class="data">{{ worker.total_working_time }}</div>
+                </div>
+            </div>
         {% endif %}
 
     </fieldset>
