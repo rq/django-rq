@@ -20,10 +20,10 @@ def get_statistics():
         last_job_id = connection.lindex(queue.key, -1)
         last_job = queue.fetch_job(last_job_id.decode('utf-8')) if last_job_id else None
         if last_job:
-            queue.oldest_job_timestamp = to_localtime(last_job.enqueued_at)\
+            oldest_job_timestamp = to_localtime(last_job.enqueued_at)\
                 .strftime('%Y-%m-%d, %H:%M:%S')
         else:
-            queue.oldest_job_timestamp = "-"
+            oldest_job_timestamp = "-"
 
         # parse_class is not needed and not JSON serializable
         try:
@@ -34,7 +34,7 @@ def get_statistics():
         queue_data = {
             'name': queue.name,
             'jobs': queue.count,
-            'oldest_job_timestamp': queue.oldest_job_timestamp,
+            'oldest_job_timestamp': oldest_job_timestamp,
             'index': index,
             'connection_kwargs': connection_kwargs
         }
