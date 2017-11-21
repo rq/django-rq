@@ -16,12 +16,14 @@ def get_statistics():
         connection = queue.connection
         connection_kwargs = connection.connection_pool.connection_kwargs
 
-        if queue.is_empty():
-            queue.oldest_job_timestamp = "-"
-        else:
-            last_job_id = queue.get_job_ids(offset=queue.count - 1, length=1)[0]
-            queue.oldest_job_timestamp = to_localtime(queue.fetch_job(last_job_id).enqueued_at)\
+        # Raw access, Ideally rq supports Queue.oldest_job
+        last_job_id = connection.lindex(queue.key, -1)
+        last_job = queue.fetch_job(last_job_id.decode('utf-8')) if last_job_id else None
+        if last_job:
+            queue.oldest_job_timestamp = to_localtime(last_job.enqueued_at)\
                 .strftime('%Y-%m-%d, %H:%M:%S')
+        else:
+            queue.oldest_job_timestamp = "-"
 
         # parse_class is not needed and not JSON serializable
         try:
