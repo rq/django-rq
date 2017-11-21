@@ -1,3 +1,13 @@
+1.0.0
+-----
+* You can now view worker information
+* Detailed worker statistics such as failed/completed job count are now shown (requires RQ >= 0.9.0). Thanks @seiryuz!
+* ``rqstats`` management command now allows you to monitor queue stats via CLI. Thanks @seiryuz!
+* Added ``/stats.json`` endpoint to fetch RQ stats in JSON format, useful for monitoring purposes. Thanks @seiryuz!
+* Fixed a crash when displaying deferring jobs. Thanks @Hovercross!
+* Added ``sentry-dsn`` cli option to ``rqworker`` management command. Thanks @efi-mk!
+* Improved performance when requeueing all jobs. Thanks @therefromhere!
+
 0.9.6
 -----
 * More Django 1.10 compatibility fixes. Thanks @dmwyatt!
