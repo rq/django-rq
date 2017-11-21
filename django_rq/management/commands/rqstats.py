@@ -12,6 +12,7 @@ class Command(BaseCommand):
     help = __doc__
 
     def add_arguments(self, parser):
+        # TODO: convert this to @click.command like rq does
         parser.add_argument(
             '-j', '--json',
             action='store_true',
@@ -27,10 +28,10 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            '-l', '--live',
-            action='store_true',
-            dest='live',
-            help='Show live CLI dashboard',
+            '-i', '--interval',
+            dest='interval',
+            type=float,
+            help='Poll statistics every N seconds',
         )
 
     def _print_separator(self):
@@ -41,11 +42,11 @@ class Command(BaseCommand):
             click.echo(self._separator)
 
     def _print_stats_dashboard(self, statistics):
-        if self.live:
+        if self.interval:
             click.clear()
 
         click.echo()
-        click.echo("Django RQ%s CLI Dashboard" % " Live" if self.live else "")
+        click.echo("Django RQ CLI Dashboard")
         click.echo()
         self._print_separator()
 
@@ -68,7 +69,7 @@ class Command(BaseCommand):
 
         self._print_separator()
 
-        if self.live:
+        if self.interval:
             click.echo()
             click.echo("Press 'Ctrl+c' to quit")
 
@@ -90,16 +91,13 @@ class Command(BaseCommand):
             click.echo(yaml.dump(get_statistics(), default_flow_style=False))
             return
 
-        if options.get("live"):
-            self.live = True
-        else:
-            self.live = False
+        self.interval = options.get("interval")
 
         # Arbitrary
         self.table_width = 78
 
-        # Not live, just print and exit
-        if not self.live:
+        # Do not continously poll
+        if not self.interval:
             self._print_stats_dashboard(get_statistics())
             return
 
@@ -107,6 +105,6 @@ class Command(BaseCommand):
         try:
             while True:
                 self._print_stats_dashboard(get_statistics())
-                time.sleep(1)
+                time.sleep(self.interval)
         except KeyboardInterrupt:
             pass
