@@ -24,6 +24,7 @@
                 <tr>
                     <th>Name</th>
                     <th>Queued Jobs</th>
+                    <th>Oldests Queued Timestamp</th>
                     <th>Active Jobs</th>
                     <th>Deferred Jobs</th>
                     <th>Finished Jobs</th>
@@ -42,6 +43,7 @@
                             </a>
                         </th>
                         <td>{{ queue.jobs }}</td>
+                        <td>{{ queue.oldest_job_timestamp }}</td>
                         <th>
                             {% if queue.name != 'failed' %}
                                 <a href = "{% url 'rq_started_jobs' queue.index %}">

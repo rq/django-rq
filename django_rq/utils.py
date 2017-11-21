@@ -3,6 +3,7 @@ from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
 
 from .queues import get_connection, get_queue_by_index
 from .settings import QUEUES_LIST
+from .templatetags.django_rq import to_localtime
 from .workers import collect_workers_by_connection, get_all_workers_by_configuration
 
 
@@ -15,6 +16,13 @@ def get_statistics():
         connection = queue.connection
         connection_kwargs = connection.connection_pool.connection_kwargs
 
+        if queue.is_empty():
+            queue.oldest_job_timestamp = "-"
+        else:
+            last_job_id = queue.get_job_ids(offset=queue.count - 1, length=1)[0]
+            queue.oldest_job_timestamp = to_localtime(queue.fetch_job(last_job_id).enqueued_at)\
+                .strftime('%Y-%m-%d, %H:%M:%S')
+
         # parse_class is not needed and not JSON serializable
         try:
             del(connection_kwargs['parser_class'])
@@ -24,6 +32,7 @@ def get_statistics():
         queue_data = {
             'name': queue.name,
             'jobs': queue.count,
+            'oldest_job_timestamp': queue.oldest_job_timestamp,
             'index': index,
             'connection_kwargs': connection_kwargs
         }
