@@ -245,7 +245,7 @@ Additionaly, these statistics are also accessible from  the command line.
 .. code-block:: bash
 
     python manage.py rqstats
-    python manage.py rqstats --live  # Live dashboard
+    python manage.py rqstats --interval=1  # Refreshes every second
     python manage.py rqstats --json  # Output as JSON
     python manage.py rqstats --yaml  # Output as YAML
 
