@@ -414,7 +414,7 @@ admin fit in with the django-suit styles.
 Changelog
 =========
 
-See `changelog <https://github.com/ui/django-rq/blob/master/CHANGELOG.rst>`.
+See `changelog <https://github.com/ui/django-rq/blob/master/CHANGELOG.md>`.
 
 
 .. |Build Status| image:: https://secure.travis-ci.org/ui/django-rq.svg?branch=master
