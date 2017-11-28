@@ -78,7 +78,7 @@ class Command(BaseCommand):
         if options['use_reloader']:
             autoreload.main(self.inner_handle, args, options)
         else:
-            self.inner_handlel(args, **options)
+            self.inner_handle(args, **options)
 
     def inner_handle(self, *args, **options):
         # If an exception was silenced in ManagementUtility.execute in order
