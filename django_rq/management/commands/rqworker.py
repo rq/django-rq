@@ -6,6 +6,7 @@ import sys
 
 from django.core.management.base import BaseCommand
 from django.db import connections
+from django.utils import autoreload
 from django.utils.version import get_version
 
 from django_rq.queues import get_queues
@@ -66,12 +67,24 @@ class Command(BaseCommand):
                             help='Default worker timeout to be used')
         parser.add_argument('--sentry-dsn', action='store', default=None, dest='sentry-dsn',
                             help='Report exceptions to this Sentry DSN')
+        parser.add_argument('--autoreload', action='store_true', dest='use_reloader',
+                            help='Auto-reloads the worker code.')
 
         if LooseVersion(get_version()) >= LooseVersion('1.10'):
             parser.add_argument('args', nargs='*', type=str,
                                 help='The queues to work on, separated by space')
 
     def handle(self, *args, **options):
+        if options['use_reloader']:
+            autoreload.main(self.inner_handle, args, options)
+        else:
+            self.inner_handlel(args, **options)
+
+    def inner_handle(self, *args, **options):
+        # If an exception was silenced in ManagementUtility.execute in order
+        # to be raised in the child process, raise it now.
+        autoreload.raise_last_exception()
+
         pid = options.get('pid')
         if pid:
             with open(os.path.expanduser(pid), "w") as fp:
@@ -88,6 +101,9 @@ class Command(BaseCommand):
                 exception_handlers=get_exception_handlers() or None,
                 default_worker_ttl=options['worker_ttl']
             )
+            if options['use_reloader']:
+                w._install_signal_handlers = lambda s: None
+                w.register_death()
 
             # Call use_connection to push the redis connection into LocalStack
             # without this, jobs using RQ's get_current_job() will fail
@@ -106,8 +122,8 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR("Please install sentry. For example `pip install raven`"))
                     sys.exit(1)
 
+            logger.info('Starting rq worker')
             w.work(burst=options.get('burst', False))
         except ConnectionError as e:
             print(e)
             sys.exit(1)
-
