@@ -164,6 +164,10 @@ def worker_details(request, queue_index, key):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
     worker = Worker.find_by_key(key, connection=queue.connection)
+
+    # Total working time in microseconds, conver to ms
+    worker.total_working_time = worker.total_working_time / 1000
+
     queue_names = ', '.join(worker.queue_names())
 
     context_data = {
