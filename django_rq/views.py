@@ -165,8 +165,12 @@ def worker_details(request, queue_index, key):
     queue = get_queue_by_index(queue_index)
     worker = Worker.find_by_key(key, connection=queue.connection)
 
-    # Total working time in microseconds, conver to ms
-    worker.total_working_time = worker.total_working_time / 1000
+    try:
+        # Convert microseconds to milliseconds
+        worker.total_working_time = worker.total_working_time / 1000
+    except AttributeError:
+        # older version of rq do not have `total_working_time`
+        worker.total_working_time = "-"
 
     queue_names = ', '.join(worker.queue_names())
 
