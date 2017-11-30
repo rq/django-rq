@@ -16,8 +16,11 @@ def get_statistics():
         connection = queue.connection
         connection_kwargs = connection.connection_pool.connection_kwargs
 
-        # Raw access, Ideally rq supports Queue.oldest_job
-        last_job_id = connection.lindex(queue.key, -1)
+        # Raw access to the first item from left of the redis list.
+        # This might not be accurate since new job can be added from the left
+        # with `at_front` parameters.
+        # Ideally rq should supports Queue.oldest_job
+        last_job_id = connection.lindex(queue.key, 0)
         last_job = queue.fetch_job(last_job_id.decode('utf-8')) if last_job_id else None
         if last_job:
             oldest_job_timestamp = to_localtime(last_job.enqueued_at)\

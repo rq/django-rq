@@ -79,19 +79,9 @@
             </div>
         </div>
 
-        <div class="form-row">
-            <div>
-                <label class="required">Current Job:</label>
-                <div class="data">
-                    {{ job.func_name }}
-                    (<a href = "{% url 'rq_job_detail' queue_index job.id %}">{{ job.id }}</a>)
-                </div>
-            </div>
-        </div>
-
         {% endif %}
 
-        {% if worker.successful_job_count %}
+        {% if worker.successful_job_count != None %}
             <div class="form-row">
                 <div>
                     <label class="required">Successful job count:</label>
@@ -100,7 +90,7 @@
             </div>
         {% endif %}
 
-        {% if worker.failed_job_count %}
+        {% if worker.failed_job_count != None %}
             <div class="form-row">
                 <div>
                     <label class="required">Failed job count:</label>
@@ -109,10 +99,10 @@
             </div>
         {% endif %}
 
-        {% if worker.total_working_time %}
+        {% if worker.total_working_time != None %}
             <div class="form-row">
                 <div>
-                    <label class="required">Total working time:</label>
+                    <label class="required">Total working time (in ms):</label>
                     <div class="data">{{ worker.total_working_time }}</div>
                 </div>
             </div>
