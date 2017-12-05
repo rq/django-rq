@@ -4,6 +4,7 @@ import importlib
 import logging
 import sys
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connections
 from django.utils import autoreload
@@ -76,6 +77,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if options['use_reloader']:
+            if not settings.DEBUG:
+                logger.warning('You are using --autoreload in production.')
             autoreload.main(self.inner_handle, args, options)
         else:
             self.inner_handle(args, **options)
