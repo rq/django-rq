@@ -105,7 +105,8 @@ class Command(BaseCommand):
                 default_worker_ttl=options['worker_ttl']
             )
             if options['use_reloader']:
-                w._install_signal_handlers = lambda s: None
+                print('Reloading worker')
+                w._install_signal_handlers = lambda: None
                 w.register_death()
 
             # Call use_connection to push the redis connection into LocalStack
