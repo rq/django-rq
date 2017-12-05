@@ -126,7 +126,6 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR("Please install sentry. For example `pip install raven`"))
                     sys.exit(1)
 
-            logger.info('Starting rq worker')
             w.work(burst=options.get('burst', False))
         except ConnectionError as e:
             print(e)
