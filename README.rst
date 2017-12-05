@@ -152,6 +152,10 @@ If you want to run ``rqworker`` in burst mode, you can pass in the ``--burst`` f
 
     python manage.py rqworker high default low --burst
 
+If you want to reload worker when you save a file, use ``--autoreload`` flag::
+
+    python manage.py rqworker high default low --autoreload
+
 If you need to use a custom worker class, you can pass in the ``--worker-class`` flag
 with the path to your worker::
 
