@@ -1,19 +1,18 @@
 import time
 import uuid
+from unittest import skipIf
 
 from django.contrib.auth.models import User
 from django.core.management import call_command
-from django.core.urlresolvers import reverse
-from django.test import TestCase
+from django.test import TestCase, override_settings
+
 try:
-    from unittest import skipIf
+    from django.urls import reverse
 except ImportError:
-    from django.utils.unittest import skipIf
+    from django.core.urlresolvers import reverse
+
 from django.test.client import Client
-try:
-    from django.test import override_settings
-except ImportError:
-    from django.test.utils import override_settings
+
 from django.conf import settings
 
 from mock import patch, PropertyMock
