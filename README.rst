@@ -64,8 +64,14 @@ Installation
 
 .. code-block:: python
 
+    # For Django < 2.0
     urlpatterns += [
         url(r'^django-rq/', include('django_rq.urls')),
+    ]
+
+    # For Django >= 2.0
+    urlpatterns += [
+        url(r'^django-rq/', (urlpatterns, '', 'django_rq'))
     ]
 
 =====
