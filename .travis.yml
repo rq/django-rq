@@ -13,6 +13,11 @@ env:
   - DJANGO=1.10.8
   - DJANGO=1.11.7
 
+matrix:
+  exclude:
+    - python: "2.7"
+      env: DJANGO=2.0
+
 install:
   - pip install Django==$DJANGO times
   - python setup.py install
