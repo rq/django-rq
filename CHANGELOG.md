@@ -1,3 +1,7 @@
+# 1.0.1
+- Django 2.0 compatibility fixes.
+- Minor bug fixes
+
 # 1.0.0
 
 -   You can now view worker information
