@@ -19,7 +19,7 @@ matrix:
       env: DJANGO=2.0
 
 install:
-  - pip install Django==$DJANGO times
+  - pip install Django==$DJANGO times docutils pygments
   - python setup.py install
 
 script: make test
