@@ -4,8 +4,8 @@ Django-RQ
 
 |Build Status|
 
-Django integration with `RQ <https://github.com/nvie/rq>`_, a `Redis <http://redis.io/>`_
-based Python queuing library. `Django-RQ <https://github.com/ui/django-rq>`_ is a
+Django integration with `RQ <https://github.com/nvie/rq>`__, a `Redis <http://redis.io/>`__
+based Python queuing library. `Django-RQ <https://github.com/ui/django-rq>`__ is a
 simple app that allows you to configure your queues in django's ``settings.py``
 and easily use them in your project.
 
@@ -13,14 +13,14 @@ and easily use them in your project.
 Requirements
 ============
 
-* `Django <https://www.djangoproject.com/>`_ (1.8+)
-* `RQ`_
+* `Django <https://www.djangoproject.com/>`__ (1.8+)
+* `RQ <https://github.com/nvie/rq>`__
 
 ============
 Installation
 ============
 
-* Install ``django-rq`` (or `download from PyPI <http://pypi.python.org/pypi/django-rq>`_):
+* Install ``django-rq`` (or `download from PyPI <http://pypi.python.org/pypi/django-rq>`__):
 
 .. code-block:: python
 
@@ -165,7 +165,7 @@ with the path to your queue class::
 Support for RQ Scheduler
 ------------------------
 
-If you have `RQ Scheduler <https://github.com/ui/rq-scheduler>`_ installed,
+If you have `RQ Scheduler <https://github.com/ui/rq-scheduler>`__ installed,
 you can also use the ``get_scheduler`` function to return a ``Scheduler``
 instance for queues defined in settings.py's ``RQ_QUEUES``. For example:
 
@@ -182,12 +182,12 @@ You can also use the management command ``rqscheduler`` to start the scheduler::
 Support for django-redis and django-redis-cache
 -----------------------------------------------
 
-If you have `django-redis <https://django-redis.readthedocs.org/>`_ or
-`django-redis-cache <https://github.com/sebleier/django-redis-cache/>`_
+If you have `django-redis <https://django-redis.readthedocs.org/>`__ or
+`django-redis-cache <https://github.com/sebleier/django-redis-cache/>`__
 installed, you can instruct django_rq to use the same connection information
 from your Redis cache. This has two advantages: it's DRY and it takes advantage
 of any optimization that may be going on in your cache setup (like using
-connection pooling or `Hiredis <https://github.com/redis/hiredis>`_.)
+connection pooling or `Hiredis <https://github.com/redis/hiredis>`__.)
 
 To use configure it, use a dict with the key ``USE_REDIS_CACHE`` pointing to the
 name of the desired cache in your ``RQ_QUEUES`` dict. It goes without saying
@@ -296,14 +296,15 @@ you can easily configure ``rqworker``'s logging mechanism in django's
 
 Note: error logging to Sentry is known to be unreliable with RQ when using async
 transports (the default transport). Please configure ``Raven`` to use
- ``sync+https://`` or ``requests+https://`` transport in ``settings.py``:
+``sync+https://`` or ``requests+https://`` transport in ``settings.py``:
 
 .. code-block:: python
+
     RAVEN_CONFIG = {
         'dsn': 'sync+https://public:secret@example.com/1',
     }
 
-For more info, refer to `Raven's documentation <http://raven.readthedocs.org/>`_.
+For more info, refer to `Raven's documentation <http://raven.readthedocs.org/>`__.
 
 Custom queue classes
 --------------------
@@ -407,7 +408,7 @@ Commit and re-deploy. Then add your new worker with:
 Django Suit Integration
 =======================
 
-You can use `django-suit-rq <https://github.com/gsmke/django-suit-rq>`_ to make your
+You can use `django-suit-rq <https://github.com/gsmke/django-suit-rq>`__ to make your
 admin fit in with the django-suit styles.
 
 =========
