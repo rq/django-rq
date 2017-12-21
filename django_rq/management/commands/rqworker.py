@@ -1,19 +1,17 @@
-from distutils.version import LooseVersion
-import os
-import importlib
 import logging
+import os
 import sys
+from distutils.version import LooseVersion
+
+from redis.exceptions import ConnectionError
+from rq import use_connection
+from rq.utils import ColorizingStreamHandler, import_attribute
 
 from django.core.management.base import BaseCommand
 from django.db import connections
 from django.utils.version import get_version
-
 from django_rq.queues import get_queues
-from django_rq.workers import get_exception_handlers
-
-from redis.exceptions import ConnectionError
-from rq import use_connection
-from rq.utils import ColorizingStreamHandler
+from django_rq.workers import get_exception_handlers, get_worker_class
 
 # Setup logging for RQWorker if not already configured
 logger = logging.getLogger('rq.worker')
@@ -24,14 +22,6 @@ if not logger.handlers:
     handler = ColorizingStreamHandler()
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-
-
-# Copied from rq.utils
-def import_attribute(name):
-    """Return an attribute from a dotted path name (e.g. "path.to.func")."""
-    module_name, attribute = name.rsplit('.', 1)
-    module = importlib.import_module(module_name)
-    return getattr(module, attribute)
 
 
 def reset_db_connections():
@@ -52,7 +42,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--worker-class', action='store', dest='worker_class',
-                            default='rq.Worker', help='RQ Worker class to use')
+                            help='RQ Worker class to use')
         parser.add_argument('--pid', action='store', dest='pid',
                             default=None, help='PID file to write the worker`s pid into')
         parser.add_argument('--burst', action='store_true', dest='burst',
@@ -60,7 +50,7 @@ class Command(BaseCommand):
         parser.add_argument('--name', action='store', dest='name',
                             default=None, help='Name of the worker')
         parser.add_argument('--queue-class', action='store', dest='queue_class',
-                            default='django_rq.queues.DjangoRQ', help='Queues class to use')
+                            help='Queues class to use')
         parser.add_argument('--worker-ttl', action='store', type=int,
                             dest='worker_ttl', default=420,
                             help='Default worker timeout to be used')
@@ -79,8 +69,12 @@ class Command(BaseCommand):
         sentry_dsn = options.get('sentry-dsn')
         try:
             # Instantiate a worker
-            worker_class = import_attribute(options['worker_class'])
-            queues = get_queues(*args, queue_class=import_attribute(options['queue_class']))
+            worker_class = get_worker_class(options['worker_class'])
+            get_queues_kwargs = {}
+            queue_class = options['queue_class']
+            if queue_class is not None:
+                get_queues_kwargs['queue_class'] = import_attribute(queue_class)
+            queues = get_queues(*args, **get_queues_kwargs)
             w = worker_class(
                 queues,
                 connection=queues[0].connection,

@@ -1,8 +1,10 @@
 from rq import Worker
 from rq.utils import import_attribute
 
-from .queues import get_queues, get_connection, filter_connection_params
-from .settings import EXCEPTION_HANDLERS
+from django.utils import six
+
+from . import settings
+from .queues import filter_connection_params, get_connection, get_queues
 
 
 def get_exception_handlers():
@@ -12,7 +14,24 @@ def get_exception_handlers():
         'EXCEPTION_HANDLERS': ['path.to.handler'],
     }
     """
-    return [import_attribute(path) for path in EXCEPTION_HANDLERS]
+    return [import_attribute(path) for path in settings.EXCEPTION_HANDLERS]
+
+
+def get_worker_class(worker_class=None):
+    """
+    Return worker class from RQ settings, otherwise return Worker.
+    If `worker_class` is not None, it is used as an override (can be
+    python import path as string).
+    """
+    if worker_class is None:
+        RQ = getattr(settings, 'RQ', {})
+        worker_class = Worker
+        if 'WORKER_CLASS' in RQ:
+            worker_class = RQ.get('WORKER_CLASS')
+
+    if isinstance(worker_class, six.string_types):
+        worker_class = import_attribute(worker_class)
+    return worker_class
 
 
 def get_worker(*queue_names, **kwargs):
@@ -20,11 +39,11 @@ def get_worker(*queue_names, **kwargs):
     Returns a RQ worker for all queues or specified ones.
     """
     queues = get_queues(*queue_names)
-    name = kwargs.get('name')
-    return Worker(queues,
-                  connection=queues[0].connection,
-                  exception_handlers=get_exception_handlers() or None,
-                  name=name)
+    worker_class = get_worker_class(kwargs.pop('worker_class', None))
+    return worker_class(queues,
+                        connection=queues[0].connection,
+                        exception_handlers=get_exception_handlers() or None,
+                        **kwargs)
 
 
 def collect_workers_by_connection(queues):
@@ -49,6 +68,8 @@ def collect_workers_by_connection(queues):
     Use `get_all_workers_by_configuration()` to select a worker group from the
     collection returned by this function.
     """
+    worker_class = get_worker_class()
+
     workers_collections = []
     for item in queues:
         connection_params = filter_connection_params(item['connection_config'])
@@ -56,7 +77,7 @@ def collect_workers_by_connection(queues):
             connection = get_connection(item['name'])
             collection = {
                 'config': connection_params,
-                'all_workers': Worker.all(connection=connection)
+                'all_workers': worker_class.all(connection=connection)
             }
             workers_collections.append(collection)
     return workers_collections

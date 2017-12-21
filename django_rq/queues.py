@@ -1,11 +1,10 @@
+import redis
+from rq.queue import FailedQueue, Queue
+from rq.utils import import_attribute
+
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import six
-
-import redis
-from rq.utils import import_attribute
-from rq.queue import FailedQueue, Queue
-
 from django_rq import thread_queue
 
 
@@ -124,7 +123,7 @@ def get_connection_by_index(index):
 
 
 def get_queue(name='default', default_timeout=None, async=None,
-              autocommit=None, queue_class=None):
+              autocommit=None, queue_class=None, **kwargs):
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
@@ -140,7 +139,7 @@ def get_queue(name='default', default_timeout=None, async=None,
         queue_class = get_queue_class(QUEUES[name])
     return queue_class(name, default_timeout=default_timeout,
                        connection=get_connection(name), async=async,
-                       autocommit=autocommit)
+                       autocommit=autocommit, **kwargs)
 
 
 def get_queue_by_index(index):
@@ -181,11 +180,10 @@ def get_queues(*queue_names, **kwargs):
     All instances must use the same Redis connection.
     """
     from .settings import QUEUES
-    autocommit = kwargs.get('autocommit', None)
-    queue_class = kwargs.get('queue_class', DjangoRQ)
+
     if len(queue_names) == 0:
         # Return "default" queue if no queue name is specified
-        return [get_queue(autocommit=autocommit)]
+        return [get_queue(**kwargs)]
     if len(queue_names) > 1:
         queue_params = QUEUES[queue_names[0]]
         connection_params = filter_connection_params(queue_params)
@@ -195,7 +193,7 @@ def get_queues(*queue_names, **kwargs):
                     'Queues must have the same redis connection.'
                     '"{0}" and "{1}" have '
                     'different connections'.format(name, queue_names[0]))
-    return [get_queue(name, autocommit=autocommit, queue_class=queue_class) for name in queue_names]
+    return [get_queue(name, **kwargs) for name in queue_names]
 
 
 def enqueue(func, *args, **kwargs):
