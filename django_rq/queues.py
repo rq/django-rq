@@ -167,11 +167,12 @@ def filter_connection_params(queue_params):
     """
     Filters the queue params to keep only the connection related params.
     """
-    NON_CONNECTION_PARAMS = ('DEFAULT_TIMEOUT',)
+    CONNECTION_PARAMS = ('URL', 'DB', 'USE_REDIS_CACHE',
+                         'UNIX_SOCKET_PATH', 'HOST', 'PORT', 'PASSWORD')
 
-    #return {p:v for p,v in queue_params.items() if p not in NON_CONNECTION_PARAMS}
+    #return {p:v for p,v in queue_params.items() if p in CONNECTION_PARAMS}
     # Dict comprehension compatible with python 2.6
-    return dict((p,v) for (p,v) in queue_params.items() if p not in NON_CONNECTION_PARAMS)
+    return dict((p,v) for (p,v) in queue_params.items() if p in CONNECTION_PARAMS)
 
 
 def get_queues(*queue_names, **kwargs):
