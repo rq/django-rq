@@ -152,12 +152,16 @@ If you want to run ``rqworker`` in burst mode, you can pass in the ``--burst`` f
 
     python manage.py rqworker high default low --burst
 
-If you need to use a custom worker class, you can pass in the ``--worker-class`` flag
+If you need to use custom worker or queue classes, it is best to use global settings
+(see `Custom queue classes`_ and `Custom worker class`_). However, it is also possible
+to override such settings with command line options as follows.
+
+To use a custom worker class, you can pass in the ``--worker-class`` flag
 with the path to your worker::
 
     python manage.py rqworker high default low --worker-class 'path.to.GeventWorker'
 
-If you need to use a custom queue class, you can pass in the ``--queue-class`` flag
+To use a custom queue class, you can pass in the ``--queue-class`` flag
 with the path to your queue class::
 
     python manage.py rqworker high default low --queue-class 'path.to.CustomQueue'
@@ -332,6 +336,21 @@ or you can specify ``DjangoRQ`` to use a custom class for all your queues in ``R
     }
 
 Custom queue classes should inherit from ``django_rq.queues.DjangoRQ``.
+
+Custom worker class
+-------------------
+
+Similarly to custom queue classes, global custom worker class can be configured using
+``WORKER_CLASS`` setting:
+
+.. code-block:: python
+
+    RQ = {
+        'WORKER_CLASS': 'module.path.CustomWorkerClass',
+    }
+
+Custom worker class should inherit from ``rq.worker.Worker``. It will be used for running
+all workers unless overriden by ``rqworker`` management command ``worker-class`` option.
 
 Testing tip
 -----------
