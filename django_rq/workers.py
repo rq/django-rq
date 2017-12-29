@@ -50,9 +50,9 @@ def collect_workers_by_connection(queues):
     """
     Collects, into a list, dictionaries of connections_config and its workers.
 
-    This function makes an association between some configurarion and the
+    This function makes an association between some configuration and the
     workers it uses.
-    What the return may looks like:
+    What the return may look like:
 
         workers_collection = [
             {
@@ -86,7 +86,7 @@ def collect_workers_by_connection(queues):
 def get_all_workers_by_configuration(config, workers_collections):
     """
     Gets from a worker_collection the worker group associated to a given
-    configuration
+    connection configuration.
     """
     c = filter_connection_params(config)
     for collection in workers_collections:

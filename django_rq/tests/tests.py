@@ -550,10 +550,10 @@ class ViewTest(TestCase):
         worker1 = get_worker()
         worker2 = get_worker('test')
         workers_collections = [
-            {'config': {'some_config': 1}, 'all_workers': [worker1]},
-            {'config': {'some_config': 2}, 'all_workers': [worker2]},
+            {'config': {'URL': 'redis://'}, 'all_workers': [worker1]},
+            {'config': {'URL': 'redis://localhost/1'}, 'all_workers': [worker2]},
         ]
-        result = get_all_workers_by_configuration({'some_config': 1}, workers_collections)
+        result = get_all_workers_by_configuration({'URL': 'redis://'}, workers_collections)
         self.assertEqual(result, [worker1])
 
     def test_workers(self):
