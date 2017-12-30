@@ -1,6 +1,7 @@
 from rq import Worker
 from rq.utils import import_attribute
 
+from django.conf import settings as global_settings
 from django.utils import six
 
 from . import settings
@@ -24,7 +25,7 @@ def get_worker_class(worker_class=None):
     python import path as string).
     """
     if worker_class is None:
-        RQ = getattr(settings, 'RQ', {})
+        RQ = getattr(global_settings, 'RQ', {})
         worker_class = Worker
         if 'WORKER_CLASS' in RQ:
             worker_class = RQ.get('WORKER_CLASS')
