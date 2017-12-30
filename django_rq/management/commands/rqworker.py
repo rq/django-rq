@@ -9,8 +9,9 @@ from rq.utils import ColorizingStreamHandler, import_attribute
 
 from django.core.management.base import BaseCommand
 from django.db import connections
+from django.utils import six
 from django.utils.version import get_version
-from django_rq.queues import get_queues
+from django_rq.queues import get_queue_class, get_queues
 from django_rq.workers import get_exception_handlers, get_worker_class
 
 # Setup logging for RQWorker if not already configured
@@ -70,17 +71,17 @@ class Command(BaseCommand):
         try:
             # Instantiate a worker
             worker_class = get_worker_class(options['worker_class'])
-            get_queues_kwargs = {}
-            queue_class = options['queue_class']
-            if queue_class is not None:
-                get_queues_kwargs['queue_class'] = import_attribute(queue_class)
-            queues = get_queues(*args, **get_queues_kwargs)
+            queue_class = options['queue_class'] or get_queue_class({})
+            if isinstance(queue_class, six.string_types):
+                queue_class = import_attribute(queue_class)
+            queues = get_queues(*args, **{'queue_class': queue_class})
             w = worker_class(
                 queues,
                 connection=queues[0].connection,
                 name=options['name'],
                 exception_handlers=get_exception_handlers() or None,
-                default_worker_ttl=options['worker_ttl']
+                default_worker_ttl=options['worker_ttl'],
+                queue_class=queue_class
             )
 
             # Call use_connection to push the redis connection into LocalStack

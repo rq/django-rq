@@ -20,6 +20,7 @@ from rq import get_current_job, Queue
 from rq.job import Job
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
+from rq.worker import Worker
 
 from django_rq.decorators import job
 from django_rq.queues import (
@@ -28,7 +29,9 @@ from django_rq.queues import (
 )
 from django_rq import thread_queue
 from django_rq.templatetags.django_rq import to_localtime
-from django_rq.workers import get_worker, collect_workers_by_connection, get_all_workers_by_configuration
+from django_rq.workers import (get_worker, get_worker_class,
+                               collect_workers_by_connection,
+                               get_all_workers_by_configuration)
 
 
 try:
@@ -783,6 +786,25 @@ class QueueClassTest(TestCase):
     def test_in_kwargs(self):
         queue = get_queue('test', queue_class=DummyQueue)
         self.assertIsInstance(queue, DummyQueue)
+
+
+class DummyWorker(Worker):
+    pass
+
+
+class WorkerClassTest(TestCase):
+
+    def test_default_worker_class(self):
+        worker = get_worker('test')
+        self.assertIsInstance(worker, Worker)
+
+    @override_settings(RQ={'WORKER_CLASS': 'django_rq.tests.DummyWorker'})
+    def test_custom_class(self):
+        worker = get_worker('test')
+        self.assertIsInstance(worker, DummyWorker)
+
+    def test_local_override(self):
+        self.assertIs(get_worker_class('django_rq.tests.DummyWorker'), DummyWorker)
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
