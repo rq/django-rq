@@ -140,6 +140,18 @@ decorator that comes with ``django_rq``:
         pass
     long_running_func.delay() # Enqueue function in "high" queue
 
+It's possible to specify default for ``result_ttl`` decorator keyword argument
+via ``DEFAULT_RESULT_TTL`` setting:
+
+.. code-block:: python
+
+    RQ = {
+        'DEFAULT_RESULT_TTL': 5000,
+    }
+
+With this setting, job decorator will set ``result_ttl`` to 5000 unless it's
+specified explicitly.
+
 
 Running workers
 ---------------

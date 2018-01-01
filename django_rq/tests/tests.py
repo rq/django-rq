@@ -363,6 +363,24 @@ class DecoratorTest(TestCase):
         self.assertEqual(result.origin, 'default')
         result.delete()
 
+    def test_job_decorator_result_ttl_default(self):
+        from rq.defaults import DEFAULT_RESULT_TTL
+
+        @job
+        def test():
+            pass
+        result = test.delay()
+        self.assertEqual(result.result_ttl, DEFAULT_RESULT_TTL)
+        result.delete()
+
+    @override_settings(RQ={'AUTOCOMMIT': True, 'DEFAULT_RESULT_TTL': 5432})
+    def test_job_decorator_result_ttl(self):
+        @job
+        def test():
+            pass
+        result = test.delay()
+        self.assertEqual(result.result_ttl, 5432)
+        result.delete()
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class WorkersTest(TestCase):
