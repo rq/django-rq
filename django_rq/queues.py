@@ -7,6 +7,8 @@ from django.core.exceptions import ImproperlyConfigured
 from django.utils import six
 from django_rq import thread_queue
 
+from .jobs import get_job_class
+
 
 def get_commit_mode():
     """
@@ -123,7 +125,7 @@ def get_connection_by_index(index):
 
 
 def get_queue(name='default', default_timeout=None, async=None,
-              autocommit=None, queue_class=None, **kwargs):
+              autocommit=None, queue_class=None, job_class=None, **kwargs):
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
@@ -132,6 +134,8 @@ def get_queue(name='default', default_timeout=None, async=None,
     # If async is provided, use it, otherwise, get it from the configuration
     if async is None:
         async = QUEUES[name].get('ASYNC', True)
+    # same for job_class
+    job_class = get_job_class(job_class)
 
     if default_timeout is None:
         default_timeout = QUEUES[name].get('DEFAULT_TIMEOUT')
@@ -139,7 +143,7 @@ def get_queue(name='default', default_timeout=None, async=None,
         queue_class = get_queue_class(QUEUES[name])
     return queue_class(name, default_timeout=default_timeout,
                        connection=get_connection(name), async=async,
-                       autocommit=autocommit, **kwargs)
+                       job_class=job_class, autocommit=autocommit, **kwargs)
 
 
 def get_queue_by_index(index):
@@ -182,19 +186,35 @@ def get_queues(*queue_names, **kwargs):
     """
     from .settings import QUEUES
 
-    if len(queue_names) == 0:
+    if len(queue_names) <= 1:
         # Return "default" queue if no queue name is specified
-        return [get_queue(**kwargs)]
-    if len(queue_names) > 1:
-        queue_params = QUEUES[queue_names[0]]
-        connection_params = filter_connection_params(queue_params)
-        for name in queue_names:
-            if connection_params != filter_connection_params(QUEUES[name]):
-                raise ValueError(
-                    'Queues must have the same redis connection.'
-                    '"{0}" and "{1}" have '
-                    'different connections'.format(name, queue_names[0]))
-    return [get_queue(name, **kwargs) for name in queue_names]
+        # or one queue with specified name
+        return [get_queue(*queue_names, **kwargs)]
+
+    # will return more than one queue
+    # import job class only once for all queues
+    kwargs['job_class'] = get_job_class(kwargs.pop('job_class', None))
+
+    queue_params = QUEUES[queue_names[0]]
+    connection_params = filter_connection_params(queue_params)
+    ret = [get_queue(queue_names[0], **kwargs)]
+
+    # do consistency checks while building return list
+    for name in queue_names[1:]:
+        queue = get_queue(name, **kwargs)
+        if not isinstance(queue, ret[0].__class__):
+            raise ValueError(
+                'Queues must have the same class.'
+                '"{0}" and "{1}" have '
+                'different classes'.format(name, queue_names[0]))
+        if connection_params != filter_connection_params(QUEUES[name]):
+            raise ValueError(
+                'Queues must have the same redis connection.'
+                '"{0}" and "{1}" have '
+                'different connections'.format(name, queue_names[0]))
+        ret.append(queue)
+
+    return ret
 
 
 def enqueue(func, *args, **kwargs):
