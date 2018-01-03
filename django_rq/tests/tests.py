@@ -23,6 +23,7 @@ from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
 from rq.worker import Worker
 
 from django_rq.decorators import job
+from django_rq.jobs import get_job_class
 from django_rq.queues import (
     get_connection, get_queue, get_queue_by_index, get_queues,
     get_unique_connection_configs, DjangoRQ
@@ -221,6 +222,13 @@ class QueuesTest(TestCase):
         """
         self.assertRaises(ValueError, get_queues, 'default', 'test')
 
+    def test_get_queues_different_classes(self):
+        """
+        Checks that getting queues with different classes (defined in configuration)
+        raises an exception.
+        """
+        self.assertRaises(ValueError, get_queues, 'test', 'test1')
+
     def test_pass_queue_via_commandline_args(self):
         """
         Checks that passing queues via commandline arguments works
@@ -401,6 +409,15 @@ class WorkersTest(TestCase):
         self.assertEqual(len(w.queues), 1)
         queue = w.queues[0]
         self.assertEqual(queue.name, 'test')
+
+    def test_get_worker_custom_classes(self):
+        w = get_worker('test',
+                       job_class='django_rq.tests.DummyJob',
+                       queue_class='django_rq.tests.DummyQueue',
+                       worker_class='django_rq.tests.DummyWorker')
+        self.assertIs(w.job_class, DummyJob)
+        self.assertIsInstance(w.queues[0], DummyQueue)
+        self.assertIsInstance(w, DummyWorker)
 
     def test_get_current_job(self):
         """
@@ -785,6 +802,25 @@ class RedisCacheTest(TestCase):
         self.assertEqual(connection_kwargs['port'], int(cachePort))
         self.assertEqual(connection_kwargs['db'], int(cacheDBNum))
         self.assertEqual(connection_kwargs['password'], None)
+
+
+class DummyJob(Job):
+    pass
+
+
+class JobClassTest(TestCase):
+
+    def test_default_job_class(self):
+        job_class = get_job_class()
+        self.assertIs(job_class, Job)
+
+    @override_settings(RQ={'JOB_CLASS': 'django_rq.tests.DummyJob'})
+    def test_custom_class(self):
+        job_class = get_job_class()
+        self.assertIs(job_class, DummyJob)
+
+    def test_local_override(self):
+        self.assertIs(get_job_class('django_rq.tests.DummyJob'), DummyJob)
 
 
 class DummyQueue(DjangoRQ):

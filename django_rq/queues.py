@@ -25,16 +25,17 @@ def get_commit_mode():
     return RQ.get('AUTOCOMMIT', True)
 
 
-def get_queue_class(config):
+def get_queue_class(config={}, queue_class=None):
     """
     Return queue class from config or from RQ settings, otherwise return DjangoRQ
     """
     RQ = getattr(settings, 'RQ', {})
-    queue_class = DjangoRQ
-    if 'QUEUE_CLASS' in config:
-        queue_class = config.get('QUEUE_CLASS')
-    elif 'QUEUE_CLASS' in RQ:
-        queue_class = RQ.get('QUEUE_CLASS')
+    if queue_class is None:
+        queue_class = DjangoRQ
+        if 'QUEUE_CLASS' in config:
+            queue_class = config.get('QUEUE_CLASS')
+        elif 'QUEUE_CLASS' in RQ:
+            queue_class = RQ.get('QUEUE_CLASS')
 
     if isinstance(queue_class, six.string_types):
         queue_class = import_attribute(queue_class)
@@ -139,8 +140,7 @@ def get_queue(name='default', default_timeout=None, async=None,
 
     if default_timeout is None:
         default_timeout = QUEUES[name].get('DEFAULT_TIMEOUT')
-    if queue_class is None:
-        queue_class = get_queue_class(QUEUES[name])
+    queue_class = get_queue_class(QUEUES[name], queue_class)
     return queue_class(name, default_timeout=default_timeout,
                        connection=get_connection(name), async=async,
                        job_class=job_class, autocommit=autocommit, **kwargs)
@@ -202,7 +202,7 @@ def get_queues(*queue_names, **kwargs):
     # do consistency checks while building return list
     for name in queue_names[1:]:
         queue = get_queue(name, **kwargs)
-        if not isinstance(queue, ret[0].__class__):
+        if queue.__class__ is not ret[0].__class__:
             raise ValueError(
                 'Queues must have the same class.'
                 '"{0}" and "{1}" have '
