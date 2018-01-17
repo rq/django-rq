@@ -5,7 +5,7 @@ Django-RQ
 |Build Status|
 
 Django integration with `RQ <https://github.com/nvie/rq>`__, a `Redis <http://redis.io/>`__
-based Python queuing library. `Django-RQ <https://github.com/ui/django-rq>`__ is a
+based Python queuing library. `Django-RQ <https://github.com/rq/django-rq>`__ is a
 simple app that allows you to configure your queues in django's ``settings.py``
 and easily use them in your project.
 
@@ -415,8 +415,8 @@ admin fit in with the django-suit styles.
 Changelog
 =========
 
-See `changelog <https://github.com/ui/django-rq/blob/master/CHANGELOG.md>`.
+See `changelog <https://github.com/rq/django-rq/blob/master/CHANGELOG.md>`.
 
 
-.. |Build Status| image:: https://secure.travis-ci.org/ui/django-rq.svg?branch=master
-   :target: https://travis-ci.org/ui/django-rq
+.. |Build Status| image:: https://secure.travis-ci.org/rq/django-rq.svg?branch=master
+   :target: https://travis-ci.org/rq/django-rq
