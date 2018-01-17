@@ -25,14 +25,14 @@ def get_commit_mode():
     return RQ.get('AUTOCOMMIT', True)
 
 
-def get_queue_class(config={}, queue_class=None):
+def get_queue_class(config=None, queue_class=None):
     """
     Return queue class from config or from RQ settings, otherwise return DjangoRQ
     """
     RQ = getattr(settings, 'RQ', {})
     if queue_class is None:
         queue_class = DjangoRQ
-        if 'QUEUE_CLASS' in config:
+        if config is not None and 'QUEUE_CLASS' in config:
             queue_class = config.get('QUEUE_CLASS')
         elif 'QUEUE_CLASS' in RQ:
             queue_class = RQ.get('QUEUE_CLASS')
@@ -197,12 +197,12 @@ def get_queues(*queue_names, **kwargs):
 
     queue_params = QUEUES[queue_names[0]]
     connection_params = filter_connection_params(queue_params)
-    ret = [get_queue(queue_names[0], **kwargs)]
+    queues = [get_queue(queue_names[0], **kwargs)]
 
     # do consistency checks while building return list
     for name in queue_names[1:]:
         queue = get_queue(name, **kwargs)
-        if queue.__class__ is not ret[0].__class__:
+        if queue.__class__ is not queues[0].__class__:
             raise ValueError(
                 'Queues must have the same class.'
                 '"{0}" and "{1}" have '
@@ -212,9 +212,9 @@ def get_queues(*queue_names, **kwargs):
                 'Queues must have the same redis connection.'
                 '"{0}" and "{1}" have '
                 'different connections'.format(name, queue_names[0]))
-        ret.append(queue)
+        queues.append(queue)
 
-    return ret
+    return queues
 
 
 def enqueue(func, *args, **kwargs):
