@@ -21,6 +21,10 @@ matrix:
 install:
   - pip install Django==$DJANGO times docutils pygments
   - python setup.py install
+  - pip install codecov
 
 script: make test
 services: redis
+
+after_success:
+  - codecov
