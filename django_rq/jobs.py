@@ -14,9 +14,7 @@ def get_job_class(job_class=None):
     RQ = getattr(settings, 'RQ', {})
 
     if job_class is None:
-        job_class = Job
-        if 'JOB_CLASS' in RQ:
-            job_class = RQ.get('JOB_CLASS')
+        job_class = RQ.get('JOB_CLASS', Job)
 
     if isinstance(job_class, six.string_types):
         job_class = import_attribute(job_class)

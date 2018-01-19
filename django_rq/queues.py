@@ -27,15 +27,19 @@ def get_commit_mode():
 
 def get_queue_class(config=None, queue_class=None):
     """
-    Return queue class from config or from RQ settings, otherwise return DjangoRQ
+    Return queue class from config or from RQ settings, otherwise return DjangoRQ.
+    If ``queue_class`` is provided, it takes priority.
+
+    The full priority list for queue class sources:
+    1. ``queue_class`` argument
+    2. ``QUEUE_CLASS`` in ``config`` argument
+    3. ``QUEUE_CLASS`` in base settings (``RQ``)
     """
     RQ = getattr(settings, 'RQ', {})
     if queue_class is None:
-        queue_class = DjangoRQ
-        if config is not None and 'QUEUE_CLASS' in config:
-            queue_class = config.get('QUEUE_CLASS')
-        elif 'QUEUE_CLASS' in RQ:
-            queue_class = RQ.get('QUEUE_CLASS')
+        queue_class = RQ.get('QUEUE_CLASS', DjangoRQ)
+        if config:
+            queue_class = config.get('QUEUE_CLASS', queue_class)
 
     if isinstance(queue_class, six.string_types):
         queue_class = import_attribute(queue_class)
