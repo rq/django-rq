@@ -206,7 +206,7 @@ def get_queues(*queue_names, **kwargs):
     # do consistency checks while building return list
     for name in queue_names[1:]:
         queue = get_queue(name, **kwargs)
-        if queue.__class__ is not queues[0].__class__:
+        if type(queue) is not type(queues[0]):
             raise ValueError(
                 'Queues must have the same class.'
                 '"{0}" and "{1}" have '
