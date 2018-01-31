@@ -20,15 +20,19 @@ from rq import get_current_job, Queue
 from rq.job import Job
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
+from rq.worker import Worker
 
 from django_rq.decorators import job
+from django_rq.jobs import get_job_class
 from django_rq.queues import (
     get_connection, get_queue, get_queue_by_index, get_queues,
     get_unique_connection_configs, DjangoRQ
 )
 from django_rq import thread_queue
 from django_rq.templatetags.django_rq import to_localtime
-from django_rq.workers import get_worker, collect_workers_by_connection, get_all_workers_by_configuration
+from django_rq.workers import (get_worker, get_worker_class,
+                               collect_workers_by_connection,
+                               get_all_workers_by_configuration)
 
 
 try:
@@ -218,6 +222,13 @@ class QueuesTest(TestCase):
         """
         self.assertRaises(ValueError, get_queues, 'default', 'test')
 
+    def test_get_queues_different_classes(self):
+        """
+        Checks that getting queues with different classes (defined in configuration)
+        raises an exception.
+        """
+        self.assertRaises(ValueError, get_queues, 'test', 'test1')
+
     def test_pass_queue_via_commandline_args(self):
         """
         Checks that passing queues via commandline arguments works
@@ -360,6 +371,24 @@ class DecoratorTest(TestCase):
         self.assertEqual(result.origin, 'default')
         result.delete()
 
+    def test_job_decorator_result_ttl_default(self):
+        from rq.defaults import DEFAULT_RESULT_TTL
+
+        @job
+        def test():
+            pass
+        result = test.delay()
+        self.assertEqual(result.result_ttl, DEFAULT_RESULT_TTL)
+        result.delete()
+
+    @override_settings(RQ={'AUTOCOMMIT': True, 'DEFAULT_RESULT_TTL': 5432})
+    def test_job_decorator_result_ttl(self):
+        @job
+        def test():
+            pass
+        result = test.delay()
+        self.assertEqual(result.result_ttl, 5432)
+        result.delete()
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class WorkersTest(TestCase):
@@ -380,6 +409,15 @@ class WorkersTest(TestCase):
         self.assertEqual(len(w.queues), 1)
         queue = w.queues[0]
         self.assertEqual(queue.name, 'test')
+
+    def test_get_worker_custom_classes(self):
+        w = get_worker('test',
+                       job_class='django_rq.tests.DummyJob',
+                       queue_class='django_rq.tests.DummyQueue',
+                       worker_class='django_rq.tests.DummyWorker')
+        self.assertIs(w.job_class, DummyJob)
+        self.assertIsInstance(w.queues[0], DummyQueue)
+        self.assertIsInstance(w, DummyWorker)
 
     def test_get_current_job(self):
         """
@@ -550,10 +588,10 @@ class ViewTest(TestCase):
         worker1 = get_worker()
         worker2 = get_worker('test')
         workers_collections = [
-            {'config': {'some_config': 1}, 'all_workers': [worker1]},
-            {'config': {'some_config': 2}, 'all_workers': [worker2]},
+            {'config': {'URL': 'redis://'}, 'all_workers': [worker1]},
+            {'config': {'URL': 'redis://localhost/1'}, 'all_workers': [worker2]},
         ]
-        result = get_all_workers_by_configuration({'some_config': 1}, workers_collections)
+        result = get_all_workers_by_configuration({'URL': 'redis://'}, workers_collections)
         self.assertEqual(result, [worker1])
 
     def test_workers(self):
@@ -766,6 +804,25 @@ class RedisCacheTest(TestCase):
         self.assertEqual(connection_kwargs['password'], None)
 
 
+class DummyJob(Job):
+    pass
+
+
+class JobClassTest(TestCase):
+
+    def test_default_job_class(self):
+        job_class = get_job_class()
+        self.assertIs(job_class, Job)
+
+    @override_settings(RQ={'JOB_CLASS': 'django_rq.tests.DummyJob'})
+    def test_custom_class(self):
+        job_class = get_job_class()
+        self.assertIs(job_class, DummyJob)
+
+    def test_local_override(self):
+        self.assertIs(get_job_class('django_rq.tests.DummyJob'), DummyJob)
+
+
 class DummyQueue(DjangoRQ):
     """Just Fake class for the following test"""
 
@@ -783,6 +840,25 @@ class QueueClassTest(TestCase):
     def test_in_kwargs(self):
         queue = get_queue('test', queue_class=DummyQueue)
         self.assertIsInstance(queue, DummyQueue)
+
+
+class DummyWorker(Worker):
+    pass
+
+
+class WorkerClassTest(TestCase):
+
+    def test_default_worker_class(self):
+        worker = get_worker('test')
+        self.assertIsInstance(worker, Worker)
+
+    @override_settings(RQ={'WORKER_CLASS': 'django_rq.tests.DummyWorker'})
+    def test_custom_class(self):
+        worker = get_worker('test')
+        self.assertIsInstance(worker, DummyWorker)
+
+    def test_local_override(self):
+        self.assertIs(get_worker_class('django_rq.tests.DummyWorker'), DummyWorker)
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})

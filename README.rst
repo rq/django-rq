@@ -140,6 +140,18 @@ decorator that comes with ``django_rq``:
         pass
     long_running_func.delay() # Enqueue function in "high" queue
 
+It's possible to specify default for ``result_ttl`` decorator keyword argument
+via ``DEFAULT_RESULT_TTL`` setting:
+
+.. code-block:: python
+
+    RQ = {
+        'DEFAULT_RESULT_TTL': 5000,
+    }
+
+With this setting, job decorator will set ``result_ttl`` to 5000 unless it's
+specified explicitly.
+
 
 Running workers
 ---------------
@@ -152,15 +164,21 @@ If you want to run ``rqworker`` in burst mode, you can pass in the ``--burst`` f
 
     python manage.py rqworker high default low --burst
 
-If you need to use a custom worker class, you can pass in the ``--worker-class`` flag
+If you need to use custom worker, job or queue classes, it is best to use global settings
+(see `Custom queue classes`_ and `Custom job and worker classes`_). However, it is also possible
+to override such settings with command line options as follows.
+
+To use a custom worker class, you can pass in the ``--worker-class`` flag
 with the path to your worker::
 
     python manage.py rqworker high default low --worker-class 'path.to.GeventWorker'
 
-If you need to use a custom queue class, you can pass in the ``--queue-class`` flag
+To use a custom queue class, you can pass in the ``--queue-class`` flag
 with the path to your queue class::
 
     python manage.py rqworker high default low --queue-class 'path.to.CustomQueue'
+
+To use a custom job class, provide ``--job-class`` flag.
 
 Support for RQ Scheduler
 ------------------------
@@ -332,6 +350,30 @@ or you can specify ``DjangoRQ`` to use a custom class for all your queues in ``R
     }
 
 Custom queue classes should inherit from ``django_rq.queues.DjangoRQ``.
+
+If you are using more than one queue class (not recommended), be sure to only run workers
+on queues with same queue class. For example if you have two queues defined in ``RQ_QUEUES`` and
+one has custom class specified, you would have to run at least two separate workers for each
+queue.
+
+Custom job and worker classes
+-----------------------------
+
+Similarly to custom queue classes, global custom job and worker classes can be configured using
+``JOB_CLASS`` and ``WORKER_CLASS`` settings:
+
+.. code-block:: python
+
+    RQ = {
+        'JOB_CLASS': 'module.path.CustomJobClass',
+        'WORKER_CLASS': 'module.path.CustomWorkerClass',
+    }
+
+Custom job class should inherit from ``rq.job.Job``. It will be used for all jobs
+if configured.
+
+Custom worker class should inherit from ``rq.worker.Worker``. It will be used for running
+all workers unless overriden by ``rqworker`` management command ``worker-class`` option.
 
 Testing tip
 -----------
