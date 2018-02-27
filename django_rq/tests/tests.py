@@ -1,5 +1,6 @@
 import time
 import uuid
+from datetime import datetime
 from unittest import skipIf
 
 from django.contrib.auth.models import User
@@ -583,6 +584,24 @@ class ViewTest(TestCase):
             reverse('rq_deferred_jobs', args=[queue_index])
         )
         self.assertEqual(response.context['jobs'], [job])
+
+    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    def test_scheduled_jobs(self):
+        queue_index = get_queue_index('django_rq_test')
+
+        scheduler = get_scheduler('django_rq_test')
+        job = scheduler.enqueue_at(
+            datetime(2099, 1, 1),
+            divide,
+            [1, 2],
+        )
+
+        response = self.client.get(
+            reverse('rq_scheduled_jobs', args=[queue_index])
+        )
+        self.assertEqual(response.context['jobs'], [job])
+        job.delete()
+        scheduler.cancel(job)
 
     def test_get_all_workers(self):
         worker1 = get_worker()

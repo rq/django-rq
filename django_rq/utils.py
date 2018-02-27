@@ -6,6 +6,13 @@ from .settings import QUEUES_LIST
 from .templatetags.django_rq import to_localtime
 from .workers import collect_workers_by_connection, get_all_workers_by_configuration
 
+try:
+    from rq_scheduler import Scheduler
+    from .queues import get_scheduler
+    RQ_SCHEDULER_INSTALLED = True
+except ImportError:
+    RQ_SCHEDULER_INSTALLED = False
+
 
 def get_statistics():
     queues = []
@@ -64,5 +71,10 @@ def get_statistics():
             queue_data['started_jobs'] = len(started_job_registry)
             queue_data['deferred_jobs'] = len(deferred_job_registry)
 
+            if RQ_SCHEDULER_INSTALLED:
+                scheduler = get_scheduler(queue.name)
+                queue_data['scheduled_jobs'] = len(
+                    [job for job in scheduler.get_jobs() if job.origin == queue.name])
+
         queues.append(queue_data)
-    return {'queues': queues}
+    return {'queues': queues, 'display_scheduled_jobs': RQ_SCHEDULER_INSTALLED}
