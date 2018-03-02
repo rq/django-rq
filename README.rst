@@ -271,7 +271,13 @@ Additionaly, these statistics are also accessible from  the command line.
 
 Configuring Sentry
 -------------------
-Use ``sentry-dsn`` parameter when running rqworker. ``./manage.py rqworker --sentry-dsn=https://*****@sentry.io/222222``
+The ``SENTRY_DSN`` value from ``settings.py`` is used by default:
+
+``SENTRY_DSN = 'https://*****@sentry.io/222222'``
+
+Also you can specify ``sentry-dsn`` parameter when running rqworker:
+
+``./manage.py rqworker --sentry-dsn=https://*****@sentry.io/222222``
 
 Configuring Logging
 -------------------
