@@ -1,10 +1,10 @@
+from django.conf import settings as django_settings
+from django.utils import six
 from django.utils.translation import activate
 from rq import Worker
 from rq.utils import import_attribute
 
-from django.conf import settings
-from django.utils import six
-
+from . import settings
 from .jobs import get_job_class
 from .queues import filter_connection_params, get_connection, get_queues
 
@@ -41,7 +41,7 @@ def get_worker_class(worker_class=None):
 
 def activate_localization():
     if getattr(settings, 'RQ_USE_LOCALIZATION', False):
-        activate(getattr(settings, 'RQ_LANGUAGE_CODE', settings.LANGUAGE_CODE))
+        activate(getattr(settings, 'RQ_LANGUAGE_CODE', django_settings.LANGUAGE_CODE))
 
 
 def get_worker(*queue_names, **kwargs):
