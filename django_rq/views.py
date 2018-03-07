@@ -16,15 +16,8 @@ from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
 from rq.worker import Worker
 
 from .queues import get_queue_by_index, get_scheduler
-from .settings import API_TOKEN
+from .settings import API_TOKEN, RQ_SCHEDULER_INSTALLED
 from .utils import get_statistics
-
-try:
-    from rq_scheduler import Scheduler
-    from .queues import get_scheduler
-    RQ_SCHEDULER_INSTALLED = True
-except ImportError:
-    RQ_SCHEDULER_INSTALLED = False
 
 
 @staff_member_required
