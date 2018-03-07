@@ -1,17 +1,10 @@
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
 
-from .queues import get_connection, get_queue_by_index
-from .settings import QUEUES_LIST
+from .queues import get_connection, get_queue_by_index, get_scheduler
+from .settings import QUEUES_LIST, RQ_SCHEDULER_INSTALLED
 from .templatetags.django_rq import to_localtime
 from .workers import collect_workers_by_connection, get_all_workers_by_configuration
-
-try:
-    from rq_scheduler import Scheduler
-    from .queues import get_scheduler
-    RQ_SCHEDULER_INSTALLED = True
-except ImportError:
-    RQ_SCHEDULER_INSTALLED = False
 
 
 def get_statistics():

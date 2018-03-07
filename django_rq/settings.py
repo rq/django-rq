@@ -5,6 +5,13 @@ from django.core.exceptions import ImproperlyConfigured
 
 from .queues import get_unique_connection_configs
 
+try:
+    from rq_scheduler import Scheduler
+    from .queues import get_scheduler
+    RQ_SCHEDULER_INSTALLED = True
+except ImportError:
+    RQ_SCHEDULER_INSTALLED = False
+
 SHOW_ADMIN_LINK = getattr(settings, 'RQ_SHOW_ADMIN_LINK', False)
 
 QUEUES = getattr(settings, 'RQ_QUEUES', None)
