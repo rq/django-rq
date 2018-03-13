@@ -232,8 +232,7 @@ def scheduled_jobs(request, queue_index):
     queue = get_queue_by_index(queue_index)
 
     scheduler = get_scheduler(queue.name)
-    all_jobs = [job for job in scheduler.get_jobs()
-            if job.origin == queue.name]
+    all_jobs = scheduler.get_jobs()
 
     items_per_page = 100
     num_jobs = len(all_jobs)
