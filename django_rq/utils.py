@@ -66,7 +66,7 @@ def get_statistics():
 
             if RQ_SCHEDULER_INSTALLED:
                 scheduler = get_scheduler(queue.name)
-                queue_data['scheduled_jobs'] = len(scheduler.get_jobs())
+                queue_data['scheduled_jobs'] = scheduler.count()
 
         queues.append(queue_data)
     return {'queues': queues, 'display_scheduled_jobs': RQ_SCHEDULER_INSTALLED}
