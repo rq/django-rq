@@ -232,17 +232,16 @@ def scheduled_jobs(request, queue_index):
     queue = get_queue_by_index(queue_index)
 
     scheduler = get_scheduler(queue.name)
-    all_jobs = scheduler.get_jobs()
 
     items_per_page = 100
-    num_jobs = len(all_jobs)
+    num_jobs = scheduler.count()
     page = int(request.GET.get('page', 1))
 
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
-        jobs = all_jobs[offset:(offset + items_per_page)]
+        jobs = scheduler.get_jobs(offset=offset, length=offset + items_per_page - 1)
     else:
         jobs = []
         page_range = []
