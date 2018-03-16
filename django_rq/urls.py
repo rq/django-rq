@@ -19,8 +19,6 @@ urlpatterns = [
         views.started_jobs, name='rq_started_jobs'),
     url(r'^queues/(?P<queue_index>[\d]+)/deferred/$',
         views.deferred_jobs, name='rq_deferred_jobs'),
-    url(r'^queues/(?P<queue_index>[\d]+)/scheduled/$',
-        views.scheduled_jobs, name='rq_scheduled_jobs'),
     url(r'^queues/(?P<queue_index>[\d]+)/empty/$',
         views.clear_queue, name='rq_clear'),
     url(r'^queues/(?P<queue_index>[\d]+)/requeue-all/$',

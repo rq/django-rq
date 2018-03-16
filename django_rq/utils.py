@@ -48,6 +48,14 @@ def get_statistics():
             queue_data['started_jobs'] = '-'
             queue_data['deferred_jobs'] = '-'
 
+        elif RQ_SCHEDULER_INSTALLED and queue.name == 'scheduled':
+            scheduler = get_scheduler()
+            queue_data['jobs'] = scheduler.count()
+            queue_data['workers'] = '-'
+            queue_data['finished_jobs'] = '-'
+            queue_data['started_jobs'] = '-'
+            queue_data['deferred_jobs'] = '-'
+
         else:
             connection = get_connection(queue.name)
             all_workers = get_all_workers_by_configuration(
@@ -63,10 +71,6 @@ def get_statistics():
             queue_data['finished_jobs'] = len(finished_job_registry)
             queue_data['started_jobs'] = len(started_job_registry)
             queue_data['deferred_jobs'] = len(deferred_job_registry)
-
-            if RQ_SCHEDULER_INSTALLED:
-                scheduler = get_scheduler(queue.name)
-                queue_data['scheduled_jobs'] = scheduler.count()
 
         queues.append(queue_data)
     return {'queues': queues, 'display_scheduled_jobs': RQ_SCHEDULER_INSTALLED}
