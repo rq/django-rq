@@ -597,7 +597,7 @@ class ViewTest(TestCase):
         )
 
         response = self.client.get(
-            reverse('rq_scheduled_jobs', args=[queue_index])
+            reverse('rq_jobs', args=[queue_index])
         )
         self.assertEqual(response.context['jobs'], [job])
         job.delete()
