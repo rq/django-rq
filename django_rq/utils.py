@@ -49,7 +49,7 @@ def get_statistics():
             queue_data['deferred_jobs'] = '-'
 
         elif RQ_SCHEDULER_INSTALLED and queue.name == 'scheduled':
-            scheduler = get_scheduler()
+            scheduler = get_scheduler(connection=queue.connection)
             queue_data['jobs'] = scheduler.count()
             queue_data['workers'] = '-'
             queue_data['finished_jobs'] = '-'

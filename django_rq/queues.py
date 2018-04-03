@@ -255,13 +255,15 @@ instance instead of a ``Queue`` instance.
 try:
     from rq_scheduler import Scheduler
 
-    def get_scheduler(name='default', interval=60):
+    def get_scheduler(name='default', interval=60, connection=None):
         """
         Returns an RQ Scheduler instance using parameters defined in
         ``RQ_QUEUES``
         """
+        if not connection:
+            connection = get_connection(name)
         return Scheduler(name, interval=interval,
-                         connection=get_connection(name))
+                         connection=connection)
 except ImportError:
     def get_scheduler(*args, **kwargs):
         raise ImproperlyConfigured('rq_scheduler not installed')

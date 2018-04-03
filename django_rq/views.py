@@ -45,7 +45,7 @@ def jobs(request, queue_index):
     offset = items_per_page * (page - 1)
 
     if RQ_SCHEDULER_INSTALLED and queue.name == 'scheduled':
-        scheduler = get_scheduler()
+        scheduler = get_scheduler(connection=queue.connection)
         all_jobs = scheduler.get_jobs(offset=offset, length=items_per_page)
         num_jobs = scheduler.count()
     else:
