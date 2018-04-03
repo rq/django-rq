@@ -27,6 +27,6 @@ EXCEPTION_HANDLERS = getattr(settings, 'RQ_EXCEPTION_HANDLERS', [])
 API_TOKEN = getattr(settings, 'RQ_API_TOKEN', '')
 
 # Activate locale for each task
-RQ_USE_LOCALIZATION = getattr(settings, 'RQ_USE_LOCALIZATION', False)
+RQ_USE_L10N = getattr(settings, 'RQ_USE_L10N', settings.USE_L10N)
 # Use specified language code to activate locale
 RQ_LANGUAGE_CODE = getattr(settings, 'RQ_LANGUAGE_CODE', settings.LANGUAGE_CODE)

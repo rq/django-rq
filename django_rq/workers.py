@@ -39,11 +39,6 @@ def get_worker_class(worker_class=None):
     return worker_class
 
 
-def activate_localization():
-    if getattr(settings, 'RQ_USE_LOCALIZATION', False):
-        activate(getattr(settings, 'RQ_LANGUAGE_CODE', django_settings.LANGUAGE_CODE))
-
-
 def get_worker(*queue_names, **kwargs):
     """
     Returns a RQ worker for all queues or specified ones.
@@ -55,7 +50,8 @@ def get_worker(*queue_names, **kwargs):
     # normalize queue_class to what get_queues returns
     queue_class = queues[0].__class__
     worker_class = get_worker_class(kwargs.pop('worker_class', None))
-    activate_localization()
+    if settings.RQ_USE_L10N:
+        activate(getattr(settings, 'RQ_LANGUAGE_CODE', django_settings.LANGUAGE_CODE))
     return worker_class(queues,
                         connection=queues[0].connection,
                         exception_handlers=get_exception_handlers() or None,
