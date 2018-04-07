@@ -255,7 +255,7 @@ instance instead of a ``Queue`` instance.
 try:
     from rq_scheduler import Scheduler
 
-    def get_scheduler(name='default', interval=60, connection=None):
+    def get_scheduler(connection, name='default', interval=60):
         """
         Returns an RQ Scheduler instance using parameters defined in
         ``RQ_QUEUES``
