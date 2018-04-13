@@ -1,4 +1,5 @@
 import redis
+from redis.sentinel import Sentinel
 from rq.queue import FailedQueue, Queue
 from rq.utils import import_attribute
 
@@ -110,7 +111,14 @@ def get_redis_connection(config, use_strict_redis=False):
     if 'UNIX_SOCKET_PATH' in config:
         return redis_cls(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
 
-    return redis_cls(host=config['HOST'], port=config['PORT'], db=config['DB'], password=config.get('PASSWORD', None))
+    if 'SENTINELS' in config:
+        sentinel = Sentinel(config['SENTINELS'])
+        return sentinel.master_for(
+            service_name=config['MASTER_NAME'], redis_class=redis_cls, db=config.get('DB'),
+            password=config.get('PASSWORD'), socket_timeout=config.get('SOCKET_TIMEOUT')
+        )
+
+    return redis_cls(host=config['HOST'], port=config['PORT'], db=config['DB'], password=config.get('PASSWORD'))
 
 
 def get_connection(name='default', use_strict_redis=False):
@@ -176,7 +184,8 @@ def filter_connection_params(queue_params):
     Filters the queue params to keep only the connection related params.
     """
     CONNECTION_PARAMS = ('URL', 'DB', 'USE_REDIS_CACHE',
-                         'UNIX_SOCKET_PATH', 'HOST', 'PORT', 'PASSWORD')
+                         'UNIX_SOCKET_PATH', 'HOST', 'PORT', 'PASSWORD',
+                         'SENTINELS', 'MASTER_NAME', 'SOCKET_TIMEOUT')
 
     #return {p:v for p,v in queue_params.items() if p in CONNECTION_PARAMS}
     # Dict comprehension compatible with python 2.6

@@ -47,6 +47,13 @@ Installation
             'PASSWORD': 'some-password',
             'DEFAULT_TIMEOUT': 360,
         },
+        'with-sentinel': {
+           'SENTINELS': [('localhost', 26736), ('localhost', 26737)],
+           'MASTER_NAME': 'redismaster',
+           'DB': 0,
+           'PASSWORD': 'secret',
+           'SOCKET_TIMEOUT': None,
+        },
         'high': {
             'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0'), # If you're on Heroku
             'DEFAULT_TIMEOUT': 500,
