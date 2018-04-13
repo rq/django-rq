@@ -752,7 +752,7 @@ class SchedulerTest(TestCase):
         Ensure get_scheduler creates a scheduler instance with the right
         connection params for `test` queue.
         """
-        connection = get_connection('default')
+        connection = get_connection('test')
         config = QUEUES['test']
         scheduler = get_scheduler(connection, 'test')
         connection_kwargs = scheduler.connection.connection_pool.connection_kwargs
