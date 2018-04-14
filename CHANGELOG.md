@@ -1,5 +1,4 @@
 # Version 1.1
-- Added `rqstats` management command. Thanks @seiryuz!
 - Fixed some admin related bugs. Thanks @seiryuz!
 - More Django 2.0 compatibility fixes. Thanks @selwin and @koddr!
 - Custom `Job` and `Worker` classes are now supported. Thanks @skirsdeda!
