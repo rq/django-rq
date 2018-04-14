@@ -336,7 +336,7 @@ transports (the default transport). Please configure ``Raven`` to use
 
 For more info, refer to `Raven's documentation <http://raven.readthedocs.org/>`__.
 
-Custom queue classes
+Custom Queue Classes
 --------------------
 
 By default, every queue will use ``DjangoRQ`` class. If you want to use a custom queue class, you can do so
@@ -368,7 +368,7 @@ on queues with same queue class. For example if you have two queues defined in `
 one has custom class specified, you would have to run at least two separate workers for each
 queue.
 
-Custom job and worker classes
+Custom Job and Worker Classes
 -----------------------------
 
 Similarly to custom queue classes, global custom job and worker classes can be configured using
@@ -387,7 +387,7 @@ if configured.
 Custom worker class should inherit from ``rq.worker.Worker``. It will be used for running
 all workers unless overriden by ``rqworker`` management command ``worker-class`` option.
 
-Testing tip
+Testing Tip
 -----------
 
 For an easier testing process, you can run a worker synchronously this way:
@@ -403,7 +403,7 @@ For an easier testing process, you can run a worker synchronously this way:
             get_worker().work(burst=True)  # Processes all jobs then stop.
             ...                      # Asserts that the job stuff is done.
 
-Synchronous mode
+Synchronous Mode
 ----------------
 
 You can set the option ``ASYNC`` to ``False`` to make synchronous operation the
