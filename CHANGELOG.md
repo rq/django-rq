@@ -1,3 +1,13 @@
+# Version 1.1
+- Fixed some admin related bugs. Thanks @seiryuz!
+- More Django 2.0 compatibility fixes. Thanks @selwin and @koddr!
+- Custom `Job` and `Worker` classes are now supported. Thanks @skirsdeda!
+- `SENTRY_DSN` value in `settings.py` will now be used by default. Thanks @inetss!
+
+# 1.0.1
+- Django 2.0 compatibility fixes.
+- Minor bug fixes
+
 # 1.0.0
 
 -   You can now view worker information
