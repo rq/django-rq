@@ -71,7 +71,7 @@ Installation
 
     # For Django >= 2.0
     urlpatterns += [
-        url(r'^django-rq/', (urlpatterns, '', 'django_rq'))
+        path('django-rq/', include('django_rq.urls'))
     ]
 
 =====
