@@ -1,25 +1,24 @@
 {% extends "admin/index.html" %}
 
-{% block sidebar %}
-    
-
+{% block extrastyle %}
     {{ block.super }}
+    <style>#django-rq table {width: 100%;}</style>
+{% endblock %}
 
-    <div id = 'django-rq' style = "float: left">
+{% block sidebar %}
+    {{ block.super }}
+    <div id="django-rq">
         <div class="module">
-            <table style="width: 498px">
+            <table>
                 <caption>Django RQ</caption>
                 <tbody>
                     <tr>
                         <th>
-                            <a href = "{% url 'rq_home' %}">
-                                Queues
-                            </a>
+                            <a href = "{% url 'rq_home' %}">Queues</a>
                         </th>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
-
 {% endblock %}
