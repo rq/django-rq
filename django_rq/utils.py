@@ -28,11 +28,9 @@ def get_statistics():
         else:
             oldest_job_timestamp = "-"
 
-        # parse_class is not needed and not JSON serializable
-        try:
-            del(connection_kwargs['parser_class'])
-        except KeyError:
-            pass
+        # parse_class and connection_pool are not needed and not JSON serializable
+        connection_kwargs.pop('parser_class', None)
+        connection_kwargs.pop('connection_pool', None)
 
         queue_data = {
             'name': queue.name,

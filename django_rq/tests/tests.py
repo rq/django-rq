@@ -15,7 +15,7 @@ from django.test.client import Client
 
 from django.conf import settings
 
-from mock import patch, PropertyMock
+from mock import patch, PropertyMock, MagicMock
 from rq import get_current_job, Queue
 from rq.job import Job
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
@@ -138,6 +138,32 @@ class QueuesTest(TestCase):
         self.assertEqual(connection_kwargs['host'], config['HOST'])
         self.assertEqual(connection_kwargs['port'], config['PORT'])
         self.assertEqual(connection_kwargs['db'], config['DB'])
+
+    @patch('django_rq.queues.Sentinel')
+    def test_get_connection_sentinel(self, sentinel_class_mock):
+        """
+        Test that get_connection returns the right connection based for
+        `sentinel` queue.
+        """
+        sentinel_mock = MagicMock()
+        sentinel_mock.master_for.return_value = sentinel_mock
+        sentinel_class_mock.side_effect = [sentinel_mock]
+
+        config = QUEUES['sentinel']
+        connection = get_connection('sentinel')
+
+        self.assertEqual(connection, sentinel_mock)
+        sentinel_class_mock.assert_called_once()
+        sentinel_mock.master_for.assert_called_once()
+
+        sentinel_instances = sentinel_class_mock.call_args[0][0]
+        self.assertListEqual(config['SENTINELS'], sentinel_instances)
+
+        connection_kwargs = sentinel_mock.master_for.call_args[1]
+        self.assertEqual(connection_kwargs['service_name'], config['MASTER_NAME'])
+        self.assertEqual(connection_kwargs['db'], config['DB'])
+        self.assertEqual(connection_kwargs['password'], config['PASSWORD'])
+        self.assertEqual(connection_kwargs['socket_timeout'], config['SOCKET_TIMEOUT'])
 
     def test_get_queue_default(self):
         """
