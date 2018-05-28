@@ -118,7 +118,7 @@ RQ_QUEUES = {
         'PORT': 1,
         'DB': 1,
         'DEFAULT_TIMEOUT': 400,
-        'QUEUE_CLASS': 'django_rq.tests.DummyQueue'
+        'QUEUE_CLASS': 'django_rq.tests.fixtures.DummyQueue'
     },
     'test2': {
         'HOST': REDIS_HOST,

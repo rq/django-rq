@@ -30,10 +30,10 @@ from django_rq.queues import (
 )
 from django_rq import thread_queue
 from django_rq.templatetags.django_rq import to_localtime
+from django_rq.tests.fixtures import DummyJob, DummyQueue, DummyWorker
 from django_rq.workers import (get_worker, get_worker_class,
                                collect_workers_by_connection,
                                get_all_workers_by_configuration)
-
 
 try:
     from rq_scheduler import Scheduler
@@ -438,9 +438,9 @@ class WorkersTest(TestCase):
 
     def test_get_worker_custom_classes(self):
         w = get_worker('test',
-                       job_class='django_rq.tests.DummyJob',
-                       queue_class='django_rq.tests.DummyQueue',
-                       worker_class='django_rq.tests.DummyWorker')
+                       job_class='django_rq.tests.fixtures.DummyJob',
+                       queue_class='django_rq.tests.fixtures.DummyQueue',
+                       worker_class='django_rq.tests.fixtures.DummyWorker')
         self.assertIs(w.job_class, DummyJob)
         self.assertIsInstance(w.queues[0], DummyQueue)
         self.assertIsInstance(w, DummyWorker)
@@ -478,6 +478,36 @@ class ViewTest(TestCase):
         self.client = Client()
         self.client.login(username=self.user.username, password='pass')
         get_queue('django_rq_test').connection.flushall()
+
+    def test_jobs(self):
+        """Jobs in queue are displayed properly"""
+        queue = get_queue('default')
+        job = queue.enqueue(access_self)
+        queue_index = get_queue_index('default')
+        response = self.client.get(reverse('rq_jobs', args=[queue_index]))
+        self.assertEqual(response.context['jobs'], [job])
+
+        # This page shouldn't fail when job.data is corrupt
+        queue.connection.hset(job.key, 'data', 'unpickleable data')
+        response = self.client.get(reverse('rq_jobs', args=[queue_index]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('UnpicklingError', response.content)
+
+    def test_job_details(self):
+        """Job data is displayed properly"""
+        queue = get_queue('default')
+        job = queue.enqueue(access_self)
+        queue_index = get_queue_index('default')
+
+        url = reverse('rq_job_detail', args=[queue_index, job.id])
+        response = self.client.get(url)
+        self.assertEqual(response.context['job'], job)
+
+        # This page shouldn't fail when job.data is corrupt
+        queue.connection.hset(job.key, 'data', 'unpickleable data')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('UnpicklingError', response.content)
 
     def test_requeue_job(self):
         """
@@ -830,27 +860,22 @@ class RedisCacheTest(TestCase):
         self.assertEqual(connection_kwargs['password'], None)
 
 
-class DummyJob(Job):
-    pass
-
-
 class JobClassTest(TestCase):
 
     def test_default_job_class(self):
         job_class = get_job_class()
         self.assertIs(job_class, Job)
 
-    @override_settings(RQ={'JOB_CLASS': 'django_rq.tests.DummyJob'})
+    @override_settings(RQ={'JOB_CLASS': 'django_rq.tests.fixtures.DummyJob'})
     def test_custom_class(self):
         job_class = get_job_class()
         self.assertIs(job_class, DummyJob)
 
     def test_local_override(self):
-        self.assertIs(get_job_class('django_rq.tests.DummyJob'), DummyJob)
-
-
-class DummyQueue(DjangoRQ):
-    """Just Fake class for the following test"""
+        self.assertIs(
+            get_job_class('django_rq.tests.fixtures.DummyJob'),
+            DummyJob
+        )
 
 
 class QueueClassTest(TestCase):
@@ -868,23 +893,22 @@ class QueueClassTest(TestCase):
         self.assertIsInstance(queue, DummyQueue)
 
 
-class DummyWorker(Worker):
-    pass
-
-
 class WorkerClassTest(TestCase):
 
     def test_default_worker_class(self):
         worker = get_worker('test')
         self.assertIsInstance(worker, Worker)
 
-    @override_settings(RQ={'WORKER_CLASS': 'django_rq.tests.DummyWorker'})
+    @override_settings(RQ={'WORKER_CLASS': 'django_rq.tests.fixtures.DummyWorker'})
     def test_custom_class(self):
         worker = get_worker('test')
         self.assertIsInstance(worker, DummyWorker)
 
     def test_local_override(self):
-        self.assertIs(get_worker_class('django_rq.tests.DummyWorker'), DummyWorker)
+        self.assertIs(
+            get_worker_class('django_rq.tests.fixtures.DummyWorker'),
+            DummyWorker
+        )
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})

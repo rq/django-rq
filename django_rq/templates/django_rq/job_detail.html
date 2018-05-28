@@ -78,7 +78,7 @@
             </div>
         </div>
         {% endif %}
-        
+
         {% if job.started_at %}
         <div class="form-row">
             <div>
@@ -107,7 +107,7 @@
         <div class="form-row">
             <div>
                 <label class="required">Callable:</label>
-                <div class="data">{{ job.func_name }}</div>
+                <div class="data">{{ job|show_func_name }}</div>
             </div>
         </div>
 
@@ -115,12 +115,16 @@
             <div>
                 <label class="required">Args:</label>
                 <div class="data">
-                    {% if job.args %}
-                    <ul>
-                        {% for arg in job.args %}
-                            <li>{{ arg }}</li>
-                        {% endfor %}
-                    </ul>
+                    {% if data_is_valid %}
+                        {% if job.args %}
+                          <ul>
+                              {% for arg in job.args %}
+                                  <li>{{ arg }}</li>
+                              {% endfor %}
+                          </ul>
+                        {% endif %}
+                    {% else %}
+                        Unpickling Error
                     {% endif %}
                 </div>
             </div>
@@ -130,12 +134,16 @@
             <div>
                 <label class="required">Kwargs:</label>
                 <div class="data">
-                    {% if job.kwargs %}
-                        <ul>
-                            {% for key, value in job.kwargs.items %}
-                                <li>{{ key }}: {{ value|escape }}</li>
-                            {% endfor %}
-                        </ul>
+                    {% if data_is_valid %}
+                        {% if job.kwargs %}
+                            <ul>
+                                {% for key, value in job.kwargs.items %}
+                                    <li>{{ key }}: {{ value|escape }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% else %}
+                        Unpickling Error
                     {% endif %}
                 </div>
             </div>
