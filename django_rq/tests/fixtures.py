@@ -1,3 +1,4 @@
+from rq import get_current_job
 from rq.job import Job
 from rq.worker import Worker
 
@@ -14,3 +15,7 @@ class DummyQueue(DjangoRQ):
 
 class DummyWorker(Worker):
     pass
+
+
+def access_self():
+    return get_current_job().id
