@@ -16,7 +16,7 @@ env:
 matrix:
   exclude:
     - python: "2.7"
-      env: DJANGO=2.0
+      env: DJANGO=2.0.5
 
 install:
   - pip install Django==$DJANGO times docutils pygments
