@@ -180,6 +180,7 @@ def worker_details(request, queue_index, key):
         'worker': worker,
         'queue_names': queue_names,
         'job': worker.get_current_job()
+        'total_working_time': worker.total_working_time * 1000
     }
     return render(request, 'django_rq/worker_details.html', context_data)
 
