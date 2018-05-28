@@ -491,7 +491,7 @@ class ViewTest(TestCase):
         queue.connection.hset(job.key, 'data', 'unpickleable data')
         response = self.client.get(reverse('rq_jobs', args=[queue_index]))
         self.assertEqual(response.status_code, 200)
-        self.assertIn('UnpicklingError', response.content)
+        self.assertIn('UnpicklingError', response.content.encode('utf-8'))
 
     def test_job_details(self):
         """Job data is displayed properly"""
@@ -507,7 +507,7 @@ class ViewTest(TestCase):
         queue.connection.hset(job.key, 'data', 'unpickleable data')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('UnpicklingError', response.content)
+        self.assertIn('UnpicklingError', response.content.encode('utf-8'))
 
     def test_requeue_job(self):
         """
