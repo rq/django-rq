@@ -438,7 +438,7 @@ Running Tests
 
 To run ``django_rq``'s test suite::
 
-    `which django-admin.py` test django_rq --settings=django_rq.test_settings --pythonpath=.
+    `which django-admin.py` test django_rq --settings=django_rq.tests.settings --pythonpath=.
 
 
 ===================

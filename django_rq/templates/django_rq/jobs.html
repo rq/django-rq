@@ -97,7 +97,7 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ job.get_status }}</td>
-                                <td>{{ job.func_name }}</td>
+                                <td>{{ job|show_func_name }}</td>
                                 {% block extra_columns_values %}
                                 {% endblock extra_columns_values %}
                             </tr>

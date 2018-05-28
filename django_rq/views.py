@@ -9,7 +9,7 @@ from django.shortcuts import redirect, render
 
 from redis.exceptions import ResponseError
 from rq import requeue_job
-from rq.exceptions import NoSuchJobError
+from rq.exceptions import NoSuchJobError, UnpickleError
 from rq.job import Job
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
@@ -232,10 +232,17 @@ def job_detail(request, queue_index, job_id):
     except NoSuchJobError:
         raise Http404("Couldn't find job with this ID: %s" % job_id)
 
+    try:
+        job.func_name
+        data_is_valid = True
+    except UnpickleError:
+        data_is_valid = False
+
     context_data = {
         'queue_index': queue_index,
         'job': job,
         'queue': queue,
+        'data_is_valid': data_is_valid
     }
     return render(request, 'django_rq/job_detail.html', context_data)
 
