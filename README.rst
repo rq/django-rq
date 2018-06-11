@@ -440,6 +440,35 @@ To run ``django_rq``'s test suite::
 
     `which django-admin.py` test django_rq --settings=django_rq.tests.settings --pythonpath=.
 
+===================
+Deploying on Ubuntu
+===================
+
+Create an rqworker service that runs the high, default, and low queues.
+
+sudo vi /etc/systemd/system/rqworker.service
+
+.. code-block:: bash
+
+    [Unit]
+    Description=Django-RQ Worker
+    After=network.target
+
+    [Service]
+    WorkingDirectory=<<path_to_your_project_folder>>
+    ExecStart=/home/ubuntu/.virtualenv/<<your_virtualenv>>/bin/python \
+        <<path_to_your_project_folder>>/manage.py \
+        rqworker high default low
+
+    [Install]
+    WantedBy=multi-user.target
+
+Enable and start the sevice
+
+.. code-block:: bash
+
+    sudo systemctl enbable rqworker
+    sudo systemctl start rqworker
 
 ===================
 Deploying on Heroku
