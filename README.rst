@@ -467,7 +467,7 @@ Enable and start the sevice
 
 .. code-block:: bash
 
-    sudo systemctl enbable rqworker
+    sudo systemctl enable rqworker
     sudo systemctl start rqworker
 
 ===================
