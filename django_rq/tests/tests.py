@@ -295,17 +295,17 @@ class QueuesTest(TestCase):
         """
         Checks whether asynchronous settings work
         """
-        # Make sure async is not set by default
+        # Make sure is_async is not set by default
         default_queue = get_queue('default')
-        self.assertTrue(default_queue._async)
+        self.assertTrue(default_queue._is_async)
 
-        # Make sure async override works
-        default_queue_async = get_queue('default', async=False)
-        self.assertFalse(default_queue_async._async)
+        # Make sure is_async override works
+        default_queue_async = get_queue('default', is_async=False)
+        self.assertFalse(default_queue_async._is_async)
 
-        # Make sure async setting works
+        # Make sure is_async setting works
         async_queue = get_queue('async')
-        self.assertFalse(async_queue._async)
+        self.assertFalse(async_queue._is_async)
 
     @override_settings(RQ={'AUTOCOMMIT': False})
     def test_autocommit(self):

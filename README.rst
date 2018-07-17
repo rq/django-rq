@@ -107,11 +107,11 @@ Putting jobs in the queue
     queue.enqueue(func, foo, bar=baz)
 
 In addition to ``name`` argument, ``get_queue`` also accepts ``default_timeout``,
-``async``, ``autocommit`` and ``queue_class`` arguments. For example:
+``is_async``, ``autocommit`` and ``queue_class`` arguments. For example:
 
 .. code-block:: python
 
-    queue = django_rq.get_queue('default', autocommit=True, async=True, default_timeout=360)
+    queue = django_rq.get_queue('default', autocommit=True, is_async=True, default_timeout=360)
     queue.enqueue(func, foo, bar=baz)
 
 * ``get_connection`` - accepts a single queue name argument (defaults to "default")
@@ -429,7 +429,7 @@ configuration in your settings file:
         for queueConfig in RQ_QUEUES.itervalues():
             queueConfig['ASYNC'] = False
 
-Note that setting the ``async`` parameter explicitly when calling ``get_queue``
+Note that setting the ``is_async`` parameter explicitly when calling ``get_queue``
 will override this setting.
 
 =============

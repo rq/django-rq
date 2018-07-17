@@ -1,3 +1,5 @@
+import warnings
+
 import redis
 from redis.sentinel import Sentinel
 from rq.queue import FailedQueue, Queue
@@ -137,16 +139,20 @@ def get_connection_by_index(index):
     return get_redis_connection(QUEUES_LIST[index]['connection_config'])
 
 
-def get_queue(name='default', default_timeout=None, async=None,
+def get_queue(name='default', default_timeout=None, is_async=None,
               autocommit=None, queue_class=None, job_class=None, **kwargs):
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
     from .settings import QUEUES
 
-    # If async is provided, use it, otherwise, get it from the configuration
-    if async is None:
-        async = QUEUES[name].get('ASYNC', True)
+    if 'async' in kwargs and kwargs['async'] is not None:
+        is_async = kwargs['async']
+        warnings.warn('The `async` keyword is deprecated. Use `is_async` instead', DeprecationWarning)
+
+    # If is_async is provided, use it, otherwise, get it from the configuration
+    if is_async is None:
+        is_async = QUEUES[name].get('ASYNC', True)
     # same for job_class
     job_class = get_job_class(job_class)
 
@@ -154,7 +160,7 @@ def get_queue(name='default', default_timeout=None, async=None,
         default_timeout = QUEUES[name].get('DEFAULT_TIMEOUT')
     queue_class = get_queue_class(QUEUES[name], queue_class)
     return queue_class(name, default_timeout=default_timeout,
-                       connection=get_connection(name), async=async,
+                       connection=get_connection(name), is_async=is_async,
                        job_class=job_class, autocommit=autocommit, **kwargs)
 
 
@@ -169,7 +175,7 @@ def get_queue_by_index(index):
     return get_queue_class(config)(
         config['name'],
         connection=get_redis_connection(config['connection_config']),
-        async=config.get('ASYNC', True))
+        is_async=config.get('ASYNC', True))
 
 
 def get_failed_queue(name='default'):
