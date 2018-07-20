@@ -146,7 +146,7 @@ def get_queue(name='default', default_timeout=None, is_async=None,
     """
     from .settings import QUEUES
 
-    if 'async' in kwargs and kwargs['async'] is not None:
+    if kwargs.get('async') is not None:
         is_async = kwargs['async']
         warnings.warn('The `async` keyword is deprecated. Use `is_async` instead', DeprecationWarning)
 

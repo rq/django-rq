@@ -300,7 +300,14 @@ class QueuesTest(TestCase):
         self.assertTrue(default_queue._is_async)
 
         # Make sure is_async override works
-        default_queue_async = get_queue('default', is_async=False)
+        default_queue_is_async = get_queue('default', is_async=False)
+        self.assertFalse(default_queue_is_async._is_async)
+
+        # Make sure old keyword argument 'async' works for backwards
+        # compatibility with code expecting older versions of rq or django-rq.
+        # Note 'async' is a reserved keyword in Python >= 3.7.
+        kwargs = {'async': False}
+        default_queue_async = get_queue('default', **kwargs)
         self.assertFalse(default_queue_async._is_async)
 
         # Make sure is_async setting works
