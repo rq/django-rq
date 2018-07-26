@@ -1,4 +1,9 @@
-# Version 1.1
+# Version 1.2.0 (2017-07-26)
+- Supports Python 3.7 by renaming `async` to `is_async`. Thanks @Flimm!
+- `UnpickleError` is now handled properly. Thanks @selwin!
+- Redis Sentinel support. Thanks @SpeedyCoder!
+
+# Version 1.1.0
 - Fixed some admin related bugs. Thanks @seiryuz!
 - More Django 2.0 compatibility fixes. Thanks @selwin and @koddr!
 - Custom `Job` and `Worker` classes are now supported. Thanks @skirsdeda!
