@@ -114,10 +114,15 @@ def get_redis_connection(config, use_strict_redis=False):
         return redis_cls(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
 
     if 'SENTINELS' in config:
-        sentinel = Sentinel(config['SENTINELS'])
+        sentinel_kwargs = {
+            'db': config.get('DB'),
+            'password': config.get('PASSWORD'),
+            'socket_timeout': config.get('SOCKET_TIMEOUT'),
+        }
+        sentinel_kwargs.update(config.get('CONNECTION_KWARGS', {}))
+        sentinel = Sentinel(config['SENTINELS'], **sentinel_kwargs)
         return sentinel.master_for(
-            service_name=config['MASTER_NAME'], redis_class=redis_cls, db=config.get('DB'),
-            password=config.get('PASSWORD'), socket_timeout=config.get('SOCKET_TIMEOUT')
+            service_name=config['MASTER_NAME'], redis_class=redis_cls,
         )
 
     return redis_cls(host=config['HOST'], port=config['PORT'], db=config['DB'], password=config.get('PASSWORD'))
@@ -191,7 +196,8 @@ def filter_connection_params(queue_params):
     """
     CONNECTION_PARAMS = ('URL', 'DB', 'USE_REDIS_CACHE',
                          'UNIX_SOCKET_PATH', 'HOST', 'PORT', 'PASSWORD',
-                         'SENTINELS', 'MASTER_NAME', 'SOCKET_TIMEOUT')
+                         'SENTINELS', 'MASTER_NAME', 'SOCKET_TIMEOUT',
+                         'CONNECTION_KWARGS',)
 
     #return {p:v for p,v in queue_params.items() if p in CONNECTION_PARAMS}
     # Dict comprehension compatible with python 2.6
