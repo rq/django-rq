@@ -145,7 +145,7 @@ def get_connection_by_index(index):
 
 
 def get_queue(name='default', default_timeout=None, is_async=None,
-              autocommit=None, queue_class=None, job_class=None, **kwargs):
+              autocommit=None, connection=None, queue_class=None, job_class=None, **kwargs):
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
@@ -163,9 +163,11 @@ def get_queue(name='default', default_timeout=None, is_async=None,
 
     if default_timeout is None:
         default_timeout = QUEUES[name].get('DEFAULT_TIMEOUT')
+    if connection is None:
+        connection = get_connection(name)
     queue_class = get_queue_class(QUEUES[name], queue_class)
     return queue_class(name, default_timeout=default_timeout,
-                       connection=get_connection(name), is_async=is_async,
+                       connection=connection, is_async=is_async,
                        job_class=job_class, autocommit=autocommit, **kwargs)
 
 
