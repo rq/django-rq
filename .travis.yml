@@ -13,7 +13,7 @@ env:
   - DJANGO=1.9.9
   - DJANGO=1.8.18
   - DJANGO=1.10.8
-  - DJANGO=1.11.13
+  - DJANGO=1.11.17
 
 matrix:
   exclude:
@@ -30,7 +30,7 @@ matrix:
     - python: "3.7-dev"
       env: DJANGO=1.10.8
     - python: "3.7-dev"
-      env: DJANGO=1.11.13
+      env: DJANGO=1.11.17
 
 install:
   - pip install Django==$DJANGO times docutils pygments
