@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from copy import deepcopy
 from distutils.version import LooseVersion
 
 from redis.exceptions import ConnectionError
@@ -86,6 +87,14 @@ class Command(BaseCommand):
             # Close any opened DB connection before any fork
             reset_db_connections()
 
+            rollbar_settings = getattr(settings, 'ROLLBAR', None)
+            if rollbar_settings:
+                import rollbar
+                rollbar_settings = deepcopy(rollbar_settings)
+                rollbar_settings['handler'] = 'blocking'
+                rollbar.init(**rollbar_settings)
+                w.push_exc_handler(rollbar.contrib.rq.exception_handler)
+
             if sentry_dsn:
                 try:
                     from raven import Client
@@ -101,4 +110,3 @@ class Command(BaseCommand):
         except ConnectionError as e:
             print(e)
             sys.exit(1)
-
