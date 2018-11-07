@@ -90,10 +90,11 @@ class Command(BaseCommand):
             rollbar_settings = getattr(settings, 'ROLLBAR', None)
             if rollbar_settings:
                 import rollbar
+                from rollbar.contrib.rq import exception_handler
                 rollbar_settings = deepcopy(rollbar_settings)
                 rollbar_settings['handler'] = 'blocking'
                 rollbar.init(**rollbar_settings)
-                w.push_exc_handler(rollbar.contrib.rq.exception_handler)
+                w.push_exc_handler(exception_handler)
 
             if sentry_dsn:
                 try:
