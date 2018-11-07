@@ -17,6 +17,7 @@ setup(
     install_requires=['django>=1.8.0', 'rq>=0.12'],
     extras_require = {
         'Sentry':  ['raven>=6.1.0'],
+        'Rollbar': ['rollbar>=0.14.5']
         'testing': ['mock>=2.0.0'],
     },
     classifiers=[
