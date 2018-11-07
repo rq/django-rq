@@ -292,6 +292,23 @@ Also you can specify ``sentry-dsn`` parameter when running rqworker:
 
 ``./manage.py rqworker --sentry-dsn=https://*****@sentry.io/222222``
 
+Configuring Rollbar
+-------------------
+
+The ``ROLLBAR`` value from ``settings.py`` is used by default. You must have
+installed rollbar for it to work, since the integration will be automatically
+enabled when this variable is found.
+
+.. code-block:: python
+
+    ROLLBAR = {
+        'access_token': 'ROLLBAR_ACCESS_TOKEN',
+        'environment': 'development' if DEBUG else 'production',
+        'root': BASE_DIR,
+    }
+
+Source: https://rollbar.com/error-tracking/django/
+
 Configuring Logging
 -------------------
 
