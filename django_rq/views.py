@@ -10,9 +10,10 @@ from django.shortcuts import redirect, render
 from redis.exceptions import ResponseError
 from rq import requeue_job
 from rq.exceptions import NoSuchJobError, UnpickleError
-from rq.job import Job
+from rq.job import Job, JobStatus
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
+from rq.utils import utcnow
 from rq.worker import Worker
 
 from .queues import get_queue_by_index
@@ -230,6 +231,7 @@ def job_detail(request, queue_index, job_id):
     queue = get_queue_by_index(queue_index)
     try:
         job = Job.fetch(job_id, connection=queue.connection)
+        job.is_deferred = (job.get_status() == JobStatus.DEFERRED)
     except NoSuchJobError:
         raise Http404("Couldn't find job with this ID: %s" % job_id)
 
@@ -368,3 +370,30 @@ def actions(request, queue_index):
                 messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
 
     return redirect('rq_jobs', queue_index)
+
+
+@staff_member_required
+def enqueue_job_view(request, queue_index, job_id):
+    """ Enqueue deferred jobs
+    """
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    registry = DeferredJobRegistry(queue.name, queue.connection)
+    job = Job.fetch(job_id, connection=queue.connection)
+
+    if request.method == 'POST':
+        job.enqueued_at = utcnow()
+        job.set_status(JobStatus.QUEUED)
+        job.save()
+        registry.remove(job)
+        queue.push_job_id(job_id)
+
+        messages.info(request, 'You have successfully enqueued %s' % job.id)
+        return redirect('rq_job_detail', queue_index, job_id)
+
+    context_data = {
+        'queue_index': queue_index,
+        'job': job,
+        'queue': queue,
+    }
+    return render(request, 'django_rq/delete_job.html', context_data)
