@@ -110,12 +110,25 @@ Putting jobs in the queue
     queue.enqueue(func, foo, bar=baz)
 
 In addition to ``name`` argument, ``get_queue`` also accepts ``default_timeout``,
-``is_async``, ``autocommit`` and ``queue_class`` arguments. For example:
+``is_async``, ``autocommit``, ``connection`` and ``queue_class`` arguments. For example:
 
 .. code-block:: python
 
     queue = django_rq.get_queue('default', autocommit=True, is_async=True, default_timeout=360)
     queue.enqueue(func, foo, bar=baz)
+
+You can provide your own singleton Redis connection object to this function so that it will not
+create a new connection object for each queue definition. This will help you limit
+number of connections to Redis server. For example:
+
+.. code-block:: python
+
+    import django_rq
+    import redis
+    redis_cursor = redis.StrictRedis(host='', port='', db='', password='')
+    high_queue = django_rq.get('high', connection=redis_cursor)
+    low_queue = django_rq.get('low', connection=redis_cursor)
+
 
 * ``get_connection`` - accepts a single queue name argument (defaults to "default")
   and returns a connection to the queue's `Redis`_ server:
