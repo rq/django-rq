@@ -21,7 +21,8 @@ from django_rq.decorators import job
 from django_rq.jobs import get_job_class
 from django_rq.queues import (
     get_connection, get_queue, get_queues,
-    get_unique_connection_configs, DjangoRQ
+    get_unique_connection_configs, DjangoRQ,
+    get_redis_connection
 )
 from django_rq import thread_queue
 from django_rq.templatetags.django_rq import to_localtime
@@ -122,10 +123,29 @@ class QueuesTest(TestCase):
         self.assertListEqual(config['SENTINELS'], sentinel_instances)
 
         connection_kwargs = sentinel_mock.master_for.call_args[1]
-        self.assertEqual(connection_kwargs['service_name'], config['MASTER_NAME'])
-        self.assertEqual(connection_kwargs['db'], config['DB'])
-        self.assertEqual(connection_kwargs['password'], config['PASSWORD'])
-        self.assertEqual(connection_kwargs['socket_timeout'], config['SOCKET_TIMEOUT'])
+        self.assertEqual(connection_kwargs['service_name'],
+                         config['MASTER_NAME'])
+
+    @patch('django_rq.queues.Sentinel')
+    def test_sentinel_class_initialized_with_kw_args(self, sentinel_class_mock):
+        """
+        Test that Sentinel object is initialized with proper connection kwargs.
+        """
+        config = {
+            'SENTINELS': [],
+            'MASTER_NAME': 'test_master',
+            'SOCKET_TIMEOUT': 0.2,
+            'DB': 0,
+            'CONNECTION_KWARGS': {
+                'socket_connect_timeout': 0.3
+            }
+        }
+        get_redis_connection(config)
+        sentinel_init_kwargs = sentinel_class_mock.call_args[1]
+        self.assertDictEqual(
+            sentinel_init_kwargs,
+            {'socket_connect_timeout': 0.3, 'db': 0,
+             'socket_timeout': 0.2, 'password': None})
 
     def test_get_queue_default(self):
         """

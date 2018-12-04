@@ -112,6 +112,7 @@ RQ_QUEUES = {
         'DB': 1,
         'PASSWORD': 'secret',
         'SOCKET_TIMEOUT': 10,
+        'CONNECTION_KWARGS': {},
     },
     'test1': {
         'HOST': REDIS_HOST,
