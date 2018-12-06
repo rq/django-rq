@@ -13,7 +13,6 @@ from rq.exceptions import NoSuchJobError, UnpickleError
 from rq.job import Job, JobStatus
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
-from rq.utils import utcnow
 from rq.worker import Worker
 
 from .queues import get_queue_by_index
@@ -378,16 +377,10 @@ def enqueue_job_view(request, queue_index, job_id):
     """
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
-    registry = DeferredJobRegistry(queue.name, queue.connection)
     job = Job.fetch(job_id, connection=queue.connection)
 
     if request.method == 'POST':
-        job.enqueued_at = utcnow()
-        job.set_status(JobStatus.QUEUED)
-        job.save()
-        registry.remove(job)
-        queue.push_job_id(job_id)
-
+        queue.enqueue_job(job)
         messages.info(request, 'You have successfully enqueued %s' % job.id)
         return redirect('rq_job_detail', queue_index, job_id)
 
