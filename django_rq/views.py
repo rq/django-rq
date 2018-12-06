@@ -372,7 +372,7 @@ def actions(request, queue_index):
 
 
 @staff_member_required
-def enqueue_job_view(request, queue_index, job_id):
+def enqueue_job(request, queue_index, job_id):
     """ Enqueue deferred jobs
     """
     queue_index = int(queue_index)
