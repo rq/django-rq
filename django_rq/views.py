@@ -379,8 +379,18 @@ def enqueue_job(request, queue_index, job_id):
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection)
 
+    # Determine correct registry to remove job from
+    if job.get_status() == JobStatus.DEFERRED:
+        registry = DeferredJobRegistry(queue.name, queue.connection)
+    elif job.get_status() == JobStatus.FINISHED:
+        registry = FinishedJobRegistry(queue.name, queue.connection)
+    else:
+        registry = None
+
     if request.method == 'POST':
         queue.enqueue_job(job)
+        if registry:
+            registry.remove(job)
         messages.info(request, 'You have successfully enqueued %s' % job.id)
         return redirect('rq_job_detail', queue_index, job_id)
 
