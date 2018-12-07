@@ -11,7 +11,7 @@ except ImportError:
 
 from mock import patch, PropertyMock
 
-from rq.job import Job
+from rq.job import Job, JobStatus
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
 
@@ -113,6 +113,29 @@ class ViewTest(TestCase):
         for job_id in job_ids:
             self.assertFalse(Job.exists(job_id, connection=queue.connection))
             self.assertNotIn(job_id, queue.job_ids)
+
+    def test_enqueue_jobs(self):
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        # enqueue some jobs that depends on other
+        previous_job = None
+        for _ in range(0, 3):
+            job = queue.enqueue(access_self, depends_on=previous_job)
+            previous_job = job
+
+        # This job is deffered
+        last_job = job
+        self.assertEqual(last_job.status, JobStatus.DEFERRED)
+        self.assertIsNone(last_job.enqueued_at)
+
+        # We want to force-enqueue this job
+        self.client.post(reverse('rq_enqueue_job', args=[queue_index, last_job.id]))
+
+        # Check that job is updated correctly
+        last_job = queue.fetch_job(last_job.id)
+        self.assertEqual(last_job.status, JobStatus.QUEUED)
+        self.assertIsNotNone(last_job.enqueued_at)
 
     def test_action_requeue_jobs(self):
         def failing_job():

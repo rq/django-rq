@@ -37,4 +37,6 @@ urlpatterns = [
             views.actions, name='rq_actions'),
     re_path(r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[-\w]+)/requeue/$',
             views.requeue_job_view, name='rq_requeue_job'),
+    re_path(r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[-\w]+)/enqueue/$',
+            views.enqueue_job, name='rq_enqueue_job'),
 ]

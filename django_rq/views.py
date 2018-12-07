@@ -10,7 +10,7 @@ from django.shortcuts import redirect, render
 from redis.exceptions import ResponseError
 from rq import requeue_job
 from rq.exceptions import NoSuchJobError, UnpickleError
-from rq.job import Job
+from rq.job import Job, JobStatus
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
 from rq.worker import Worker
@@ -368,3 +368,33 @@ def actions(request, queue_index):
                 messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
 
     return redirect('rq_jobs', queue_index)
+
+
+@staff_member_required
+def enqueue_job(request, queue_index, job_id):
+    """ Enqueue deferred jobs
+    """
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    job = Job.fetch(job_id, connection=queue.connection)
+
+    if request.method == 'POST':
+        queue.enqueue_job(job)
+
+        # Remove job from correct registry if needed
+        if job.get_status() == JobStatus.DEFERRED:
+            registry = DeferredJobRegistry(queue.name, queue.connection)
+            registry.remove(job)
+        elif job.get_status() == JobStatus.FINISHED:
+            registry = FinishedJobRegistry(queue.name, queue.connection)
+            registry.remove(job)
+
+        messages.info(request, 'You have successfully enqueued %s' % job.id)
+        return redirect('rq_job_detail', queue_index, job_id)
+
+    context_data = {
+        'queue_index': queue_index,
+        'job': job,
+        'queue': queue,
+    }
+    return render(request, 'django_rq/delete_job.html', context_data)
