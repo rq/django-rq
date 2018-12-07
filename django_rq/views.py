@@ -230,7 +230,6 @@ def job_detail(request, queue_index, job_id):
     queue = get_queue_by_index(queue_index)
     try:
         job = Job.fetch(job_id, connection=queue.connection)
-        job.is_deferred = (job.get_status() == JobStatus.DEFERRED)
     except NoSuchJobError:
         raise Http404("Couldn't find job with this ID: %s" % job_id)
 
@@ -379,18 +378,17 @@ def enqueue_job(request, queue_index, job_id):
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection)
 
-    # Determine correct registry to remove job from
-    if job.get_status() == JobStatus.DEFERRED:
-        registry = DeferredJobRegistry(queue.name, queue.connection)
-    elif job.get_status() == JobStatus.FINISHED:
-        registry = FinishedJobRegistry(queue.name, queue.connection)
-    else:
-        registry = None
-
     if request.method == 'POST':
         queue.enqueue_job(job)
-        if registry:
+
+        # Remove job from correct registry if needed
+        if job.get_status() == JobStatus.DEFERRED:
+            registry = DeferredJobRegistry(queue.name, queue.connection)
             registry.remove(job)
+        elif job.get_status() == JobStatus.FINISHED:
+            registry = FinishedJobRegistry(queue.name, queue.connection)
+            registry.remove(job)
+
         messages.info(request, 'You have successfully enqueued %s' % job.id)
         return redirect('rq_job_detail', queue_index, job_id)
 
