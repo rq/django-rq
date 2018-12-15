@@ -1,5 +1,6 @@
 import time
 from unittest import skipIf
+from uuid import uuid4
 
 from django.core.management import call_command
 from django.test import TestCase, override_settings
@@ -27,8 +28,8 @@ from django_rq.queues import (
 from django_rq import thread_queue
 from django_rq.templatetags.django_rq import to_localtime
 from django_rq.tests.fixtures import DummyJob, DummyQueue, DummyWorker
-from django_rq.workers import (get_worker, get_worker_class,
-                               collect_workers_by_connection)
+from django_rq.utils import get_statistics
+from django_rq.workers import get_worker, get_worker_class
 
 try:
     from rq_scheduler import Scheduler
@@ -53,7 +54,7 @@ def long_running_job(timeout=10):
     return 'Done sleeping...'
 
 
-class RqstatsTest(TestCase):
+class RqStatsTest(TestCase):
 
     def test_get_connection_default(self):
         """
@@ -68,7 +69,8 @@ class RqstatsTest(TestCase):
             },
             'name': 'default'
         }]
-        with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
+        with patch('django_rq.utils.QUEUES_LIST',
+                   new_callable=PropertyMock(return_value=queues)):
             # Only to make sure it doesn't crash
             call_command('rqstats')
             call_command('rqstats', '-j')
@@ -405,6 +407,7 @@ class DecoratorTest(TestCase):
         self.assertEqual(result.result_ttl, 5432)
         result.delete()
 
+
 @override_settings(RQ={'AUTOCOMMIT': True})
 class WorkersTest(TestCase):
     def test_get_worker_default(self):
@@ -445,15 +448,6 @@ class WorkersTest(TestCase):
         failed_queue = Queue(name='failed', connection=queue.connection)
         self.assertFalse(job.id in failed_queue.job_ids)
         job.delete()
-
-    def test_collects_worker_various_connections_get_multiple_collection(self):
-        queues = [
-            {'name': 'default', 'connection_config': settings.RQ_QUEUES['default']},
-            {'name': 'django_rq_test', 'connection_config': settings.RQ_QUEUES['django_rq_test']},
-            {'name': 'test3', 'connection_config': settings.RQ_QUEUES['test3']},
-        ]
-        collections = collect_workers_by_connection(queues)
-        self.assertEqual(len(collections), 2)
 
 
 class ThreadQueueTest(TestCase):
@@ -651,3 +645,27 @@ class TemplateTagTest(TestCase):
 
             self.assertIsNotNone(time.tzinfo)
             self.assertEqual(time.strftime("%z"), '+0700')
+
+
+class UtilsTest(TestCase):
+
+    def test_get_statistics(self):
+        """get_statistics() returns the right number of workers"""
+        queues = [{
+            'connection_config': {
+                'DB': 0,
+                'HOST': 'localhost',
+                'PORT': 6379,
+            },
+            'name': 'async'
+        }]
+
+        with patch('django_rq.utils.QUEUES_LIST',
+                   new_callable=PropertyMock(return_value=queues)):
+            worker = get_worker('async', name=uuid4().hex)
+            worker.register_birth()
+            statistics = get_statistics()
+            data = statistics['queues'][0]
+            self.assertEqual(data['name'], 'async')
+            self.assertEqual(data['workers'], 1)
+            worker.register_death()

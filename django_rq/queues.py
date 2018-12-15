@@ -136,14 +136,6 @@ def get_connection(name='default', use_strict_redis=False):
     return get_redis_connection(QUEUES[name], use_strict_redis)
 
 
-def get_connection_by_index(index):
-    """
-    Returns a Redis connection to use based on parameters in settings.RQ_QUEUES
-    """
-    from .settings import QUEUES_LIST
-    return get_redis_connection(QUEUES_LIST[index]['connection_config'])
-
-
 def get_queue(name='default', default_timeout=None, is_async=None,
               autocommit=None, connection=None, queue_class=None, job_class=None, **kwargs):
     """
