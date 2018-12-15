@@ -14,7 +14,7 @@ setup(
     zip_safe=False,
     include_package_data=True,
     package_data={'': ['README.rst']},
-    install_requires=['django>=1.8.0', 'rq>=0.12', 'redis<3.0.0'],
+    install_requires=['django>=1.8.0', 'rq>=0.13', 'redis>=3'],
     extras_require = {
         'Sentry':  ['raven>=6.1.0'],
         'testing': ['mock>=2.0.0'],
