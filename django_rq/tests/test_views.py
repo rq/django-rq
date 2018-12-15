@@ -258,7 +258,8 @@ class ViewTest(TestCase):
             },
             'name': 'default'
         }]
-        with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
+        with patch('django_rq.utils.QUEUES_LIST',
+                   new_callable=PropertyMock(return_value=queues)):
             response = self.client.get(reverse('rq_home'))
             self.assertEqual(response.status_code, 200)
 
