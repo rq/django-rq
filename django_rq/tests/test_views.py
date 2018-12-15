@@ -16,7 +16,7 @@ from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
 
 from django_rq import get_queue
-from django_rq.workers import get_worker, get_all_workers_by_configuration
+from django_rq.workers import get_worker
 from django_rq.tests.fixtures import access_self
 from .utils import get_queue_index, get_failed_queue_index
 
@@ -216,16 +216,6 @@ class ViewTest(TestCase):
             reverse('rq_deferred_jobs', args=[queue_index])
         )
         self.assertEqual(response.context['jobs'], [job])
-
-    def test_get_all_workers(self):
-        worker1 = get_worker()
-        worker2 = get_worker('test')
-        workers_collections = [
-            {'config': {'URL': 'redis://'}, 'all_workers': [worker1]},
-            {'config': {'URL': 'redis://localhost/1'}, 'all_workers': [worker2]},
-        ]
-        result = get_all_workers_by_configuration({'URL': 'redis://'}, workers_collections)
-        self.assertEqual(result, [worker1])
 
     def test_workers(self):
         """Worker index page should show workers for a specific queue"""

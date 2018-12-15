@@ -1,15 +1,14 @@
 from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
                          StartedJobRegistry)
+from rq.worker import Worker
 
 from .queues import get_connection, get_queue_by_index
 from .settings import QUEUES_LIST
 from .templatetags.django_rq import to_localtime
-from .workers import collect_workers_by_connection, get_all_workers_by_configuration
 
 
 def get_statistics():
     queues = []
-    workers_collections = collect_workers_by_connection(QUEUES_LIST)
     for index, config in enumerate(QUEUES_LIST):
 
         queue = get_queue_by_index(index)
@@ -48,12 +47,7 @@ def get_statistics():
 
         else:
             connection = get_connection(queue.name)
-            all_workers = get_all_workers_by_configuration(
-                config['connection_config'],
-                workers_collections
-            )
-            queue_workers = [worker for worker in all_workers if queue in worker.queues]
-            queue_data['workers'] = len(queue_workers)
+            queue_data['workers'] = Worker.count(queue=queue)
 
             finished_job_registry = FinishedJobRegistry(queue.name, connection)
             started_job_registry = StartedJobRegistry(queue.name, connection)

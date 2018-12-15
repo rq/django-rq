@@ -27,8 +27,7 @@ from django_rq.queues import (
 from django_rq import thread_queue
 from django_rq.templatetags.django_rq import to_localtime
 from django_rq.tests.fixtures import DummyJob, DummyQueue, DummyWorker
-from django_rq.workers import (get_worker, get_worker_class,
-                               collect_workers_by_connection)
+from django_rq.workers import get_worker, get_worker_class
 
 try:
     from rq_scheduler import Scheduler
@@ -445,15 +444,6 @@ class WorkersTest(TestCase):
         failed_queue = Queue(name='failed', connection=queue.connection)
         self.assertFalse(job.id in failed_queue.job_ids)
         job.delete()
-
-    def test_collects_worker_various_connections_get_multiple_collection(self):
-        queues = [
-            {'name': 'default', 'connection_config': settings.RQ_QUEUES['default']},
-            {'name': 'django_rq_test', 'connection_config': settings.RQ_QUEUES['django_rq_test']},
-            {'name': 'test3', 'connection_config': settings.RQ_QUEUES['test3']},
-        ]
-        collections = collect_workers_by_connection(queues)
-        self.assertEqual(len(collections), 2)
 
 
 class ThreadQueueTest(TestCase):
