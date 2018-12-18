@@ -1,4 +1,10 @@
-# Version 1.2.0 (2017-07-26)
+# Version 1.3.0 (2018-12-18)
+- Added support `redis-py` >= 3 and `RQ` >= 0.13. Thanks @selwin!
+- Use `Worker.count(queue=queue)` to speed up the process of getting the number of active workers. Thanks @selwin!
+- Added an option to requeue job from the admin interface. Thanks @seiryuz!
+- Improve Sentinel support. Thanks @pnuckowski!
+
+# Version 1.2.0 (2018-07-26)
 - Supports Python 3.7 by renaming `async` to `is_async`. Thanks @Flimm!
 - `UnpickleError` is now handled properly. Thanks @selwin!
 - Redis Sentinel support. Thanks @SpeedyCoder!
