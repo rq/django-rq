@@ -308,6 +308,11 @@ Also you can specify ``sentry-dsn`` parameter when running rqworker:
 
 ``./manage.py rqworker --sentry-dsn=https://*****@sentry.io/222222``
 
+If your project use ``sentry-sdk``, the DSN is not compatible with the sentry integration
+used inside RQ.
+
+In that case you can disable sentry integration by specifying ``--disable-sentry-integration``.
+
 Configuring Logging
 -------------------
 

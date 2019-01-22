@@ -47,6 +47,8 @@ class Command(BaseCommand):
                             help='Default worker timeout to be used')
         parser.add_argument('--sentry-dsn', action='store', default=None, dest='sentry-dsn',
                             help='Report exceptions to this Sentry DSN')
+        parser.add_argument('--disable-sentry-integration', action='store_true', dest='disable-sentry',
+                            help='Disable sentry integration. Useful if `sentry-sdk` is used')
 
         if LooseVersion(get_version()) >= LooseVersion('1.10'):
             parser.add_argument('args', nargs='*', type=str,
@@ -86,7 +88,7 @@ class Command(BaseCommand):
             # Close any opened DB connection before any fork
             reset_db_connections()
 
-            if sentry_dsn:
+            if not options.get('disable-sentry', False) and sentry_dsn:
                 try:
                     from raven import Client
                     from raven.transport.http import HTTPTransport
