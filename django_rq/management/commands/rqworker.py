@@ -47,8 +47,6 @@ class Command(BaseCommand):
                             help='Default worker timeout to be used')
         parser.add_argument('--sentry-dsn', action='store', default=None, dest='sentry-dsn',
                             help='Report exceptions to this Sentry DSN')
-        parser.add_argument('--disable-sentry-integration', action='store_true', dest='disable-sentry',
-                            help='Disable sentry integration. Useful if `sentry-sdk` is used')
 
         if LooseVersion(get_version()) >= LooseVersion('1.10'):
             parser.add_argument('args', nargs='*', type=str,
@@ -59,6 +57,9 @@ class Command(BaseCommand):
         if pid:
             with open(os.path.expanduser(pid), "w") as fp:
                 fp.write(str(os.getpid()))
+        sentry_dsn = options.get('sentry-dsn')
+        if sentry_dsn is None:
+            sentry_dsn = getattr(settings, 'SENTRY_DSN', None)
 
         # Verbosity is defined by default in BaseCommand for all commands
         verbosity = options.get('verbosity')
@@ -88,13 +89,21 @@ class Command(BaseCommand):
             # Close any opened DB connection before any fork
             reset_db_connections()
 
-            if not options.get('disable-sentry', False) and sentry_dsn:
+            if sentry_dsn:
                 try:
                     from raven import Client
                     from raven.transport.http import HTTPTransport
                     from rq.contrib.sentry import register_sentry
-                    client = Client(sentry_dsn, transport=HTTPTransport)
-                    register_sentry(client, w)
+
+                    from raven.exceptions import InvalidDsn
+                    try:
+                        client = Client(sentry_dsn, transport=HTTPTransport)
+                        register_sentry(client, w)
+                    except InvalidDsn:
+                        self.stdout.write(self.style.ERROR(
+                            "Invalid DSN. If you use `sentry-sdk` package you have to disable the django-rq sentry plugin by setting `--sentry-dsn=\"\"`."
+                        ))
+                        sys.exit(1)
                 except ImportError:
                     self.stdout.write(self.style.ERROR("Please install sentry. For example `pip install raven`"))
                     sys.exit(1)
