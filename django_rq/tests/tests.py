@@ -449,6 +449,19 @@ class WorkersTest(TestCase):
         self.assertFalse(job.id in failed_queue.job_ids)
         job.delete()
 
+    @patch('django_rq.management.commands.rqworker.setup_loghandlers')
+    def test_commandline_verbosity_affects_logging_level(self, setup_loghandlers_mock):
+        expected_level = {
+            0: 'WARNING',
+            1: 'INFO',
+            2: 'DEBUG',
+            3: 'DEBUG',
+        }
+        for verbosity in [0, 1, 2, 3]:
+            setup_loghandlers_mock.reset_mock()
+            call_command('rqworker', verbosity=verbosity, burst=True)
+            setup_loghandlers_mock.assert_called_once_with(expected_level[verbosity])
+
 
 class ThreadQueueTest(TestCase):
 
@@ -538,6 +551,22 @@ class SchedulerTest(TestCase):
         self.assertEqual(connection_kwargs['host'], config['HOST'])
         self.assertEqual(connection_kwargs['port'], config['PORT'])
         self.assertEqual(connection_kwargs['db'], config['DB'])
+
+    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    @patch('django_rq.management.commands.rqscheduler.get_scheduler')
+    @patch('django_rq.management.commands.rqscheduler.setup_loghandlers')
+    def test_commandline_verbosity_affects_logging_level(self, setup_loghandlers_mock, get_scheduler_mock):
+        get_scheduler_mock.run.return_value = None
+        expected_level = {
+            0: 'WARNING',
+            1: 'INFO',
+            2: 'DEBUG',
+            3: 'DEBUG',
+        }
+        for verbosity in [0, 1, 2, 3]:
+            setup_loghandlers_mock.reset_mock()
+            call_command('rqscheduler', verbosity=verbosity)
+            setup_loghandlers_mock.assert_called_once_with(expected_level[verbosity])
 
 
 class RedisCacheTest(TestCase):
