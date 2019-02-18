@@ -1,9 +1,16 @@
 import os
 from distutils.version import LooseVersion
 
+from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand
 from django.utils.version import get_version
 from django_rq import get_scheduler
+
+try:
+    from rq_scheduler.utils import setup_loghandlers
+except ImportError:
+    def setup_loghandlers(*args, **kwargs):
+        raise ImproperlyConfigured('rq_scheduler not installed')
 
 
 class Command(BaseCommand):
@@ -30,6 +37,16 @@ class Command(BaseCommand):
         if pid:
             with open(os.path.expanduser(pid), "w") as fp:
                 fp.write(str(os.getpid()))
+
+        # Verbosity is defined by default in BaseCommand for all commands
+        verbosity = options.get('verbosity')
+        if verbosity >= 2:
+            level = 'DEBUG'
+        elif verbosity == 0:
+            level = 'WARNING'
+        else:
+            level = 'INFO'
+        setup_loghandlers(level)
 
         scheduler = get_scheduler(
             name=options.get('queue'), interval=options.get('interval'))

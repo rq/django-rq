@@ -1,27 +1,16 @@
-import logging
 import os
 import sys
 from distutils.version import LooseVersion
 
 from redis.exceptions import ConnectionError
 from rq import use_connection
-from rq.utils import ColorizingStreamHandler
+from rq.logutils import setup_loghandlers
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connections
 from django.utils.version import get_version
 from django_rq.workers import get_worker
-
-# Setup logging for RQWorker if not already configured
-logger = logging.getLogger('rq.worker')
-if not logger.handlers:
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(fmt='%(asctime)s %(message)s',
-                                  datefmt='%H:%M:%S')
-    handler = ColorizingStreamHandler()
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
 
 
 def reset_db_connections():
@@ -68,6 +57,17 @@ class Command(BaseCommand):
         if pid:
             with open(os.path.expanduser(pid), "w") as fp:
                 fp.write(str(os.getpid()))
+
+        # Verbosity is defined by default in BaseCommand for all commands
+        verbosity = options.get('verbosity')
+        if verbosity >= 2:
+            level = 'DEBUG'
+        elif verbosity == 0:
+            level = 'WARNING'
+        else:
+            level = 'INFO'
+        setup_loghandlers(level)
+
         sentry_dsn = options.get('sentry-dsn') or getattr(settings, 'SENTRY_DSN', None)
         try:
             # Instantiate a worker
