@@ -552,21 +552,29 @@ class SchedulerTest(TestCase):
         self.assertEqual(connection_kwargs['port'], config['PORT'])
         self.assertEqual(connection_kwargs['db'], config['DB'])
 
+    @override_settings(RQ={'AUTOCOMMIT': True, 'DEFAULT_RESULT_TTL': 5432})
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
-    @patch('django_rq.management.commands.rqscheduler.get_scheduler')
-    @patch('django_rq.management.commands.rqscheduler.setup_loghandlers')
-    def test_commandline_verbosity_affects_logging_level(self, setup_loghandlers_mock, get_scheduler_mock):
-        get_scheduler_mock.run.return_value = None
-        expected_level = {
-            0: 'WARNING',
-            1: 'INFO',
-            2: 'DEBUG',
-            3: 'DEBUG',
-        }
-        for verbosity in [0, 1, 2, 3]:
-            setup_loghandlers_mock.reset_mock()
-            call_command('rqscheduler', verbosity=verbosity)
-            setup_loghandlers_mock.assert_called_once_with(expected_level[verbosity])
+    def test_scheduler_default_result_ttl(self):
+        """
+        Ensure scheduler respects DEFAULT_RESULT_TTL value for `result_ttl` param.
+        """
+        scheduler = get_scheduler('test')
+        job = scheduler.enqueue_at(datetime.datetime.now() + datetime.timedelta(days=1), divide, 1, 1)
+        self.assertTrue(job in scheduler.get_jobs())
+        self.assertEqual(job.result_ttl, 5432)
+        job.delete()
+
+    @override_settings(RQ={'AUTOCOMMIT': True})
+    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    def test_scheduler_default_timeout(self):
+        """
+        Ensure scheduler respects DEFAULT_TIMEOUT value for `timeout` queue param.
+        """
+        scheduler = get_scheduler('test1')
+        job = scheduler.enqueue_at(datetime.datetime.now() + datetime.timedelta(days=1), divide, 1, 1)
+        self.assertTrue(job in scheduler.get_jobs())
+        self.assertEqual(job.timeout, 400)
+        job.delete()
 
 
 class RedisCacheTest(TestCase):
