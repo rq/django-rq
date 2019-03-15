@@ -125,7 +125,7 @@ def get_redis_connection(config, use_strict_redis=False):
             service_name=config['MASTER_NAME'], redis_class=redis_cls,
         )
 
-    return redis_cls(host=config['HOST'], port=config['PORT'], db=config['DB'], password=config.get('PASSWORD'))
+    return redis_cls(host=config['HOST'], port=config['PORT'], db=config['DB'], password=config.get('PASSWORD'), ssl=config.get('SSL', False))
 
 
 def get_connection(name='default', use_strict_redis=False):
@@ -191,7 +191,7 @@ def filter_connection_params(queue_params):
     CONNECTION_PARAMS = ('URL', 'DB', 'USE_REDIS_CACHE',
                          'UNIX_SOCKET_PATH', 'HOST', 'PORT', 'PASSWORD',
                          'SENTINELS', 'MASTER_NAME', 'SOCKET_TIMEOUT',
-                         'CONNECTION_KWARGS',)
+                         'SSL', 'CONNECTION_KWARGS',)
 
     #return {p:v for p,v in queue_params.items() if p in CONNECTION_PARAMS}
     # Dict comprehension compatible with python 2.6
