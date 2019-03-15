@@ -1,13 +1,22 @@
+# Version 1.3.1 (2019-03-15)
+- Run `rqworker` with `--sentry_dsn=""` to disable Sentry integration. Thanks @Bolayniuss!
+- Support for `SSL` Redis kwarg. Thanks @ajknv!
+- `rqworker`and `rqscheduler` management commands now uses RQ's built in `setup_loghandlers` function. Thanks @Paulius-Maruska!
+- Remove the use of deprecated `admin_static` template tag. Thanks @lorenzomorandini!
+
+
 # Version 1.3.0 (2018-12-18)
 - Added support `redis-py` >= 3 and `RQ` >= 0.13. Thanks @selwin!
 - Use `Worker.count(queue=queue)` to speed up the process of getting the number of active workers. Thanks @selwin!
 - Added an option to requeue job from the admin interface. Thanks @seiryuz!
 - Improve Sentinel support. Thanks @pnuckowski!
 
+
 # Version 1.2.0 (2018-07-26)
 - Supports Python 3.7 by renaming `async` to `is_async`. Thanks @Flimm!
 - `UnpickleError` is now handled properly. Thanks @selwin!
 - Redis Sentinel support. Thanks @SpeedyCoder!
+
 
 # Version 1.1.0
 - Fixed some admin related bugs. Thanks @seiryuz!
@@ -15,9 +24,11 @@
 - Custom `Job` and `Worker` classes are now supported. Thanks @skirsdeda!
 - `SENTRY_DSN` value in `settings.py` will now be used by default. Thanks @inetss!
 
+
 # 1.0.1
 - Django 2.0 compatibility fixes.
 - Minor bug fixes
+
 
 # 1.0.0
 
