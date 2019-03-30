@@ -174,10 +174,12 @@
                 <input type="submit" value="Requeue" class="default" name="requeue">
             </form>
         {% endif %}
-        <form method = 'POST' action = "{% url 'rq_enqueue_job' queue_index job.id %}">
-            {% csrf_token %}
-            <input type="submit" value="Enqueue" class="default" name="Enqueue">
-        </form>
+        {% if not job.is_queued and not job.is_failed %}
+            <form method = 'POST' action = "{% url 'rq_enqueue_job' queue_index job.id %}">
+                {% csrf_token %}
+                <input type="submit" value="Enqueue" class="default" name="Enqueue">
+            </form>
+        {% endif %}
     </div>
 
 </div>

@@ -6,6 +6,8 @@
 .python-version
 dist/
 django_rq.egg-info/
+.pytest_cache/
 
+*.rdb
 # pycharm
 .idea

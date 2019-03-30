@@ -1,5 +1,5 @@
-from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
-                         StartedJobRegistry)
+from rq.registry import (DeferredJobRegistry, FailedJobRegistry,
+                         FinishedJobRegistry, StartedJobRegistry)
 from rq.worker import Worker
 
 from .queues import get_connection, get_queue_by_index
@@ -52,9 +52,11 @@ def get_statistics():
             finished_job_registry = FinishedJobRegistry(queue.name, connection)
             started_job_registry = StartedJobRegistry(queue.name, connection)
             deferred_job_registry = DeferredJobRegistry(queue.name, connection)
+            failed_job_registry = FailedJobRegistry(queue.name, connection)
             queue_data['finished_jobs'] = len(finished_job_registry)
             queue_data['started_jobs'] = len(started_job_registry)
             queue_data['deferred_jobs'] = len(deferred_job_registry)
+            queue_data['failed_jobs'] = len(failed_job_registry)
 
         queues.append(queue_data)
     return {'queues': queues}

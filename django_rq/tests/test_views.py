@@ -12,13 +12,13 @@ except ImportError:
 from mock import patch, PropertyMock
 
 from rq.job import Job, JobStatus
-from rq.registry import (DeferredJobRegistry, FinishedJobRegistry,
-                         StartedJobRegistry)
+from rq.registry import (DeferredJobRegistry, FailedJobRegistry,
+                         FinishedJobRegistry, StartedJobRegistry)
 
 from django_rq import get_queue
 from django_rq.workers import get_worker
 from django_rq.tests.fixtures import access_self
-from .utils import get_queue_index, get_failed_queue_index
+from .utils import get_queue_index
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
@@ -71,7 +71,7 @@ class ViewTest(TestCase):
             raise ValueError
 
         queue = get_queue('default')
-        queue_index = get_failed_queue_index('default')
+        queue_index = get_queue_index('default')
         job = queue.enqueue(failing_job)
         worker = get_worker('default')
         worker.work(burst=True)
@@ -126,7 +126,7 @@ class ViewTest(TestCase):
 
         # This job is deffered
         last_job = job
-        self.assertEqual(last_job.status, JobStatus.DEFERRED)
+        self.assertEqual(last_job.get_status(), JobStatus.DEFERRED)
         self.assertIsNone(last_job.enqueued_at)
 
         # We want to force-enqueue this job
@@ -134,7 +134,7 @@ class ViewTest(TestCase):
 
         # Check that job is updated correctly
         last_job = queue.fetch_job(last_job.id)
-        self.assertEqual(last_job.status, JobStatus.QUEUED)
+        self.assertEqual(last_job.get_status(), JobStatus.QUEUED)
         self.assertIsNotNone(last_job.enqueued_at)
 
     def test_action_requeue_jobs(self):
@@ -142,7 +142,7 @@ class ViewTest(TestCase):
             raise ValueError
 
         queue = get_queue('django_rq_test')
-        failed_queue_index = get_failed_queue_index('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
 
         # enqueue some jobs that will fail
         jobs = []
@@ -161,7 +161,7 @@ class ViewTest(TestCase):
             self.assertTrue(job.is_failed)
 
         # renqueue failed jobs from failed queue
-        self.client.post(reverse('rq_actions', args=[failed_queue_index]),
+        self.client.post(reverse('rq_actions', args=[queue_index]),
                          {'action': 'requeue', 'job_ids': job_ids})
 
         # check if we requeue all failed jobs
@@ -188,6 +188,19 @@ class ViewTest(TestCase):
         registry.add(job, 2)
         response = self.client.get(
             reverse('rq_finished_jobs', args=[queue_index])
+        )
+        self.assertEqual(response.context['jobs'], [job])
+
+    def test_failed_jobs(self):
+        """Ensure that failed jobs page works properly."""
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        job = queue.enqueue(access_self)
+        registry = FailedJobRegistry(queue.name, queue.connection)
+        registry.add(job, 2)
+        response = self.client.get(
+            reverse('rq_failed_jobs', args=[queue_index])
         )
         self.assertEqual(response.context['jobs'], [job])
 

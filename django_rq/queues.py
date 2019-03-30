@@ -2,7 +2,8 @@ import warnings
 
 import redis
 from redis.sentinel import Sentinel
-from rq.queue import FailedQueue, Queue
+from rq.queue import Queue
+from rq.registry import FailedJobRegistry
 from rq.utils import import_attribute
 
 from django.conf import settings
@@ -169,19 +170,17 @@ def get_queue_by_index(index):
     """
     from .settings import QUEUES_LIST
     config = QUEUES_LIST[int(index)]
-    if config['name'] == 'failed':
-        return FailedQueue(connection=get_redis_connection(config['connection_config']))
     return get_queue_class(config)(
         config['name'],
         connection=get_redis_connection(config['connection_config']),
         is_async=config.get('ASYNC', True))
 
 
-def get_failed_queue(name='default'):
+def get_failed_job_registry(name='default'):
     """
     Returns the rq failed Queue using parameters defined in ``RQ_QUEUES``
     """
-    return FailedQueue(connection=get_connection(name))
+    return FailedJobRegistry(name=name, connection=get_connection(name))
 
 
 def filter_connection_params(queue_params):
