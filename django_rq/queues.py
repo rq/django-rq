@@ -176,13 +176,6 @@ def get_queue_by_index(index):
         is_async=config.get('ASYNC', True))
 
 
-def get_failed_job_registry(name='default'):
-    """
-    Returns the rq failed Queue using parameters defined in ``RQ_QUEUES``
-    """
-    return FailedJobRegistry(name=name, connection=get_connection(name))
-
-
 def filter_connection_params(queue_params):
     """
     Filters the queue params to keep only the connection related params.
