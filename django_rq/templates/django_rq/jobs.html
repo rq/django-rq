@@ -2,6 +2,8 @@
 
 {% load admin_static jquery_path django_rq %}
 
+{% block title %}{{ job_status }} Jobs in {{ queue.name }} {{ block.super }}{% endblock %}
+
 {% block extrastyle %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">

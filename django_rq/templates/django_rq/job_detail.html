@@ -2,6 +2,8 @@
 
 {% load admin_static django_rq %}
 
+{% block title %}Job {{ job.id }} {{ block.super }}{% endblock %}
+
 {% block extrastyle %}
     {{ block.super }}
     <style>
