@@ -157,6 +157,12 @@ RQ_QUEUES = {
         'PORT': 6379,
         'DB': 0,
     },
+    'test_scheduler': {
+        'HOST': REDIS_HOST,
+        'PORT': 6379,
+        'DB': 0,
+        'DEFAULT_TIMEOUT': 400,
+    },
 }
 RQ = {
     'AUTOCOMMIT': False,
