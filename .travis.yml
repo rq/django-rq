@@ -33,7 +33,7 @@ matrix:
       env: DJANGO=1.11.16
 
 install:
-  - pip install Django==$DJANGO times docutils pygments
+  - pip install Django==$DJANGO times docutils pygments rq-scheduler
   - python setup.py install
   - pip install codecov
 

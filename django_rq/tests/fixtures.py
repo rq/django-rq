@@ -17,5 +17,14 @@ class DummyWorker(Worker):
     pass
 
 
+try:
+    from rq_scheduler import Scheduler
+
+    class DummyScheduler(Scheduler):
+        pass
+except ImportError:
+    pass
+
+
 def access_self():
     return get_current_job().id
