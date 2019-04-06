@@ -1,10 +1,11 @@
 language: python
+dist: xenial
 
 python:
   - "2.7"
   - "3.5"
   - "3.6"
-  - "3.7-dev"
+  - "3.7"
 
 env:
   - DJANGO=2.2
@@ -23,13 +24,13 @@ matrix:
       env: DJANGO=2.1
     - python: "2.7"
       env: DJANGO=2.0.8
-    - python: "3.7-dev"
+    - python: "3.7"
       env: DJANGO=1.9.9
-    - python: "3.7-dev"
+    - python: "3.7"
       env: DJANGO=1.8.18
-    - python: "3.7-dev"
+    - python: "3.7"
       env: DJANGO=1.10.8
-    - python: "3.7-dev"
+    - python: "3.7"
       env: DJANGO=1.11.16
 
 install:
