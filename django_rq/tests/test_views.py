@@ -196,6 +196,12 @@ class ViewTest(TestCase):
         queue = get_queue('django_rq_test')
         queue_index = get_queue_index('django_rq_test')
 
+        # Test that page doesn't fail when FailedJobRegistry is empty
+        response = self.client.get(
+            reverse('rq_failed_jobs', args=[queue_index])
+        )
+        self.assertEqual(response.status_code, 200)
+
         job = queue.enqueue(access_self)
         registry = FailedJobRegistry(queue.name, queue.connection)
         registry.add(job, 2)
