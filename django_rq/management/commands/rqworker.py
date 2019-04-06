@@ -91,25 +91,13 @@ class Command(BaseCommand):
 
             if sentry_dsn:
                 try:
-                    from raven import Client
-                    from raven.transport.http import HTTPTransport
                     from rq.contrib.sentry import register_sentry
-
-                    from raven.exceptions import InvalidDsn
-                    try:
-                        client = Client(sentry_dsn, transport=HTTPTransport)
-                        register_sentry(client, w)
-                    except InvalidDsn:
-                        self.stdout.write(self.style.ERROR(
-                            "Invalid DSN. If you use `sentry-sdk` package you have to disable the django-rq sentry plugin by setting `--sentry-dsn=\"\"`."
-                        ))
-                        sys.exit(1)
+                    register_sentry(sentry_dsn)
                 except ImportError:
-                    self.stdout.write(self.style.ERROR("Please install sentry. For example `pip install raven`"))
+                    self.stdout.write(self.style.ERROR("Please install sentry-sdk using `pip install sentry-sdk`"))
                     sys.exit(1)
 
             w.work(burst=options.get('burst', False))
         except ConnectionError as e:
             print(e)
             sys.exit(1)
-
