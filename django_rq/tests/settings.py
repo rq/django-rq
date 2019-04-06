@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.admin',
     'django.contrib.auth',
+    'django.contrib.messages',
     'django.contrib.sessions',
     'django_rq',
 ]
