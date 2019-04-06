@@ -1,3 +1,11 @@
+# Version 2.0 (2019-04-06)
+- Compatibility with RQ 1.0 (Thanks @selwin). Backward incompatible changes include:
+  * `FailedQueue` is now replaced by `FailedJobRegistry`
+  * RQ now uses `sentry-sdk` to send job failures to Sentry.
+- Scheduler now respects default `timeout` and `result_ttl` defined in `RQ_QUEUES`. Thanks @simone6021!
+- Minor improvements and bug fixes. Thanks @selwin!
+
+
 # Version 1.3.1 (2019-03-15)
 - Run `rqworker` with `--sentry_dsn=""` to disable Sentry integration. Thanks @Bolayniuss!
 - Support for `SSL` Redis kwarg. Thanks @ajknv!
