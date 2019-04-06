@@ -80,36 +80,24 @@ def get_redis_connection(config, use_strict_redis=False):
 
     if 'URL' in config:
         return redis_cls.from_url(config['URL'], db=config.get('DB'))
+
     if 'USE_REDIS_CACHE' in config.keys():
 
         try:
-            from django.core.cache import caches
-            cache = caches[config['USE_REDIS_CACHE']]
+            # Assume that we're using django-redis
+            from django_redis import get_redis_connection as get_redis
+            return get_redis(config['USE_REDIS_CACHE'])
         except ImportError:
-            from django.core.cache import get_cache
-            cache = get_cache(config['USE_REDIS_CACHE'])
+            pass
 
-        if hasattr(cache, 'client'):
-            # We're using django-redis. The cache's `client` attribute
-            # is a pluggable backend that return its Redis connection as
-            # its `client`
-            try:
-                # To get Redis connection on django-redis >= 3.4.0
-                # we need to use cache.client.get_client() instead of
-                # cache.client.client used in older versions
-                try:
-                    return cache.client.get_client()
-                except AttributeError:
-                    return cache.client.client
-            except NotImplementedError:
-                pass
-        else:
-            # We're using django-redis-cache
-            try:
-                return cache._client
-            except AttributeError:
-                # For django-redis-cache > 0.13.1
-                return cache.get_master_client()
+        from django.core.cache import caches
+        cache = caches[config['USE_REDIS_CACHE']]
+        # We're using django-redis-cache
+        try:
+            return cache._client
+        except AttributeError:
+            # For django-redis-cache > 0.13.1
+            return cache.get_master_client()
 
     if 'UNIX_SOCKET_PATH' in config:
         return redis_cls(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
@@ -287,7 +275,7 @@ try:
         """
         RQ = getattr(settings, 'RQ', {})
         scheduler_class = RQ.get('SCHEDULER_CLASS', DjangoScheduler)
-        
+
         if isinstance(scheduler_class, six.string_types):
             scheduler_class = import_attribute(scheduler_class)
 
