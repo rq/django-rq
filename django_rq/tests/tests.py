@@ -13,7 +13,9 @@ except ImportError:
 
 from django.conf import settings
 
+import mock
 from mock import patch, PropertyMock, MagicMock
+
 from rq import get_current_job, Queue
 from rq.job import Job
 from rq.registry import FinishedJobRegistry
@@ -199,7 +201,6 @@ class QueuesTest(TestCase):
         connection, where no DB given and URL does not contain the db number
         (redis-py defaults to 0, should not break).
         """
-        config = QUEUES['url_default_db']
         queue = get_queue('url_default_db')
         connection_kwargs = queue.connection.connection_pool.connection_kwargs
         self.assertEqual(queue.name, 'url_default_db')
@@ -259,6 +260,13 @@ class QueuesTest(TestCase):
         for job in jobs:
             self.assertTrue(job['job'].is_finished)
             self.assertIn(job['job'].id, job['finished_job_registry'].get_job_ids())
+
+    @mock.patch('rq.contrib.sentry.register_sentry')
+    def test_sentry_dsn(self, mocked):
+        queue_names = ['django_rq_test']
+        call_command('rqworker', *queue_names, burst=True,
+                     sentry_dsn='https://1@sentry.io/1')
+        self.assertEqual(mocked.call_count, 1)
 
     def test_get_unique_connection_configs(self):
         connection_params_1 = {
@@ -577,7 +585,7 @@ class SchedulerTest(TestCase):
         Scheduler class customization.
         """
         scheduler = get_scheduler('default')
-        self.assertIsInstance(scheduler, DummyScheduler)        
+        self.assertIsInstance(scheduler, DummyScheduler)
 
     @override_settings(RQ={'AUTOCOMMIT': True})
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
@@ -608,23 +616,15 @@ class RedisCacheTest(TestCase):
 
     @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis',
             'django-redis not installed')
-    def test_get_queue_django_redis(self):
+    @patch('django_redis.get_redis_connection')
+    def test_get_queue_django_redis(self, mocked):
         """
         Test that the USE_REDIS_CACHE option for configuration works.
         """
-        queueName = 'django-redis'
-        queue = get_queue(queueName)
-        connection_kwargs = queue.connection.connection_pool.connection_kwargs
-        self.assertEqual(queue.name, queueName)
-
-        cacheHost = settings.CACHES[queueName]['LOCATION'].split(':')[0]
-        cachePort = settings.CACHES[queueName]['LOCATION'].split(':')[1]
-        cacheDBNum = settings.CACHES[queueName]['LOCATION'].split(':')[2]
-
-        self.assertEqual(connection_kwargs['host'], cacheHost)
-        self.assertEqual(connection_kwargs['port'], int(cachePort))
-        self.assertEqual(connection_kwargs['db'], int(cacheDBNum))
-        self.assertEqual(connection_kwargs['password'], None)
+        queue = get_queue('django-redis')
+        queue.enqueue(access_self)
+        self.assertEqual(len(queue), 1)
+        self.assertEqual(mocked.call_count, 1)
 
     @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis-cache',
             'django-redis-cache not installed')

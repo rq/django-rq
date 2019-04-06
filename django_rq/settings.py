@@ -17,8 +17,6 @@ BURST = getattr(settings, 'RQ_BURST', False)
 QUEUES_LIST = []
 for key, value in sorted(QUEUES.items(), key=itemgetter(0)):
     QUEUES_LIST.append({'name': key, 'connection_config': value})
-for config in get_unique_connection_configs():
-    QUEUES_LIST.append({'name': 'failed', 'connection_config': config})
 
 # Get exception handlers
 EXCEPTION_HANDLERS = getattr(settings, 'RQ_EXCEPTION_HANDLERS', [])

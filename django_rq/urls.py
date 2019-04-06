@@ -21,6 +21,8 @@ urlpatterns = [
             views.worker_details, name='rq_worker_details'),
     re_path(r'^queues/(?P<queue_index>[\d]+)/finished/$',
             views.finished_jobs, name='rq_finished_jobs'),
+    re_path(r'^queues/(?P<queue_index>[\d]+)/failed/$',
+            views.failed_jobs, name='rq_failed_jobs'),
     re_path(r'^queues/(?P<queue_index>[\d]+)/started/$',
             views.started_jobs, name='rq_started_jobs'),
     re_path(r'^queues/(?P<queue_index>[\d]+)/deferred/$',

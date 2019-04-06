@@ -9,13 +9,15 @@ SECRET_KEY = 'a'
 # is only really used to conditionally configure options for the unit tests.
 # In actually usage, no such check is necessary.
 try:
-    import redis_cache
-    if hasattr(redis_cache, 'get_redis_connection'):
-        REDIS_CACHE_TYPE = 'django-redis'
-    else:
-        REDIS_CACHE_TYPE = 'django-redis-cache'
+    from django_redis import get_redis_connection
+    REDIS_CACHE_TYPE = 'django-redis'
 except ImportError:
-    REDIS_CACHE_TYPE = 'none'
+    try:
+        import redis_cache
+        REDIS_CACHE_TYPE = 'django-redis-cache'
+    except ImportError:
+        REDIS_CACHE_TYPE = 'none'
+
 try:
     from django.utils.log import NullHandler
     nullhandler = 'django.utils.log.NullHandler'
@@ -26,6 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.admin',
     'django.contrib.auth',
+    'django.contrib.messages',
     'django.contrib.sessions',
     'django_rq',
 ]
@@ -40,19 +43,17 @@ DATABASES = {
 
 if REDIS_CACHE_TYPE == 'django-redis':
     CACHES = {
-        'django-redis': {
-            'BACKEND': 'redis_cache.cache.RedisCache',
-            'LOCATION': '%s:6379:2' % REDIS_HOST,
-            'KEY_PREFIX': 'django-rq-tests',
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': "redis://127.0.0.1:6379/0",
             'OPTIONS': {
-                'CLIENT_CLASS': 'redis_cache.client.DefaultClient',
-                'MAX_ENTRIES': 5000,
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             },
         },
     }
 elif REDIS_CACHE_TYPE == 'django-redis-cache':
     CACHES = {
-        'django-redis-cache': {
+        'default': {
             'BACKEND': 'redis_cache.cache.RedisCache',
             'LOCATION': '%s:6379' % REDIS_HOST,
             'KEY_PREFIX': 'django-rq-tests',
@@ -152,6 +153,9 @@ RQ_QUEUES = {
         'PORT': 6379,
         'DB': 0,
     },
+    'django-redis': {
+        'USE_REDIS_CACHE': 'default',
+    },
     'django_rq_test2': {
         'HOST': REDIS_HOST,
         'PORT': 6379,
@@ -168,9 +172,7 @@ RQ = {
     'AUTOCOMMIT': False,
 }
 
-if REDIS_CACHE_TYPE == 'django-redis':
-    RQ_QUEUES['django-redis'] = {'USE_REDIS_CACHE': 'django-redis'}
-elif REDIS_CACHE_TYPE == 'django-redis-cache':
+if REDIS_CACHE_TYPE == 'django-redis-cache':
     RQ_QUEUES['django-redis-cache'] = {'USE_REDIS_CACHE': 'django-redis-cache'}
 
 ROOT_URLCONF = 'django_rq.tests.urls'

@@ -1,5 +1,7 @@
 {% extends "admin/base_site.html" %}
 
+{% block title %}Queues {{ block.super }}{% endblock %}
+
 {% block extrastyle %}
     {{ block.super }}
     <style>table {width: 100%;}</style>
@@ -28,6 +30,7 @@
                     <th>Active Jobs</th>
                     <th>Deferred Jobs</th>
                     <th>Finished Jobs</th>
+                    <th>Failed Jobs</th>
                     <th>Workers</th>
                     <th>Host</th>
                     <th>Port</th>
@@ -45,31 +48,24 @@
                         <td>{{ queue.jobs }}</td>
                         <td>{{ queue.oldest_job_timestamp }}</td>
                         <th>
-                            {% if queue.name != 'failed' %}
-                                <a href = "{% url 'rq_started_jobs' queue.index %}">
-                                    {{ queue.started_jobs }}
-                                </a>
-                            {% else %}
-                                -
-                            {% endif %}
+                            <a href = "{% url 'rq_started_jobs' queue.index %}">
+                                {{ queue.started_jobs }}
+                            </a>
                         </th>
                         <th>
-                            {% if queue.name != 'failed' %}
-                                <a href = "{% url 'rq_deferred_jobs' queue.index %}">
-                                    {{ queue.deferred_jobs }}
-                                </a>
-                            {% else %}
-                                -
-                            {% endif %}
+                            <a href = "{% url 'rq_deferred_jobs' queue.index %}">
+                                {{ queue.deferred_jobs }}
+                            </a>
                         </th>
                         <th>
-                            {% if queue.name != 'failed' %}
-                                <a href = "{% url 'rq_finished_jobs' queue.index %}">
-                                    {{ queue.finished_jobs }}
-                                </a>
-                            {% else %}
-                                -
-                            {% endif %}
+                              <a href = "{% url 'rq_finished_jobs' queue.index %}">
+                                  {{ queue.finished_jobs }}
+                              </a>
+                        </th>
+                        <th>
+                              <a href = "{% url 'rq_failed_jobs' queue.index %}">
+                                  {{ queue.failed_jobs }}
+                              </a>
                         </th>
                         <th><a href = "{% url 'rq_workers' queue.index %}">
                                 {{ queue.workers }}
