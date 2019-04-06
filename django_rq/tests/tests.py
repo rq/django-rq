@@ -13,7 +13,9 @@ except ImportError:
 
 from django.conf import settings
 
+import mock
 from mock import patch, PropertyMock, MagicMock
+
 from rq import get_current_job, Queue
 from rq.job import Job
 from rq.registry import FinishedJobRegistry
@@ -259,6 +261,13 @@ class QueuesTest(TestCase):
         for job in jobs:
             self.assertTrue(job['job'].is_finished)
             self.assertIn(job['job'].id, job['finished_job_registry'].get_job_ids())
+
+    @mock.patch('rq.contrib.sentry.register_sentry')
+    def test_sentry_dsn(self, mocked):
+        queue_names = ['django_rq_test']
+        call_command('rqworker', *queue_names, burst=True,
+                     sentry_dsn='https://1@sentry.io/1')
+        self.assertEqual(mocked.call_count, 1)
 
     def test_get_unique_connection_configs(self):
         connection_params_1 = {
@@ -577,7 +586,7 @@ class SchedulerTest(TestCase):
         Scheduler class customization.
         """
         scheduler = get_scheduler('default')
-        self.assertIsInstance(scheduler, DummyScheduler)        
+        self.assertIsInstance(scheduler, DummyScheduler)
 
     @override_settings(RQ={'AUTOCOMMIT': True})
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
