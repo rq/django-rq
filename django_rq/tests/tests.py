@@ -1,3 +1,4 @@
+import datetime
 import time
 from unittest import skipIf
 from uuid import uuid4
@@ -34,6 +35,7 @@ from django_rq.workers import get_worker, get_worker_class
 try:
     from rq_scheduler import Scheduler
     from ..queues import get_scheduler
+    from django_rq.tests.fixtures import DummyScheduler
     RQ_SCHEDULER_INSTALLED = True
 except ImportError:
     RQ_SCHEDULER_INSTALLED = False
@@ -567,6 +569,39 @@ class SchedulerTest(TestCase):
             setup_loghandlers_mock.reset_mock()
             call_command('rqscheduler', verbosity=verbosity)
             setup_loghandlers_mock.assert_called_once_with(expected_level[verbosity])
+
+    @override_settings(RQ={'SCHEDULER_CLASS': 'django_rq.tests.fixtures.DummyScheduler'})
+    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    def test_scheduler_default_timeout(self):
+        """
+        Scheduler class customization.
+        """
+        scheduler = get_scheduler('default')
+        self.assertIsInstance(scheduler, DummyScheduler)        
+
+    @override_settings(RQ={'AUTOCOMMIT': True})
+    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    def test_scheduler_default_timeout(self):
+        """
+        Ensure scheduler respects DEFAULT_RESULT_TTL value for `result_ttl` param.
+        """
+        scheduler = get_scheduler('test_scheduler')
+        job = scheduler.enqueue_at(datetime.datetime.now() + datetime.timedelta(days=1), divide, 1, 1)
+        self.assertTrue(job in scheduler.get_jobs())
+        self.assertEqual(job.timeout, 400)
+        job.delete()
+
+    @override_settings(RQ={'AUTOCOMMIT': True, 'DEFAULT_RESULT_TTL': 5432})
+    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    def test_scheduler_default_result_ttl(self):
+        """
+        Ensure scheduler respects DEFAULT_RESULT_TTL value for `result_ttl` param.
+        """
+        scheduler = get_scheduler('test_scheduler')
+        job = scheduler.enqueue_at(datetime.datetime.now() + datetime.timedelta(days=1), divide, 1, 1)
+        self.assertTrue(job in scheduler.get_jobs())
+        self.assertEqual(job.result_ttl, 5432)
+        job.delete()
 
 
 class RedisCacheTest(TestCase):

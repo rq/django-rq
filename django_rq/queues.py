@@ -262,13 +262,41 @@ instance instead of a ``Queue`` instance.
 try:
     from rq_scheduler import Scheduler
 
-    def get_scheduler(name='default', interval=60):
+    class DjangoScheduler(Scheduler):
+        """
+        Use settings ``DEFAULT_RESULT_TTL`` from ``RQ``
+        and ``DEFAULT_TIMEOUT`` from ``RQ_QUEUES`` if configured.
+        """
+        def _create_job(self, *args, **kwargs):
+            from .settings import QUEUES
+
+            if kwargs.get('timeout') is None:
+                queue_name = kwargs.get('queue_name') or self.queue_name
+                kwargs['timeout'] = QUEUES[queue_name].get('DEFAULT_TIMEOUT')
+
+            if kwargs.get('result_ttl') is None:
+                kwargs['result_ttl'] = getattr(settings, 'RQ', {}).get('DEFAULT_RESULT_TTL')
+
+            return super(DjangoScheduler, self)._create_job(*args, **kwargs)
+
+
+    def get_scheduler(name='default', queue=None, interval=60):
         """
         Returns an RQ Scheduler instance using parameters defined in
         ``RQ_QUEUES``
         """
-        return Scheduler(name, interval=interval,
-                         connection=get_connection(name))
+        RQ = getattr(settings, 'RQ', {})
+        scheduler_class = RQ.get('SCHEDULER_CLASS', DjangoScheduler)
+        
+        if isinstance(scheduler_class, six.string_types):
+            scheduler_class = import_attribute(scheduler_class)
+
+        if queue is None:
+            queue = get_queue(name)
+
+        return scheduler_class(queue_name=name, interval=interval,
+                               queue=queue, job_class=queue.job_class,
+                               connection=get_connection(name))
 except ImportError:
     def get_scheduler(*args, **kwargs):
         raise ImproperlyConfigured('rq_scheduler not installed')
