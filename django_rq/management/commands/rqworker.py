@@ -71,7 +71,6 @@ class Command(BaseCommand):
             level = 'INFO'
         setup_loghandlers(level)
 
-        sentry_dsn = options.get('sentry-dsn') or getattr(settings, 'SENTRY_DSN', None)
         try:
             # Instantiate a worker
             worker_kwargs = {
