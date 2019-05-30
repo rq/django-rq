@@ -9,6 +9,12 @@ based Python queuing library. `Django-RQ <https://github.com/rq/django-rq>`__ is
 simple app that allows you to configure your queues in django's ``settings.py``
 and easily use them in your project.
 
+=================
+Support Django-RQ
+=================
+
+If you find ``django-rq useful``, please consider supporting its development via `Tidelift <https://tidelift.com/subscription/pkg/pypi-django_rq?utm_source=pypi-django-rq&utm_medium=referral&utm_campaign=readme>`_.
+
 ============
 Requirements
 ============
