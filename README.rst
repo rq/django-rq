@@ -13,7 +13,7 @@ and easily use them in your project.
 Support Django-RQ
 =================
 
-If you find ``django-rq useful``, please consider supporting its development via `Tidelift <https://tidelift.com/subscription/pkg/pypi-django_rq?utm_source=pypi-django-rq&utm_medium=referral&utm_campaign=readme>`_.
+If you find ``django-rq`` useful, please consider supporting its development via `Tidelift <https://tidelift.com/subscription/pkg/pypi-django_rq?utm_source=pypi-django-rq&utm_medium=referral&utm_campaign=readme>`_.
 
 ============
 Requirements
