@@ -1,5 +1,5 @@
 -e ..
-Django==1.11.20
+Django==1.11.21
 gunicorn==19.7.1
 psycopg2==2.7.3.1
 requests==2.20.1
