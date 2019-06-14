@@ -22,7 +22,8 @@ from .utils import get_statistics
 
 @staff_member_required
 def stats(request):
-    return render(request, 'django_rq/stats.html', get_statistics())
+    return render(request, 'django_rq/stats.html',
+                  get_statistics(run_maintenance_tasks=True))
 
 
 def stats_json(request, token=None):
