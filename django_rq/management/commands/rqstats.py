@@ -96,7 +96,7 @@ class Command(BaseCommand):
         # Arbitrary
         self.table_width = 78
 
-        # Do not continously poll
+        # Do not continuously poll
         if not self.interval:
             self._print_stats_dashboard(get_statistics())
             return
