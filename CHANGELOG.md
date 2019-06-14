@@ -1,3 +1,7 @@
+# Version 2.1.0 (2019-06-14)
+- Fixed `Requeue All`
+- Django-RQ now automatically runs maintenance tasks when `rq_home` is opened
+
 # Version 2.0 (2019-04-06)
 - Compatibility with RQ 1.0 (Thanks @selwin). Backward incompatible changes include:
   * `FailedQueue` is now replaced by `FailedJobRegistry`
