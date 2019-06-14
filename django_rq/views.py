@@ -349,9 +349,10 @@ def clear_queue(request, queue_index):
 def requeue_all(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
+    registry = FailedJobRegistry(queue=queue)
 
     if request.method == 'POST':
-        job_ids = queue.get_job_ids()
+        job_ids = registry.get_job_ids()
 
         # Confirmation received
         for job_id in job_ids:
@@ -363,7 +364,7 @@ def requeue_all(request, queue_index):
     context_data = {
         'queue_index': queue_index,
         'queue': queue,
-        'total_jobs': queue.count,
+        'total_jobs': len(registry),
     }
 
     return render(request, 'django_rq/requeue_all.html', context_data)
