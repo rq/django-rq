@@ -137,7 +137,7 @@ number of connections to Redis server. For example:
 
 
 * ``get_connection`` - accepts a single queue name argument (defaults to "default")
-  and returns a connection to the queue's `Redis`_ server:
+  and returns a connection to the queue's Redis server:
 
 .. code-block:: python
 
@@ -533,7 +533,7 @@ admin fit in with the django-suit styles.
 Changelog
 =========
 
-See `changelog <https://github.com/rq/django-rq/blob/master/CHANGELOG.md>`.
+See `CHANGELOG.md <https://github.com/rq/django-rq/blob/master/CHANGELOG.md>`__.
 
 
 .. |Build Status| image:: https://secure.travis-ci.org/rq/django-rq.svg?branch=master
