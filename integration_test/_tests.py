@@ -85,7 +85,7 @@ class IntegrationTest(unittest.TestCase):
         # self.site = DjangoCommand("runserver", self.ADDRPORT)
         self.site = Process(
             "gunicorn", "-b", self.ADDRPORT,
-            "--timeout", "600",  # usefull for worker debugging
+            "--timeout", "600",  # useful for worker debugging
             "integration_test.wsgi:application")
         self.site.start()
 

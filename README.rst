@@ -293,7 +293,7 @@ HTTP clients (for monitoring purposes), you can define ``RQ_API_TOKEN`` and acce
 .. image::  demo-django-rq-json-dashboard.png
 
 
-Additionaly, these statistics are also accessible from  the command line.
+Additionally, these statistics are also accessible from  the command line.
 
 .. code-block:: bash
 
@@ -491,7 +491,7 @@ sudo vi /etc/systemd/system/rqworker.service
     [Install]
     WantedBy=multi-user.target
 
-Enable and start the sevice
+Enable and start the service
 
 .. code-block:: bash
 
