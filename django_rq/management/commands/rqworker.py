@@ -61,6 +61,8 @@ class Command(BaseCommand):
         if sentry_dsn is None:
             sentry_dsn = getattr(settings, 'SENTRY_DSN', None)
 
+        disable_sentry = getattr(settings, 'RQ_DISABLE_SENTRY', None)
+
         # Verbosity is defined by default in BaseCommand for all commands
         verbosity = options.get('verbosity')
         if verbosity >= 2:
@@ -88,7 +90,7 @@ class Command(BaseCommand):
             # Close any opened DB connection before any fork
             reset_db_connections()
 
-            if sentry_dsn:
+            if sentry_dsn and not disable_sentry:
                 try:
                     from rq.contrib.sentry import register_sentry
                     register_sentry(sentry_dsn)

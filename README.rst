@@ -318,7 +318,7 @@ Also you can specify ``sentry-dsn`` parameter when running rqworker:
 **Disable RQ sentry plugin**
 
 If your project use ``sentry-sdk``, the DSN is not compatible with RQ's sentry plugin (based on raven).
-In that case you have to disable the sentry plugin by setting `--sentry-dsn=""`.
+In that case you have to disable the sentry plugin by setting `RQ_DISABLE_SENTRY = True` in ``settings.py``.
 
 Configuring Logging
 -------------------

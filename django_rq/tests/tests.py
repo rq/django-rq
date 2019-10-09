@@ -286,6 +286,14 @@ class QueuesTest(TestCase):
 
             self.assertEqual(mocked.call_count, 0)
 
+    @mock.patch('rq.contrib.sentry.register_sentry')
+    def test_sentry_disabling(self, mocked):
+        queue_names = ['django_rq_test']
+        with self.settings(SENTRY_DSN='https://1@sentry.io/1', RQ_DISABLE_SENTRY=True):
+            call_command('rqworker', *queue_names, burst=True)
+
+            self.assertEqual(mocked.call_count, 0)
+
     def test_get_unique_connection_configs(self):
         connection_params_1 = {
             'HOST': 'localhost',
