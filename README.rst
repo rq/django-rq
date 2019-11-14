@@ -306,7 +306,7 @@ Additionally, these statistics are also accessible from  the command line.
 
 Configuring Sentry
 -------------------
-The ``SENTRY_DSN`` value from ``settings.py`` is used by default:
+Django-RQ >= 2.0 uses ``sentry-sdk`` instead of the deprecated ``raven`` library. The ``SENTRY_DSN`` value from ``settings.py`` is used by default:
 
 ``SENTRY_DSN = 'https://*****@sentry.io/222222'``
 
