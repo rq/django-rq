@@ -1,8 +1,8 @@
+import six
 from rq.job import Job
 from rq.utils import import_attribute
 
 from django.conf import settings
-from django.utils import six
 
 
 def get_job_class(job_class=None):

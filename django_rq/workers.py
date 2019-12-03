@@ -1,8 +1,8 @@
+import six
 from rq import Worker
 from rq.utils import import_attribute
 
 from django.conf import settings
-from django.utils import six
 
 from .jobs import get_job_class
 from .queues import filter_connection_params, get_connection, get_queues
