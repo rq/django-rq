@@ -14,7 +14,11 @@ import unittest
 import psycopg2
 import requests
 from django.conf import settings
-from django.utils.six.moves.urllib.parse import urlunsplit
+
+try:
+    from django.utils.six.moves.urllib.parse import urlunsplit
+except ImportError:
+    from urllib.parse import urlunsplit
 
 DJANGO_SETTINGS_MODULE = "integration_test.settings"
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", DJANGO_SETTINGS_MODULE)

@@ -8,10 +8,14 @@ from rq.utils import import_attribute
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.utils import six
 from django_rq import thread_queue
 
 from .jobs import get_job_class
+
+try:
+    from django.utils.six import string_types
+except ImportError:
+    string_types = str
 
 
 def get_commit_mode():
@@ -45,7 +49,7 @@ def get_queue_class(config=None, queue_class=None):
         if config:
             queue_class = config.get('QUEUE_CLASS', queue_class)
 
-    if isinstance(queue_class, six.string_types):
+    if isinstance(queue_class, string_types):
         queue_class = import_attribute(queue_class)
     return queue_class
 
@@ -276,7 +280,7 @@ try:
         RQ = getattr(settings, 'RQ', {})
         scheduler_class = RQ.get('SCHEDULER_CLASS', DjangoScheduler)
 
-        if isinstance(scheduler_class, six.string_types):
+        if isinstance(scheduler_class, string_types):
             scheduler_class = import_attribute(scheduler_class)
 
         if queue is None:

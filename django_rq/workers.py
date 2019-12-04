@@ -2,10 +2,14 @@ from rq import Worker
 from rq.utils import import_attribute
 
 from django.conf import settings
-from django.utils import six
 
 from .jobs import get_job_class
 from .queues import filter_connection_params, get_connection, get_queues
+
+try:
+    from django.utils.six import string_types
+except ImportError:
+    string_types = str
 
 
 def get_exception_handlers():
@@ -33,7 +37,7 @@ def get_worker_class(worker_class=None):
         if 'WORKER_CLASS' in RQ:
             worker_class = RQ.get('WORKER_CLASS')
 
-    if isinstance(worker_class, six.string_types):
+    if isinstance(worker_class, string_types):
         worker_class = import_attribute(worker_class)
     return worker_class
 
