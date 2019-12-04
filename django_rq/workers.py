@@ -1,9 +1,10 @@
+from django.conf import settings as django_settings
+from django.utils import six
+from django.utils.translation import activate
 from rq import Worker
 from rq.utils import import_attribute
 
-from django.conf import settings
-from django.utils import six
-
+from . import settings
 from .jobs import get_job_class
 from .queues import filter_connection_params, get_connection, get_queues
 
@@ -49,6 +50,8 @@ def get_worker(*queue_names, **kwargs):
     # normalize queue_class to what get_queues returns
     queue_class = queues[0].__class__
     worker_class = get_worker_class(kwargs.pop('worker_class', None))
+    if settings.RQ_USE_L10N:
+        activate(getattr(settings, 'RQ_LANGUAGE_CODE', django_settings.LANGUAGE_CODE))
     return worker_class(queues,
                         connection=queues[0].connection,
                         exception_handlers=get_exception_handlers() or None,
