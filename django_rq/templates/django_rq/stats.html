@@ -45,7 +45,11 @@
                                 {{ queue.name }}
                             </a>
                         </th>
-                        <td>{{ queue.jobs }}</td>
+                        <td>
+                                <a href = "{% url 'rq_jobs' queue.index %}">
+                                    {{ queue.jobs }}
+                                </a>
+                        </td>
                         <td>{{ queue.oldest_job_timestamp }}</td>
                         <th>
                             <a href = "{% url 'rq_started_jobs' queue.index %}">
