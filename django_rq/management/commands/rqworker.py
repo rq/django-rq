@@ -96,7 +96,7 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR("Please install sentry-sdk using `pip install sentry-sdk`"))
                     sys.exit(1)
 
-            w.work(burst=options.get('burst', False))
+            w.work(burst=options.get('burst', False), logging_level=level)
         except ConnectionError as e:
             print(e)
             sys.exit(1)
