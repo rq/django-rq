@@ -7,7 +7,7 @@ setup(
     author='Selwin Ong',
     author_email='selwin.ong@gmail.com',
     packages=['django_rq'],
-    url='https://github.com/ui/django-rq',
+    url='https://github.com/rq/django-rq',
     license='MIT',
     description='An app that provides django integration for RQ (Redis Queue)',
     long_description=open('README.rst').read(),
