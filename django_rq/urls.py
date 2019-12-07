@@ -1,12 +1,9 @@
 from django_rq import views
 
-try:
-    # Fixed supporting for Django 2.0 and greater
-    # See: https://docs.djangoproject.com/en/2.0/ref/urls/#django.urls.re_path
-    from django.urls import re_path
-except ImportError:
-    # Fallback for Django 1.11 and lower
-    from django.conf.urls import url as re_path
+# Fixed supporting for Django 2.0 and greater
+# See: https://docs.djangoproject.com/en/2.0/ref/urls/#django.urls.re_path
+from django.urls import re_path
+
 
 urlpatterns = [
     re_path(r'^$',

@@ -1,10 +1,8 @@
 import warnings
 
 import redis
-import six
 from redis.sentinel import Sentinel
 from rq.queue import Queue
-from rq.registry import FailedJobRegistry
 from rq.utils import import_attribute
 
 from django.conf import settings
@@ -45,7 +43,7 @@ def get_queue_class(config=None, queue_class=None):
         if config:
             queue_class = config.get('QUEUE_CLASS', queue_class)
 
-    if isinstance(queue_class, six.string_types):
+    if isinstance(queue_class, str):
         queue_class = import_attribute(queue_class)
     return queue_class
 
@@ -276,7 +274,7 @@ try:
         RQ = getattr(settings, 'RQ', {})
         scheduler_class = RQ.get('SCHEDULER_CLASS', DjangoScheduler)
 
-        if isinstance(scheduler_class, six.string_types):
+        if isinstance(scheduler_class, str):
             scheduler_class = import_attribute(scheduler_class)
 
         if queue is None:
