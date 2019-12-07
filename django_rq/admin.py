@@ -1,5 +1,6 @@
 from django.contrib import admin
-from django_rq import settings
+
+from . import settings
 
 
 if settings.SHOW_ADMIN_LINK:

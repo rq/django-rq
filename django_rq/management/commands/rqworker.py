@@ -10,7 +10,8 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connections
 from django.utils.version import get_version
-from django_rq.workers import get_worker
+
+from ...workers import get_worker
 
 
 def reset_db_connections():

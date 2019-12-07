@@ -3,7 +3,7 @@ from distutils.version import LooseVersion
 from django.core.management.base import BaseCommand
 from django.utils.version import get_version
 
-from django_rq import get_queue
+from .. import get_queue
 
 
 class Command(BaseCommand):
