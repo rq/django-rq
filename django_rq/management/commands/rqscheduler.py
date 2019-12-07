@@ -5,7 +5,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand
 from django.utils.version import get_version
 
-from .. import get_scheduler
+from ... import get_scheduler
 
 try:
     from rq_scheduler.utils import setup_loghandlers
