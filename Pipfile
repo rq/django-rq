@@ -1,0 +1,16 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+django-redis = {editable = true,git = "https://github.com/niwinz/django-redis.git",ref = "13acf21d61ec95de6550c2df9fc65363676cf8a7"}
+docutils = "*"
+pygments = "*"
+rq-scheduler = "*"
+
+[packages]
+django-rq = {editable = true,path = "."}
+
+[requires]
+python_version = "3.7"
