@@ -115,8 +115,8 @@ class QueuesTest(TestCase):
         connection = get_connection('sentinel')
 
         self.assertEqual(connection, sentinel_mock)
-        sentinel_class_mock.assert_called_once()
-        sentinel_mock.master_for.assert_called_once()
+        self.assertEqual(sentinel_mock.master_for.call_count, 1)
+        self.assertEqual(sentinel_class_mock.call_count, 1)
 
         sentinel_instances = sentinel_class_mock.call_args[0][0]
         self.assertListEqual(config['SENTINELS'], sentinel_instances)
