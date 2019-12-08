@@ -1,3 +1,9 @@
+# Version 2.2.0 (2019-12-08)
+- Support for Django 3.0. This release also drops support for Django 1.X. Thanks @hugorodgerbrown!
+- `rqworker` management command now properly passes in `--verbosity` to `Worker`. Thanks @stlk!
+- The admin interface can now view jobs with `:` on their IDs. Thanks @carboncoop!
+- Job detail page now shows `job.dependency`. Thanks @selwin!
+
 # Version 2.1.0 (2019-06-14)
 - Fixed `Requeue All`
 - Django-RQ now automatically runs maintenance tasks when `rq_home` is opened
