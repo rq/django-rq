@@ -1,15 +1,10 @@
 import uuid
+from unittest.mock import patch, PropertyMock
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.test.client import Client
-
-try:
-    from django.urls import reverse
-except ImportError:
-    from django.core.urlresolvers import reverse
-
-from mock import patch, PropertyMock
+from django.urls import reverse
 
 from rq.job import Job, JobStatus
 from rq.registry import (DeferredJobRegistry, FailedJobRegistry,
@@ -17,7 +12,7 @@ from rq.registry import (DeferredJobRegistry, FailedJobRegistry,
 
 from django_rq import get_queue
 from django_rq.workers import get_worker
-from django_rq.tests.fixtures import access_self
+from .fixtures import access_self
 from .utils import get_queue_index
 
 
@@ -81,7 +76,7 @@ class ViewTest(TestCase):
                          {'requeue': 'Requeue'})
         self.assertIn(job, queue.jobs)
         job.delete()
-    
+
     def test_requeue_all(self):
         """
         Ensure that requeueing all failed job work properly

@@ -1,6 +1,6 @@
 from django.core.signals import got_request_exception, request_finished
 
-from django_rq import thread_queue
+from . import thread_queue
 from .queues import get_commit_mode
 
 

@@ -1,20 +1,13 @@
 import datetime
 import time
-from unittest import skipIf
+from unittest import skipIf, mock
+from unittest.mock import patch, PropertyMock, MagicMock
 from uuid import uuid4
 
+from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase, override_settings
-
-try:
-    from django.urls import reverse
-except ImportError:
-    from django.core.urlresolvers import reverse
-
-from django.conf import settings
-
-import mock
-from mock import patch, PropertyMock, MagicMock
+from django.urls import reverse
 
 from rq import get_current_job, Queue
 from rq.job import Job
@@ -122,8 +115,8 @@ class QueuesTest(TestCase):
         connection = get_connection('sentinel')
 
         self.assertEqual(connection, sentinel_mock)
-        sentinel_class_mock.assert_called_once()
-        sentinel_mock.master_for.assert_called_once()
+        self.assertEqual(sentinel_mock.master_for.call_count, 1)
+        self.assertEqual(sentinel_class_mock.call_count, 1)
 
         sentinel_instances = sentinel_class_mock.call_args[0][0]
         self.assertListEqual(config['SENTINELS'], sentinel_instances)

@@ -2,7 +2,8 @@ import click
 import time
 
 from django.core.management.base import BaseCommand
-from django_rq.utils import get_statistics
+
+from ...utils import get_statistics
 
 
 class Command(BaseCommand):
