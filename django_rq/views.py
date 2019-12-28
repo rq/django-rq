@@ -354,12 +354,16 @@ def requeue_all(request, queue_index):
 
     if request.method == 'POST':
         job_ids = registry.get_job_ids()
-
+        count = 0
         # Confirmation received
         for job_id in job_ids:
-            requeue_job(job_id, connection=queue.connection)
+            try:
+                requeue_job(job_id, connection=queue.connection)
+                count += 1
+            except NoSuchJobError:
+                pass
 
-        messages.info(request, 'You have successfully requeued all %d jobs!' % len(job_ids))
+        messages.info(request, 'You have successfully requeued %d jobs!' % count)
         return redirect('rq_jobs', queue_index)
 
     context_data = {
