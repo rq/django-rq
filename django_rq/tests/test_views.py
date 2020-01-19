@@ -97,6 +97,28 @@ class ViewTest(TestCase):
         response = self.client.post(reverse('rq_requeue_all', args=[queue_index]))
         self.assertEqual(len(queue), 2)
 
+    def test_requeue_all_if_deleted_job(self):
+        """
+        Ensure that requeueing all failed job work properly
+        """
+        def failing_job():
+            raise ValueError
+
+        queue = get_queue('default')
+        queue_index = get_queue_index('default')
+        job = queue.enqueue(failing_job)
+        queue.enqueue(failing_job)
+        worker = get_worker('default')
+        worker.work(burst=True)
+
+        response = self.client.get(reverse('rq_requeue_all', args=[queue_index]))
+        self.assertEqual(response.context['total_jobs'], 2)
+        job.delete()
+
+        # After requeue_all is called, jobs are enqueued
+        response = self.client.post(reverse('rq_requeue_all', args=[queue_index]))
+        self.assertEqual(len(queue), 1)
+
     def test_delete_job(self):
         """
         In addition to deleting job from Redis, the job id also needs to be
