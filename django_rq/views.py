@@ -11,8 +11,13 @@ from redis.exceptions import ResponseError
 from rq import requeue_job
 from rq.exceptions import NoSuchJobError, UnpickleError
 from rq.job import Job, JobStatus
-from rq.registry import (DeferredJobRegistry, FailedJobRegistry,
-                         FinishedJobRegistry, StartedJobRegistry)
+from rq.registry import (
+    DeferredJobRegistry, 
+    FailedJobRegistry, 
+    FinishedJobRegistry, 
+    ScheduledJobRegistry,
+    StartedJobRegistry, 
+)
 from rq.worker import Worker
 
 from .queues import get_queue_by_index
@@ -140,6 +145,47 @@ def failed_jobs(request, queue_index):
         'page': page,
         'page_range': page_range,
         'job_status': 'Failed',
+    }
+    return render(request, 'django_rq/jobs.html', context_data)
+
+
+@staff_member_required
+def scheduled_jobs(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+
+    registry = ScheduledJobRegistry(queue.name, queue.connection)
+
+    items_per_page = 100
+    num_jobs = len(registry)
+    page = int(request.GET.get('page', 1))
+    jobs = []
+
+    if num_jobs > 0:
+        last_page = int(ceil(num_jobs / items_per_page))
+        page_range = range(1, last_page + 1)
+        offset = items_per_page * (page - 1)
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
+
+        for job_id in job_ids:
+            try:
+                job = Job.fetch(job_id, connection=queue.connection)
+                job.scheduled_at = registry.get_scheduled_time(job)
+                jobs.append(job)
+            except NoSuchJobError:
+                pass
+
+    else:
+        page_range = []
+
+    context_data = {
+        'queue': queue,
+        'queue_index': queue_index,
+        'jobs': jobs,
+        'num_jobs': num_jobs,
+        'page': page,
+        'page_range': page_range,
+        'job_status': 'Scheduled',
     }
     return render(request, 'django_rq/jobs.html', context_data)
 

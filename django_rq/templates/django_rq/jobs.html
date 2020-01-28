@@ -70,6 +70,9 @@
                             </th>
                             <th><div class = 'text'><span>ID</span></div></th>
                             <th><div class = 'text'><span>Created</span></div></th>
+                            {% if job_status == 'Scheduled' %}
+                                <th><div class = 'text'><span>Scheduled</span></div></th>
+                            {% endif %}
                             <th><div class = 'text'><span>Enqueued</span></div></th>
                             <th><div class = 'text'><span>Status</span></div></th>
                             <th><div class = 'text'><span>Callable</span></div></th>
@@ -93,6 +96,13 @@
                                         {{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}
                                     {% endif %}
                                 </td>
+                                {% if job_status == 'Scheduled' %}
+                                    <td>
+                                        {% if job.scheduled_at %}
+                                            {{ job.scheduled_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
                                 <td>
                                     {% if job.enqueued_at %}
                                         {{ job.enqueued_at|to_localtime|date:"Y-m-d, H:i:s" }}
