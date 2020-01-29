@@ -168,8 +168,11 @@ def scheduled_jobs(request, queue_index):
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
 
         jobs = Job.fetch_many(job_ids, connection=queue.connection)
-        for job in jobs:
-            job.scheduled_at = registry.get_scheduled_time(job)
+        for i, job in enumerate(jobs):
+            if job is None:
+                registry.remove(job_ids[i])
+            else:
+                job.scheduled_at = registry.get_scheduled_time(job)            
 
     else:
         page_range = []
