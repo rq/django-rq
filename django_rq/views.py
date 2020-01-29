@@ -167,13 +167,9 @@ def scheduled_jobs(request, queue_index):
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
 
-        for job_id in job_ids:
-            try:
-                job = Job.fetch(job_id, connection=queue.connection)
-                job.scheduled_at = registry.get_scheduled_time(job)
-                jobs.append(job)
-            except NoSuchJobError:
-                pass
+        jobs = Job.fetch_many(job_ids, connection=queue.connection)
+        for job in jobs:
+            job.scheduled_at = registry.get_scheduled_time(job)
 
     else:
         page_range = []
