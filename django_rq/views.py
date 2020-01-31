@@ -22,7 +22,7 @@ from rq.worker import Worker
 
 from .queues import get_queue_by_index
 from .settings import API_TOKEN
-from .utils import get_statistics
+from .utils import get_statistics, get_jobs
 
 
 @staff_member_required
@@ -88,12 +88,7 @@ def finished_jobs(request, queue_index):
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
-
-        for job_id in job_ids:
-            try:
-                jobs.append(Job.fetch(job_id, connection=queue.connection))
-            except NoSuchJobError:
-                pass
+        jobs = get_jobs(queue, job_ids, registry)
 
     else:
         page_range = []
@@ -127,12 +122,7 @@ def failed_jobs(request, queue_index):
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
-
-        for job_id in job_ids:
-            try:
-                jobs.append(Job.fetch(job_id, connection=queue.connection))
-            except NoSuchJobError:
-                pass
+        jobs = get_jobs(queue, job_ids, registry)
 
     else:
         page_range = []
@@ -167,13 +157,9 @@ def scheduled_jobs(request, queue_index):
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
 
-        jobs = Job.fetch_many(job_ids, connection=queue.connection)
-        for i, job in enumerate(jobs):
-            if job is None:
-                registry.remove(job_ids[i])
-            else:
-                job.scheduled_at = registry.get_scheduled_time(job)
-        jobs = [job for job in jobs if job is not None]
+        jobs = get_jobs(queue, job_ids, registry)
+        for job in jobs:
+            job.scheduled_at = registry.get_scheduled_time(job)
 
     else:
         page_range = []
@@ -207,12 +193,7 @@ def started_jobs(request, queue_index):
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
-
-        for job_id in job_ids:
-            try:
-                jobs.append(Job.fetch(job_id, connection=queue.connection))
-            except NoSuchJobError:
-                pass
+        jobs = get_jobs(queue, job_ids, registry)
 
     else:
         page_range = []
