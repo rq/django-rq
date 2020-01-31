@@ -10,8 +10,9 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from rq import get_current_job, Queue
+from rq.exceptions import NoSuchJobError
 from rq.job import Job
-from rq.registry import FinishedJobRegistry
+from rq.registry import FinishedJobRegistry, ScheduledJobRegistry
 from rq.worker import Worker
 
 from django_rq.decorators import job
@@ -24,7 +25,7 @@ from django_rq.queues import (
 from django_rq import thread_queue
 from django_rq.templatetags.django_rq import to_localtime
 from django_rq.tests.fixtures import DummyJob, DummyQueue, DummyWorker
-from django_rq.utils import get_statistics
+from django_rq.utils import get_jobs, get_statistics
 from django_rq.workers import get_worker, get_worker_class
 
 try:
@@ -49,6 +50,17 @@ def divide(a, b):
 def long_running_job(timeout=10):
     time.sleep(timeout)
     return 'Done sleeping...'
+
+
+def flush_registry(registry):
+    connection = registry.connection
+    for job_id in registry.get_job_ids():
+        connection.zrem(registry.key, job_id)
+        try:
+            job = Job.fetch(job_id, connection=connection)
+            job.delete()
+        except NoSuchJobError:
+            pass
 
 
 class RqStatsTest(TestCase):
@@ -744,3 +756,36 @@ class UtilsTest(TestCase):
             self.assertEqual(data['name'], 'async')
             self.assertEqual(data['workers'], 1)
             worker.register_death()
+
+    def test_get_jobs(self):
+        """get_jobs() works properly"""
+        queue = get_queue('django_rq_test')
+
+        registry = ScheduledJobRegistry(queue.name, queue.connection)
+        flush_registry(registry)
+
+        now = datetime.datetime.now()
+        job = queue.enqueue_at(now, access_self)
+        job2 = queue.enqueue_at(now, access_self)
+        self.assertEqual(
+            get_jobs(queue, [job.id, job2.id]),
+            [job, job2]
+        )
+        self.assertEqual(len(registry), 2)
+
+        # job has been deleted, so the result will be filtered out
+        queue.connection.delete(job.key)
+        self.assertEqual(
+            get_jobs(queue, [job.id, job2.id]),
+            [job2]
+        )
+        self.assertEqual(len(registry), 2)
+
+        # If job has been deleted and `registry` is passed,
+        # job will also be removed from registry
+        queue.connection.delete(job2.key)
+        self.assertEqual(
+            get_jobs(queue, [job.id, job2.id], registry),
+            []
+        )
+        self.assertEqual(len(registry), 0)

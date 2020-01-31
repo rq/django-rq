@@ -1,3 +1,4 @@
+from rq.job import Job
 from rq.registry import (
     DeferredJobRegistry, 
     FailedJobRegistry, 
@@ -66,3 +67,20 @@ def get_statistics(run_maintenance_tasks=False):
 
         queues.append(queue_data)
     return {'queues': queues}
+
+
+def get_jobs(queue, job_ids, registry=None):
+    """Fetch jobs in bulk from Redis.
+    1. If job data is not present in Redis, discard the result
+    2. If `registry` argument is supplied, delete empty jobs from registry
+    """
+    jobs = Job.fetch_many(job_ids, connection=queue.connection)
+    valid_jobs = []
+    for i, job in enumerate(jobs):
+        if job is None:
+            if registry:
+                registry.remove(job_ids[i])
+        else:
+            valid_jobs.append(job)
+
+    return valid_jobs
