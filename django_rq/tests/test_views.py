@@ -283,7 +283,7 @@ class ViewTest(TestCase):
         response = self.client.get(
             reverse('rq_scheduled_jobs', args=[queue_index])
         )
-        self.assertEqual(response.context['jobs'], [None])
+        self.assertEqual(response.context['jobs'], [])
 
         self.assertEqual(len(registry), 0)
 
