@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from unittest.mock import patch, PropertyMock
 
 from django.contrib.auth.models import User
@@ -7,8 +8,13 @@ from django.test.client import Client
 from django.urls import reverse
 
 from rq.job import Job, JobStatus
-from rq.registry import (DeferredJobRegistry, FailedJobRegistry,
-                         FinishedJobRegistry, StartedJobRegistry)
+from rq.registry import (
+    DeferredJobRegistry, 
+    FailedJobRegistry,
+    FinishedJobRegistry, 
+    ScheduledJobRegistry, 
+    StartedJobRegistry
+)
 
 from django_rq import get_queue
 from django_rq.workers import get_worker
@@ -246,6 +252,40 @@ class ViewTest(TestCase):
             reverse('rq_failed_jobs', args=[queue_index])
         )
         self.assertEqual(response.context['jobs'], [job])
+
+    def test_scheduled_jobs(self):
+        """Ensure that scheduled jobs page works properly."""
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        # Test that page doesn't fail when ScheduledJobRegistry is empty
+        response = self.client.get(
+            reverse('rq_scheduled_jobs', args=[queue_index])
+        )
+        self.assertEqual(response.status_code, 200)
+
+        job = queue.enqueue_at(datetime.now(), access_self)
+        response = self.client.get(
+            reverse('rq_scheduled_jobs', args=[queue_index])
+        )
+        self.assertEqual(response.context['jobs'], [job])
+
+    def test_scheduled_jobs_registry_removal(self):
+        """Ensure that non existing job is being deleted from registry by view"""
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        registry = ScheduledJobRegistry(queue.name, queue.connection)
+        job = queue.enqueue_at(datetime.now(), access_self)
+        self.assertEqual(len(registry), 1)
+
+        queue.connection.delete(job.key)
+        response = self.client.get(
+            reverse('rq_scheduled_jobs', args=[queue_index])
+        )
+        self.assertEqual(response.context['jobs'], [None])
+
+        self.assertEqual(len(registry), 0)
 
     def test_started_jobs(self):
         """Ensure that active jobs page works properly."""
