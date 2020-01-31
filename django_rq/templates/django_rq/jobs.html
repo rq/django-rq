@@ -82,39 +82,37 @@
                     </thead>
                     <tbody>
                         {% for job in jobs %}
-                            {% if job is not None %}
-                                <tr class = "{% cycle 'row1' 'row2' %}">
-                                    <td class="action-checkbox">
-                                        <input class="action-select" name="_selected_action" type="checkbox" value="{{ job.id }}">
-                                    </td>
-                                    <th>
-                                        <a href = "{% url 'rq_job_detail' queue_index job.id %}">
-                                            {{ job.id }}
-                                        </a>
-                                    </th>
-                                    <td>
-                                        {% if job.created_at %}
-                                            {{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}
-                                        {% endif %}
-                                    </td>
-                                    {% if job_status == 'Scheduled' %}
-                                        <td>
-                                            {% if job.scheduled_at %}
-                                                {{ job.scheduled_at|to_localtime|date:"Y-m-d, H:i:s" }}
-                                            {% endif %}
-                                        </td>
+                            <tr class = "{% cycle 'row1' 'row2' %}">
+                                <td class="action-checkbox">
+                                    <input class="action-select" name="_selected_action" type="checkbox" value="{{ job.id }}">
+                                </td>
+                                <th>
+                                    <a href = "{% url 'rq_job_detail' queue_index job.id %}">
+                                        {{ job.id }}
+                                    </a>
+                                </th>
+                                <td>
+                                    {% if job.created_at %}
+                                        {{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}
                                     {% endif %}
+                                </td>
+                                {% if job_status == 'Scheduled' %}
                                     <td>
-                                        {% if job.enqueued_at %}
-                                            {{ job.enqueued_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                        {% if job.scheduled_at %}
+                                            {{ job.scheduled_at|to_localtime|date:"Y-m-d, H:i:s" }}
                                         {% endif %}
                                     </td>
-                                    <td>{{ job.get_status }}</td>
-                                    <td>{{ job|show_func_name }}</td>
-                                    {% block extra_columns_values %}
-                                    {% endblock extra_columns_values %}
-                                </tr>
-                            {% endif %}
+                                {% endif %}
+                                <td>
+                                    {% if job.enqueued_at %}
+                                        {{ job.enqueued_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ job.get_status }}</td>
+                                <td>{{ job|show_func_name }}</td>
+                                {% block extra_columns_values %}
+                                {% endblock extra_columns_values %}
+                            </tr>
                         {% endfor %}
                     </tbody>
                 </table>

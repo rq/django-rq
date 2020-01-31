@@ -172,7 +172,8 @@ def scheduled_jobs(request, queue_index):
             if job is None:
                 registry.remove(job_ids[i])
             else:
-                job.scheduled_at = registry.get_scheduled_time(job)            
+                job.scheduled_at = registry.get_scheduled_time(job)
+        jobs = [job for job in jobs if job is not None]
 
     else:
         page_range = []
