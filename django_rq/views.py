@@ -2,7 +2,7 @@ from __future__ import division
 
 from math import ceil
 
-from django.contrib import messages
+from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
@@ -27,8 +27,11 @@ from .utils import get_statistics, get_jobs
 
 @staff_member_required
 def stats(request):
-    return render(request, 'django_rq/stats.html',
-                  get_statistics(run_maintenance_tasks=True))
+    context_data = {
+        **admin.site.each_context(request),
+        **get_statistics(run_maintenance_tasks=True)
+    }
+    return render(request, 'django_rq/stats.html', context_data)
 
 
 def stats_json(request, token=None):
@@ -60,6 +63,7 @@ def jobs(request, queue_index):
         page_range = []
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'jobs': jobs,
@@ -94,6 +98,7 @@ def finished_jobs(request, queue_index):
         page_range = []
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'jobs': jobs,
@@ -128,6 +133,7 @@ def failed_jobs(request, queue_index):
         page_range = []
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'jobs': jobs,
@@ -165,6 +171,7 @@ def scheduled_jobs(request, queue_index):
         page_range = []
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'jobs': jobs,
@@ -199,6 +206,7 @@ def started_jobs(request, queue_index):
         page_range = []
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'jobs': jobs,
@@ -219,6 +227,7 @@ def workers(request, queue_index):
                if queue.name in worker.queue_names()]
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'workers': workers,
@@ -237,6 +246,7 @@ def worker_details(request, queue_index, key):
     queue_names = ', '.join(worker.queue_names())
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'worker': worker,
@@ -275,6 +285,7 @@ def deferred_jobs(request, queue_index):
         page_range = []
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'jobs': jobs,
@@ -302,6 +313,7 @@ def job_detail(request, queue_index, job_id):
         data_is_valid = False
 
     context_data = {
+        **admin.site.each_context(request),
         'queue_index': queue_index,
         'job': job,
         'queue': queue,
@@ -324,6 +336,7 @@ def delete_job(request, queue_index, job_id):
         return redirect('rq_jobs', queue_index)
 
     context_data = {
+        **admin.site.each_context(request),
         'queue_index': queue_index,
         'job': job,
         'queue': queue,
@@ -343,6 +356,7 @@ def requeue_job_view(request, queue_index, job_id):
         return redirect('rq_job_detail', queue_index, job_id)
 
     context_data = {
+        **admin.site.each_context(request),
         'queue_index': queue_index,
         'job': job,
         'queue': queue,
@@ -367,6 +381,7 @@ def clear_queue(request, queue_index):
         return redirect('rq_jobs', queue_index)
 
     context_data = {
+        **admin.site.each_context(request),
         'queue_index': queue_index,
         'queue': queue,
     }
@@ -394,6 +409,7 @@ def requeue_all(request, queue_index):
         return redirect('rq_jobs', queue_index)
 
     context_data = {
+        **admin.site.each_context(request),
         'queue_index': queue_index,
         'queue': queue,
         'total_jobs': len(registry),
@@ -411,6 +427,7 @@ def actions(request, queue_index):
         # confirm action
         if request.POST.get('_selected_action', False):
             context_data = {
+                **admin.site.each_context(request),
                 'queue_index': queue_index,
                 'action': request.POST['action'],
                 'job_ids': request.POST.getlist('_selected_action'),
@@ -460,6 +477,7 @@ def enqueue_job(request, queue_index, job_id):
         return redirect('rq_job_detail', queue_index, job_id)
 
     context_data = {
+        **admin.site.each_context(request),
         'queue_index': queue_index,
         'job': job,
         'queue': queue,
