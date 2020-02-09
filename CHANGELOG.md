@@ -1,3 +1,11 @@
+# Version 2.3.0 (2020-02-09)
+* Support for RQ's new `ScheduledJobRegistry`. Thanks @Yolley!
+* Improve performance when displaying pages showing a large number of jobs by using `Job.fetch_many()`. Thanks @selwin!
+* `django-rq` will now automatically cleanup orphaned worker keys in job registries. Thanks @selwin!
+* Site name now properly displayed in Django-RQ admin pages. Thanks @tom-price!
+* `NoSuchJobError`s are now handled properly when requeuing all jobs. Thanks @thomasmatecki!
+* Support for displaying jobs with names containing `$`. Thanks @gowthamk63!
+
 # Version 2.2.0 (2019-12-08)
 - Support for Django 3.0. This release also drops support for Django 1.X. Thanks @hugorodgerbrown!
 - `rqworker` management command now properly passes in `--verbosity` to `Worker`. Thanks @stlk!
