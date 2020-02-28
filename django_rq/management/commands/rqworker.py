@@ -37,6 +37,8 @@ class Command(BaseCommand):
                             default=None, help='PID file to write the worker`s pid into')
         parser.add_argument('--burst', action='store_true', dest='burst',
                             default=False, help='Run worker in burst mode')
+        parser.add_argument('--with-scheduler', action='store_true', dest='with_scheduler',
+                            default=False, help='Run worker with scheduler enabled')
         parser.add_argument('--name', action='store', dest='name',
                             default=None, help='Name of the worker')
         parser.add_argument('--queue-class', action='store', dest='queue_class',
@@ -97,7 +99,7 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR("Please install sentry-sdk using `pip install sentry-sdk`"))
                     sys.exit(1)
 
-            w.work(burst=options.get('burst', False), logging_level=level)
+            w.work(burst=options.get('burst', False), with_scheduler=options.get('with_scheduler', False), logging_level=level)
         except ConnectionError as e:
             print(e)
             sys.exit(1)
