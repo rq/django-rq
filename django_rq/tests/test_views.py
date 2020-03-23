@@ -85,7 +85,7 @@ class ViewTest(TestCase):
 
     def test_requeue_all(self):
         """
-        Ensure that requeueing all failed job work properly
+        Ensure that requeuing all failed job work properly
         """
         def failing_job():
             raise ValueError
@@ -105,7 +105,7 @@ class ViewTest(TestCase):
 
     def test_requeue_all_if_deleted_job(self):
         """
-        Ensure that requeueing all failed job work properly
+        Ensure that requeuing all failed job work properly
         """
         def failing_job():
             raise ValueError
