@@ -316,6 +316,7 @@ def job_detail(request, queue_index, job_id):
         **admin.site.each_context(request),
         'queue_index': queue_index,
         'job': job,
+        'dependency_id': job._dependency_id, 
         'queue': queue,
         'data_is_valid': data_is_valid
     }
