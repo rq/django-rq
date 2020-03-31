@@ -155,9 +155,9 @@
             <div>
                 <label class="required">Depends On:</label>
                 <div class="data">
-                    {% if job.dependency %}
-                    <a href = "{% url 'rq_job_detail' queue_index job.dependency.id %}">
-                        {{ job.dependency.id }}
+                    {% if dependency_id %}
+                    <a href = "{% url 'rq_job_detail' queue_index dependency_id %}">
+                        {{ dependency_id }}
                     </a>
                     {% endif %}
                 </div>

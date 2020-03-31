@@ -62,7 +62,20 @@ class ViewTest(TestCase):
         queue.connection.hset(job.key, 'data', 'unpickleable data')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('UnpicklingError', response.content.decode('utf-8'))
+        self.assertIn('UnpicklingError', response.content.decode())
+    
+    def test_job_details_on_deleted_dependency(self):
+        """Page doesn't crash even if job.dependency has been deleted"""
+        queue = get_queue('default')
+        queue_index = get_queue_index('default')
+
+        job = queue.enqueue(access_self)
+        second_job = queue.enqueue(access_self, depends_on=job)
+        job.delete()
+        url = reverse('rq_job_detail', args=[queue_index, second_job.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(second_job._dependency_id, response.content.decode())
 
     def test_requeue_job(self):
         """
