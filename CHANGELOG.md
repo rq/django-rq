@@ -1,3 +1,7 @@
+# Version 2.3.1 (2020-04-10)
+* Added `--with-scheduler` argument to `rqworker` management command. Thanks @stlk!
+* Fixed a bug where opening job detail would crash if job.dependency no longer exists. Thanks @selwin!
+
 # Version 2.3.0 (2020-02-09)
 * Support for RQ's new `ScheduledJobRegistry`. Thanks @Yolley!
 * Improve performance when displaying pages showing a large number of jobs by using `Job.fetch_many()`. Thanks @selwin!
