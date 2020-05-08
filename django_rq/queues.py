@@ -221,6 +221,11 @@ def enqueue(func, *args, **kwargs):
     from django_rq import enqueue
     enqueue(func, *args, **kwargs)
     """
+    RQ = getattr(settings, 'RQ', {})
+    default_result_ttl = RQ.get('DEFAULT_RESULT_TTL')
+    if default_result_ttl is not None:
+        kwargs.setdefault('result_ttl', default_result_ttl)
+
     return get_queue().enqueue(func, *args, **kwargs)
 
 
