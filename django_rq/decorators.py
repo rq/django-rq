@@ -33,7 +33,7 @@ def job(func_or_queue, connection=None, *args, **kwargs):
 
     RQ = getattr(settings, 'RQ', {})
     default_result_ttl = RQ.get('DEFAULT_RESULT_TTL')
-    if default_result_ttl:
+    if default_result_ttl is not None:
         kwargs.setdefault('result_ttl', default_result_ttl)
 
     decorator = _rq_job(queue, connection=connection, *args, **kwargs)
