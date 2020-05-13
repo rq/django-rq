@@ -9,7 +9,7 @@ from django.shortcuts import redirect, render
 
 from redis.exceptions import ResponseError
 from rq import requeue_job
-from rq.exceptions import NoSuchJobError, UnpickleError
+from rq.exceptions import NoSuchJobError
 from rq.job import Job, JobStatus
 from rq.registry import (
     DeferredJobRegistry, 
@@ -309,7 +309,7 @@ def job_detail(request, queue_index, job_id):
     try:
         job.func_name
         data_is_valid = True
-    except UnpickleError:
+    except:
         data_is_valid = False
 
     context_data = {
