@@ -1,3 +1,6 @@
+# Version 2.3.2 (2020-05-13)
+* Compatibility with RQ >= 1.4.0 which implements customizable serialization method. Thanks @selwin!
+
 # Version 2.3.1 (2020-04-10)
 * Added `--with-scheduler` argument to `rqworker` management command. Thanks @stlk!
 * Fixed a bug where opening job detail would crash if job.dependency no longer exists. Thanks @selwin!
