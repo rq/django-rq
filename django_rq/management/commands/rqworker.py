@@ -50,6 +50,10 @@ class Command(BaseCommand):
                             help='Default worker timeout to be used')
         parser.add_argument('--sentry-dsn', action='store', default=None, dest='sentry-dsn',
                             help='Report exceptions to this Sentry DSN')
+        parser.add_argument('--sentry-ca-certs', action='store', default=None, dest='sentry-ca-certs',
+                            help='A path to an alternative CA bundle file in PEM-format')
+        parser.add_argument('--sentry-debug', action='store', default=False, dest='sentry-debug',
+                            help='Turns debug mode on or off.')
 
         if LooseVersion(get_version()) >= LooseVersion('1.10'):
             parser.add_argument('args', nargs='*', type=str,
@@ -92,9 +96,20 @@ class Command(BaseCommand):
             reset_db_connections()
 
             if sentry_dsn:
+                sentry_debug = options.get('sentry-debug') or getattr(
+                    settings, 'SENTRY_DEBUG', False
+                )
+                options = {'debug': sentry_debug}
+
+                sentry_ca_certs = options.get('sentry-ca-certs') or getattr(
+                    settings, 'SENTRY_CA_CERTS', None
+                )
+                if sentry_ca_certs:
+                    options.update({'ca_certs': sentry_ca_certs})
+
                 try:
                     from rq.contrib.sentry import register_sentry
-                    register_sentry(sentry_dsn)
+                    register_sentry(sentry_dsn, **options)
                 except ImportError:
                     self.stdout.write(self.style.ERROR("Please install sentry-sdk using `pip install sentry-sdk`"))
                     sys.exit(1)
