@@ -99,17 +99,17 @@ class Command(BaseCommand):
                 sentry_debug = options.get('sentry-debug') or getattr(
                     settings, 'SENTRY_DEBUG', False
                 )
-                options = {'debug': sentry_debug}
+                sentry_options = {'debug': sentry_debug}
 
                 sentry_ca_certs = options.get('sentry-ca-certs') or getattr(
                     settings, 'SENTRY_CA_CERTS', None
                 )
                 if sentry_ca_certs:
-                    options.update({'ca_certs': sentry_ca_certs})
+                    sentry_options.update({'ca_certs': sentry_ca_certs})
 
                 try:
                     from rq.contrib.sentry import register_sentry
-                    register_sentry(sentry_dsn, **options)
+                    register_sentry(sentry_dsn, **sentry_options)
                 except ImportError:
                     self.stdout.write(self.style.ERROR("Please install sentry-sdk using `pip install sentry-sdk`"))
                     sys.exit(1)
