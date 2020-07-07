@@ -31,6 +31,7 @@
                     <th>Deferred Jobs</th>
                     <th>Finished Jobs</th>
                     <th>Failed Jobs</th>
+                    <th>Scheduled Jobs</th>
                     <th>Workers</th>
                     <th>Host</th>
                     <th>Port</th>
@@ -45,7 +46,11 @@
                                 {{ queue.name }}
                             </a>
                         </th>
-                        <td>{{ queue.jobs }}</td>
+                        <td>
+                                <a href = "{% url 'rq_jobs' queue.index %}">
+                                    {{ queue.jobs }}
+                                </a>
+                        </td>
                         <td>{{ queue.oldest_job_timestamp }}</td>
                         <th>
                             <a href = "{% url 'rq_started_jobs' queue.index %}">
@@ -66,6 +71,11 @@
                               <a href = "{% url 'rq_failed_jobs' queue.index %}">
                                   {{ queue.failed_jobs }}
                               </a>
+                        </th>
+                        <th>
+                            <a href = "{% url 'rq_scheduled_jobs' queue.index %}">
+                                {{ queue.scheduled_jobs }}
+                            </a>
                         </th>
                         <th><a href = "{% url 'rq_workers' queue.index %}">
                                 {{ queue.workers }}

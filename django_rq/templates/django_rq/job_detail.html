@@ -1,6 +1,6 @@
 {% extends "admin/base_site.html" %}
 
-{% load admin_static django_rq %}
+{% load static django_rq %}
 
 {% block title %}Job {{ job.id }} {{ block.super }}{% endblock %}
 
@@ -115,6 +115,13 @@
 
         <div class="form-row">
             <div>
+                <label class="required">Meta:</label>
+                <div class="data">{{ job.meta }}</div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
                 <label class="required">Args:</label>
                 <div class="data">
                     {% if data_is_valid %}
@@ -146,6 +153,19 @@
                         {% endif %}
                     {% else %}
                         Unpickling Error
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label class="required">Depends On:</label>
+                <div class="data">
+                    {% if dependency_id %}
+                    <a href = "{% url 'rq_job_detail' queue_index dependency_id %}">
+                        {{ dependency_id }}
+                    </a>
                     {% endif %}
                 </div>
             </div>

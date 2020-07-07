@@ -1,7 +1,6 @@
 from django import template
 from django.utils import timezone
 
-from rq.exceptions import UnpickleError
 
 register = template.Library()
 
@@ -17,8 +16,8 @@ def to_localtime(time):
 
 @register.filter
 def show_func_name(job):
-    '''Shows job.func_name and handles UnpickleError'''
+    '''Shows job.func_name and handles errors during deserialization'''
     try:
         return job.func_name
-    except UnpickleError as e:
+    except Exception as e:
         return repr(e)

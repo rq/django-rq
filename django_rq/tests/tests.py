@@ -1,24 +1,18 @@
 import datetime
 import time
-from unittest import skipIf
+from unittest import skipIf, mock
+from unittest.mock import patch, PropertyMock, MagicMock
 from uuid import uuid4
 
+from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase, override_settings
-
-try:
-    from django.urls import reverse
-except ImportError:
-    from django.core.urlresolvers import reverse
-
-from django.conf import settings
-
-import mock
-from mock import patch, PropertyMock, MagicMock
+from django.urls import reverse
 
 from rq import get_current_job, Queue
+from rq.exceptions import NoSuchJobError
 from rq.job import Job
-from rq.registry import FinishedJobRegistry
+from rq.registry import FinishedJobRegistry, ScheduledJobRegistry
 from rq.worker import Worker
 
 from django_rq.decorators import job
@@ -31,7 +25,7 @@ from django_rq.queues import (
 from django_rq import thread_queue
 from django_rq.templatetags.django_rq import to_localtime
 from django_rq.tests.fixtures import DummyJob, DummyQueue, DummyWorker
-from django_rq.utils import get_statistics
+from django_rq.utils import get_jobs, get_statistics
 from django_rq.workers import get_worker, get_worker_class
 
 try:
@@ -56,6 +50,17 @@ def divide(a, b):
 def long_running_job(timeout=10):
     time.sleep(timeout)
     return 'Done sleeping...'
+
+
+def flush_registry(registry):
+    connection = registry.connection
+    for job_id in registry.get_job_ids():
+        connection.zrem(registry.key, job_id)
+        try:
+            job = Job.fetch(job_id, connection=connection)
+            job.delete()
+        except NoSuchJobError:
+            pass
 
 
 class RqStatsTest(TestCase):
@@ -122,8 +127,8 @@ class QueuesTest(TestCase):
         connection = get_connection('sentinel')
 
         self.assertEqual(connection, sentinel_mock)
-        sentinel_class_mock.assert_called_once()
-        sentinel_mock.master_for.assert_called_once()
+        self.assertEqual(sentinel_mock.master_for.call_count, 1)
+        self.assertEqual(sentinel_class_mock.call_count, 1)
 
         sentinel_instances = sentinel_class_mock.call_args[0][0]
         self.assertListEqual(config['SENTINELS'], sentinel_instances)
@@ -286,6 +291,28 @@ class QueuesTest(TestCase):
 
             self.assertEqual(mocked.call_count, 0)
 
+    @mock.patch('rq.contrib.sentry.register_sentry')
+    def test_sentry_dsn_certs(self, mocked):
+        queue_names = ['django_rq_test']
+        with self.settings(SENTRY_DSN='https://1@sentry.io/1'):
+            call_command('rqworker', *queue_names, burst=True,
+                         sentry_dsn='https://1@sentry.io/1',
+                         sentry_ca_certs="/path/to/cert"
+                         )
+
+            self.assertEqual(mocked.call_count, 1)
+
+    @mock.patch('rq.contrib.sentry.register_sentry')
+    def test_sentry_dsn_debug(self, mocked):
+        queue_names = ['django_rq_test']
+        with self.settings(SENTRY_DSN='https://1@sentry.io/1'):
+            call_command('rqworker', *queue_names, burst=True,
+                         sentry_dsn='https://1@sentry.io/1',
+                         sentry_debug=True
+                         )
+
+            self.assertEqual(mocked.call_count, 1)
+
     def test_get_unique_connection_configs(self):
         connection_params_1 = {
             'HOST': 'localhost',
@@ -435,6 +462,14 @@ class DecoratorTest(TestCase):
         self.assertEqual(result.result_ttl, 5432)
         result.delete()
 
+    @override_settings(RQ={'AUTOCOMMIT': True, 'DEFAULT_RESULT_TTL': 0})
+    def test_job_decorator_result_ttl_zero(self):
+        @job
+        def test():
+            pass
+        result = test.delay()
+        self.assertEqual(result.result_ttl, 0)
+        result.delete()
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class WorkersTest(TestCase):
@@ -751,3 +786,36 @@ class UtilsTest(TestCase):
             self.assertEqual(data['name'], 'async')
             self.assertEqual(data['workers'], 1)
             worker.register_death()
+
+    def test_get_jobs(self):
+        """get_jobs() works properly"""
+        queue = get_queue('django_rq_test')
+
+        registry = ScheduledJobRegistry(queue.name, queue.connection)
+        flush_registry(registry)
+
+        now = datetime.datetime.now()
+        job = queue.enqueue_at(now, access_self)
+        job2 = queue.enqueue_at(now, access_self)
+        self.assertEqual(
+            get_jobs(queue, [job.id, job2.id]),
+            [job, job2]
+        )
+        self.assertEqual(len(registry), 2)
+
+        # job has been deleted, so the result will be filtered out
+        queue.connection.delete(job.key)
+        self.assertEqual(
+            get_jobs(queue, [job.id, job2.id]),
+            [job2]
+        )
+        self.assertEqual(len(registry), 2)
+
+        # If job has been deleted and `registry` is passed,
+        # job will also be removed from registry
+        queue.connection.delete(job2.key)
+        self.assertEqual(
+            get_jobs(queue, [job.id, job2.id], registry),
+            []
+        )
+        self.assertEqual(len(registry), 0)

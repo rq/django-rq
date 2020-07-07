@@ -2,39 +2,26 @@ language: python
 dist: xenial
 
 python:
-  - "2.7"
   - "3.5"
   - "3.6"
   - "3.7"
+  - "3.8"
 
 env:
-  - DJANGO=2.2
+  - DJANGO=2.0
   - DJANGO=2.1
-  - DJANGO=2.0.8
-  - DJANGO=1.9.9
-  - DJANGO=1.8.18
-  - DJANGO=1.10.8
-  - DJANGO=1.11.16
+  - DJANGO=2.2
+  - DJANGO=3.0
 
 matrix:
   exclude:
-    - python: "2.7"
-      env: DJANGO=2.2
-    - python: "2.7"
-      env: DJANGO=2.1
-    - python: "2.7"
-      env: DJANGO=2.0.8
-    - python: "3.7"
-      env: DJANGO=1.9.9
-    - python: "3.7"
-      env: DJANGO=1.8.18
-    - python: "3.7"
-      env: DJANGO=1.10.8
-    - python: "3.7"
-      env: DJANGO=1.11.16
+    - python: "3.5"
+      env: DJANGO=3.0
 
 install:
-  - pip install Django==$DJANGO docutils pygments rq-scheduler django-redis
+  - pip install Django==$DJANGO docutils pygments rq-scheduler
+  # django-redis fix not yet released, so pinning to master
+  - pip install git+https://github.com/niwinz/django-redis.git@13acf21d61ec95de6550c2df9fc65363676cf8a7#egg=django_redis
   - python setup.py install
   - pip install codecov
 

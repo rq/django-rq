@@ -1,7 +1,6 @@
 from rq.decorators import job as _rq_job
 
 from django.conf import settings
-from django.utils import six
 
 from .queues import get_queue
 
@@ -24,7 +23,7 @@ def job(func_or_queue, connection=None, *args, **kwargs):
         func = None
         queue = func_or_queue
 
-    if isinstance(queue, six.string_types):
+    if isinstance(queue, str):
         try:
             queue = get_queue(queue)
             if connection is None:
@@ -34,7 +33,7 @@ def job(func_or_queue, connection=None, *args, **kwargs):
 
     RQ = getattr(settings, 'RQ', {})
     default_result_ttl = RQ.get('DEFAULT_RESULT_TTL')
-    if default_result_ttl:
+    if default_result_ttl is not None:
         kwargs.setdefault('result_ttl', default_result_ttl)
 
     decorator = _rq_job(queue, connection=connection, *args, **kwargs)

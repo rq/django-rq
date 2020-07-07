@@ -1,23 +1,24 @@
 import uuid
+from datetime import datetime
+from unittest.mock import patch, PropertyMock
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.test.client import Client
-
-try:
-    from django.urls import reverse
-except ImportError:
-    from django.core.urlresolvers import reverse
-
-from mock import patch, PropertyMock
+from django.urls import reverse
 
 from rq.job import Job, JobStatus
-from rq.registry import (DeferredJobRegistry, FailedJobRegistry,
-                         FinishedJobRegistry, StartedJobRegistry)
+from rq.registry import (
+    DeferredJobRegistry, 
+    FailedJobRegistry,
+    FinishedJobRegistry, 
+    ScheduledJobRegistry, 
+    StartedJobRegistry
+)
 
 from django_rq import get_queue
 from django_rq.workers import get_worker
-from django_rq.tests.fixtures import access_self
+from .fixtures import access_self
 from .utils import get_queue_index
 
 
@@ -61,7 +62,20 @@ class ViewTest(TestCase):
         queue.connection.hset(job.key, 'data', 'unpickleable data')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('UnpicklingError', response.content.decode('utf-8'))
+        self.assertIn('UnpicklingError', response.content.decode())
+    
+    def test_job_details_on_deleted_dependency(self):
+        """Page doesn't crash even if job.dependency has been deleted"""
+        queue = get_queue('default')
+        queue_index = get_queue_index('default')
+
+        job = queue.enqueue(access_self)
+        second_job = queue.enqueue(access_self, depends_on=job)
+        job.delete()
+        url = reverse('rq_job_detail', args=[queue_index, second_job.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(second_job._dependency_id, response.content.decode())
 
     def test_requeue_job(self):
         """
@@ -81,10 +95,10 @@ class ViewTest(TestCase):
                          {'requeue': 'Requeue'})
         self.assertIn(job, queue.jobs)
         job.delete()
-    
+
     def test_requeue_all(self):
         """
-        Ensure that requeueing all failed job work properly
+        Ensure that requeuing all failed job work properly
         """
         def failing_job():
             raise ValueError
@@ -101,6 +115,28 @@ class ViewTest(TestCase):
         # After requeue_all is called, jobs are enqueued
         response = self.client.post(reverse('rq_requeue_all', args=[queue_index]))
         self.assertEqual(len(queue), 2)
+
+    def test_requeue_all_if_deleted_job(self):
+        """
+        Ensure that requeuing all failed job work properly
+        """
+        def failing_job():
+            raise ValueError
+
+        queue = get_queue('default')
+        queue_index = get_queue_index('default')
+        job = queue.enqueue(failing_job)
+        queue.enqueue(failing_job)
+        worker = get_worker('default')
+        worker.work(burst=True)
+
+        response = self.client.get(reverse('rq_requeue_all', args=[queue_index]))
+        self.assertEqual(response.context['total_jobs'], 2)
+        job.delete()
+
+        # After requeue_all is called, jobs are enqueued
+        response = self.client.post(reverse('rq_requeue_all', args=[queue_index]))
+        self.assertEqual(len(queue), 1)
 
     def test_delete_job(self):
         """
@@ -229,6 +265,40 @@ class ViewTest(TestCase):
             reverse('rq_failed_jobs', args=[queue_index])
         )
         self.assertEqual(response.context['jobs'], [job])
+
+    def test_scheduled_jobs(self):
+        """Ensure that scheduled jobs page works properly."""
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        # Test that page doesn't fail when ScheduledJobRegistry is empty
+        response = self.client.get(
+            reverse('rq_scheduled_jobs', args=[queue_index])
+        )
+        self.assertEqual(response.status_code, 200)
+
+        job = queue.enqueue_at(datetime.now(), access_self)
+        response = self.client.get(
+            reverse('rq_scheduled_jobs', args=[queue_index])
+        )
+        self.assertEqual(response.context['jobs'], [job])
+
+    def test_scheduled_jobs_registry_removal(self):
+        """Ensure that non existing job is being deleted from registry by view"""
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        registry = ScheduledJobRegistry(queue.name, queue.connection)
+        job = queue.enqueue_at(datetime.now(), access_self)
+        self.assertEqual(len(registry), 1)
+
+        queue.connection.delete(job.key)
+        response = self.client.get(
+            reverse('rq_scheduled_jobs', args=[queue_index])
+        )
+        self.assertEqual(response.context['jobs'], [])
+
+        self.assertEqual(len(registry), 0)
 
     def test_started_jobs(self):
         """Ensure that active jobs page works properly."""

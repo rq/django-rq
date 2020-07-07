@@ -2,28 +2,36 @@ from __future__ import division
 
 from math import ceil
 
-from django.contrib import messages
+from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 
 from redis.exceptions import ResponseError
 from rq import requeue_job
-from rq.exceptions import NoSuchJobError, UnpickleError
+from rq.exceptions import NoSuchJobError
 from rq.job import Job, JobStatus
-from rq.registry import (DeferredJobRegistry, FailedJobRegistry,
-                         FinishedJobRegistry, StartedJobRegistry)
+from rq.registry import (
+    DeferredJobRegistry, 
+    FailedJobRegistry, 
+    FinishedJobRegistry, 
+    ScheduledJobRegistry,
+    StartedJobRegistry, 
+)
 from rq.worker import Worker
 
 from .queues import get_queue_by_index
 from .settings import API_TOKEN
-from .utils import get_statistics
+from .utils import get_statistics, get_jobs
 
 
 @staff_member_required
 def stats(request):
-    return render(request, 'django_rq/stats.html',
-                  get_statistics(run_maintenance_tasks=True))
+    context_data = {
+        **admin.site.each_context(request),
+        **get_statistics(run_maintenance_tasks=True)
+    }
+    return render(request, 'django_rq/stats.html', context_data)
 
 
 def stats_json(request, token=None):
@@ -55,6 +63,7 @@ def jobs(request, queue_index):
         page_range = []
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'jobs': jobs,
@@ -83,17 +92,13 @@ def finished_jobs(request, queue_index):
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
-
-        for job_id in job_ids:
-            try:
-                jobs.append(Job.fetch(job_id, connection=queue.connection))
-            except NoSuchJobError:
-                pass
+        jobs = get_jobs(queue, job_ids, registry)
 
     else:
         page_range = []
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'jobs': jobs,
@@ -122,17 +127,13 @@ def failed_jobs(request, queue_index):
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
-
-        for job_id in job_ids:
-            try:
-                jobs.append(Job.fetch(job_id, connection=queue.connection))
-            except NoSuchJobError:
-                pass
+        jobs = get_jobs(queue, job_ids, registry)
 
     else:
         page_range = []
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'jobs': jobs,
@@ -140,6 +141,44 @@ def failed_jobs(request, queue_index):
         'page': page,
         'page_range': page_range,
         'job_status': 'Failed',
+    }
+    return render(request, 'django_rq/jobs.html', context_data)
+
+
+@staff_member_required
+def scheduled_jobs(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+
+    registry = ScheduledJobRegistry(queue.name, queue.connection)
+
+    items_per_page = 100
+    num_jobs = len(registry)
+    page = int(request.GET.get('page', 1))
+    jobs = []
+
+    if num_jobs > 0:
+        last_page = int(ceil(num_jobs / items_per_page))
+        page_range = range(1, last_page + 1)
+        offset = items_per_page * (page - 1)
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
+
+        jobs = get_jobs(queue, job_ids, registry)
+        for job in jobs:
+            job.scheduled_at = registry.get_scheduled_time(job)
+
+    else:
+        page_range = []
+
+    context_data = {
+        **admin.site.each_context(request),
+        'queue': queue,
+        'queue_index': queue_index,
+        'jobs': jobs,
+        'num_jobs': num_jobs,
+        'page': page,
+        'page_range': page_range,
+        'job_status': 'Scheduled',
     }
     return render(request, 'django_rq/jobs.html', context_data)
 
@@ -161,17 +200,13 @@ def started_jobs(request, queue_index):
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
-
-        for job_id in job_ids:
-            try:
-                jobs.append(Job.fetch(job_id, connection=queue.connection))
-            except NoSuchJobError:
-                pass
+        jobs = get_jobs(queue, job_ids, registry)
 
     else:
         page_range = []
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'jobs': jobs,
@@ -192,6 +227,7 @@ def workers(request, queue_index):
                if queue.name in worker.queue_names()]
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'workers': workers,
@@ -210,6 +246,7 @@ def worker_details(request, queue_index, key):
     queue_names = ', '.join(worker.queue_names())
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'worker': worker,
@@ -248,6 +285,7 @@ def deferred_jobs(request, queue_index):
         page_range = []
 
     context_data = {
+        **admin.site.each_context(request),
         'queue': queue,
         'queue_index': queue_index,
         'jobs': jobs,
@@ -271,12 +309,14 @@ def job_detail(request, queue_index, job_id):
     try:
         job.func_name
         data_is_valid = True
-    except UnpickleError:
+    except:
         data_is_valid = False
 
     context_data = {
+        **admin.site.each_context(request),
         'queue_index': queue_index,
         'job': job,
+        'dependency_id': job._dependency_id, 
         'queue': queue,
         'data_is_valid': data_is_valid
     }
@@ -297,6 +337,7 @@ def delete_job(request, queue_index, job_id):
         return redirect('rq_jobs', queue_index)
 
     context_data = {
+        **admin.site.each_context(request),
         'queue_index': queue_index,
         'job': job,
         'queue': queue,
@@ -316,6 +357,7 @@ def requeue_job_view(request, queue_index, job_id):
         return redirect('rq_job_detail', queue_index, job_id)
 
     context_data = {
+        **admin.site.each_context(request),
         'queue_index': queue_index,
         'job': job,
         'queue': queue,
@@ -340,6 +382,7 @@ def clear_queue(request, queue_index):
         return redirect('rq_jobs', queue_index)
 
     context_data = {
+        **admin.site.each_context(request),
         'queue_index': queue_index,
         'queue': queue,
     }
@@ -354,15 +397,20 @@ def requeue_all(request, queue_index):
 
     if request.method == 'POST':
         job_ids = registry.get_job_ids()
-
+        count = 0
         # Confirmation received
         for job_id in job_ids:
-            requeue_job(job_id, connection=queue.connection)
+            try:
+                requeue_job(job_id, connection=queue.connection)
+                count += 1
+            except NoSuchJobError:
+                pass
 
-        messages.info(request, 'You have successfully requeued all %d jobs!' % len(job_ids))
+        messages.info(request, 'You have successfully requeued %d jobs!' % count)
         return redirect('rq_jobs', queue_index)
 
     context_data = {
+        **admin.site.each_context(request),
         'queue_index': queue_index,
         'queue': queue,
         'total_jobs': len(registry),
@@ -380,6 +428,7 @@ def actions(request, queue_index):
         # confirm action
         if request.POST.get('_selected_action', False):
             context_data = {
+                **admin.site.each_context(request),
                 'queue_index': queue_index,
                 'action': request.POST['action'],
                 'job_ids': request.POST.getlist('_selected_action'),
@@ -429,6 +478,7 @@ def enqueue_job(request, queue_index, job_id):
         return redirect('rq_job_detail', queue_index, job_id)
 
     context_data = {
+        **admin.site.each_context(request),
         'queue_index': queue_index,
         'job': job,
         'queue': queue,

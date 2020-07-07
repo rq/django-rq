@@ -10,7 +10,8 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connections
 from django.utils.version import get_version
-from django_rq.workers import get_worker
+
+from ...workers import get_worker
 
 
 def reset_db_connections():
@@ -36,6 +37,8 @@ class Command(BaseCommand):
                             default=None, help='PID file to write the worker`s pid into')
         parser.add_argument('--burst', action='store_true', dest='burst',
                             default=False, help='Run worker in burst mode')
+        parser.add_argument('--with-scheduler', action='store_true', dest='with_scheduler',
+                            default=False, help='Run worker with scheduler enabled')
         parser.add_argument('--name', action='store', dest='name',
                             default=None, help='Name of the worker')
         parser.add_argument('--queue-class', action='store', dest='queue_class',
@@ -47,6 +50,10 @@ class Command(BaseCommand):
                             help='Default worker timeout to be used')
         parser.add_argument('--sentry-dsn', action='store', default=None, dest='sentry-dsn',
                             help='Report exceptions to this Sentry DSN')
+        parser.add_argument('--sentry-ca-certs', action='store', default=None, dest='sentry-ca-certs',
+                            help='A path to an alternative CA bundle file in PEM-format')
+        parser.add_argument('--sentry-debug', action='store', default=False, dest='sentry-debug',
+                            help='Turns debug mode on or off.')
 
         if LooseVersion(get_version()) >= LooseVersion('1.10'):
             parser.add_argument('args', nargs='*', type=str,
@@ -89,14 +96,25 @@ class Command(BaseCommand):
             reset_db_connections()
 
             if sentry_dsn:
+                sentry_debug = options.get('sentry-debug') or getattr(
+                    settings, 'SENTRY_DEBUG', False
+                )
+                sentry_options = {'debug': sentry_debug}
+
+                sentry_ca_certs = options.get('sentry-ca-certs') or getattr(
+                    settings, 'SENTRY_CA_CERTS', None
+                )
+                if sentry_ca_certs:
+                    sentry_options.update({'ca_certs': sentry_ca_certs})
+
                 try:
                     from rq.contrib.sentry import register_sentry
-                    register_sentry(sentry_dsn)
+                    register_sentry(sentry_dsn, **sentry_options)
                 except ImportError:
                     self.stdout.write(self.style.ERROR("Please install sentry-sdk using `pip install sentry-sdk`"))
                     sys.exit(1)
 
-            w.work(burst=options.get('burst', False))
+            w.work(burst=options.get('burst', False), with_scheduler=options.get('with_scheduler', False), logging_level=level)
         except ConnectionError as e:
             print(e)
             sys.exit(1)
