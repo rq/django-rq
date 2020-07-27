@@ -175,6 +175,15 @@ decorator that comes with ``django_rq``:
         pass
     long_running_func.delay() # Enqueue function in "high" queue
 
+You can pass in any arguments that RQ's job decorator accepts:
+
+.. code-block:: python
+
+    @job('default', timeout=3600)
+    def long_running_func():
+        pass
+    long_running_func.delay() # Enqueue function with a timeout of 3600 seconds.
+
 It's possible to specify default for ``result_ttl`` decorator keyword argument
 via ``DEFAULT_RESULT_TTL`` setting:
 
