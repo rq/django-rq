@@ -59,6 +59,39 @@ class Command(BaseCommand):
             parser.add_argument('args', nargs='*', type=str,
                                 help='The queues to work on, separated by space')
 
+    def sentry_options(self, **options):
+        """
+        Return options to be used to configue Sentry.
+
+        This method combines any existing options, which may have been set in
+        the Django configuration (setting.py), along with any options passed in
+        to the command. The options passed in to the command take precedence.
+
+        """
+        try:
+            import sentry_sdk
+        except ImportError:
+            self.stdout.write(self.style.ERROR("Please install sentry-sdk using `pip install sentry-sdk`"))
+            sys.exit(1)
+
+        if sentry_sdk.Hub.current.client:
+            sentry_options = sentry_sdk.Hub.current.client.options
+        else:
+            sentry_options = {}
+
+        sentry_debug = options.get('sentry-debug') or getattr(
+            settings, 'SENTRY_DEBUG', False
+        )
+        sentry_options['debug'] = sentry_debug
+
+        sentry_ca_certs = options.get('sentry-ca-certs') or getattr(
+            settings, 'SENTRY_CA_CERTS', None
+        )
+        if sentry_ca_certs:
+            sentry_options['ca_certs'] = sentry_ca_certs
+
+        return sentry_options
+
     def handle(self, *args, **options):
         pid = options.get('pid')
         if pid:
@@ -96,25 +129,11 @@ class Command(BaseCommand):
             reset_db_connections()
 
             if sentry_dsn:
-                sentry_debug = options.get('sentry-debug') or getattr(
-                    settings, 'SENTRY_DEBUG', False
-                )
-                sentry_options = {'debug': sentry_debug}
-
-                sentry_ca_certs = options.get('sentry-ca-certs') or getattr(
-                    settings, 'SENTRY_CA_CERTS', None
-                )
-                if sentry_ca_certs:
-                    sentry_options.update({'ca_certs': sentry_ca_certs})
-
-                try:
-                    from rq.contrib.sentry import register_sentry
-                    register_sentry(sentry_dsn, **sentry_options)
-                except ImportError:
-                    self.stdout.write(self.style.ERROR("Please install sentry-sdk using `pip install sentry-sdk`"))
-                    sys.exit(1)
+                from rq.contrib.sentry import register_sentry
+                sentry_options = self.sentry_options(**options)
+                register_sentry(sentry_dsn, **sentry_options)
 
             w.work(burst=options.get('burst', False), with_scheduler=options.get('with_scheduler', False), logging_level=level)
         except ConnectionError as e:
-            print(e)
+            self.stdout.write(self.style.ERROR(e))
             sys.exit(1)
