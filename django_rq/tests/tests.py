@@ -17,6 +17,7 @@ from rq.worker import Worker
 
 from django_rq.decorators import job
 from django_rq.jobs import get_job_class
+from django_rq.management.commands import rqworker
 from django_rq.queues import (
     get_connection, get_queue, get_queues,
     get_unique_connection_configs, DjangoRQ,
@@ -266,6 +267,7 @@ class QueuesTest(TestCase):
             self.assertTrue(job['job'].is_finished)
             self.assertIn(job['job'].id, job['finished_job_registry'].get_job_ids())
 
+    @mock.patch.object(rqworker.Command, 'sentry_options', lambda obj, **opts: {})
     @mock.patch('rq.contrib.sentry.register_sentry')
     def test_sentry_dsn(self, mocked):
         queue_names = ['django_rq_test']
@@ -274,6 +276,18 @@ class QueuesTest(TestCase):
 
         self.assertEqual(mocked.call_count, 1)
 
+    @mock.patch.object(rqworker.Command, 'sentry_options')
+    @mock.patch('rq.contrib.sentry.register_sentry')
+    def test_sentry_options(self, mocked, mock_options):
+        mock_options.return_value = {'environment': 'dev'}
+        queue_names = ['django_rq_test']
+        call_command('rqworker', *queue_names, burst=True,
+                     sentry_dsn='https://1@sentry.io/1')
+
+        self.assertEqual(mocked.call_count, 1)
+        mocked.assert_called_once_with('https://1@sentry.io/1', environment='dev')
+
+    @mock.patch.object(rqworker.Command, 'sentry_options', lambda obj, **opts: {})
     @mock.patch('rq.contrib.sentry.register_sentry')
     def test_sentry_dsn_setting(self, mocked):
         queue_names = ['django_rq_test']
@@ -282,6 +296,7 @@ class QueuesTest(TestCase):
 
             self.assertEqual(mocked.call_count, 1)
 
+    @mock.patch.object(rqworker.Command, 'sentry_options', lambda obj, **opts: {})
     @mock.patch('rq.contrib.sentry.register_sentry')
     def test_sentry_dsn_setting_override(self, mocked):
         queue_names = ['django_rq_test']
@@ -291,6 +306,7 @@ class QueuesTest(TestCase):
 
             self.assertEqual(mocked.call_count, 0)
 
+    @mock.patch.object(rqworker.Command, 'sentry_options', lambda obj, **opts: {})
     @mock.patch('rq.contrib.sentry.register_sentry')
     def test_sentry_dsn_certs(self, mocked):
         queue_names = ['django_rq_test']
@@ -302,6 +318,7 @@ class QueuesTest(TestCase):
 
             self.assertEqual(mocked.call_count, 1)
 
+    @mock.patch.object(rqworker.Command, 'sentry_options', lambda obj, **opts: {})
     @mock.patch('rq.contrib.sentry.register_sentry')
     def test_sentry_dsn_debug(self, mocked):
         queue_names = ['django_rq_test']
