@@ -103,7 +103,9 @@ class Command(BaseCommand):
             with open(os.path.expanduser(pid), "w") as fp:
                 fp.write(str(os.getpid()))
 
-        sentry_dsn = options.pop('sentry-dsn') or getattr(settings, 'SENTRY_DSN', None)
+        sentry_dsn = options.get('sentry-dsn')
+        if sentry_dsn is None:
+            sentry_dsn = getattr(settings, 'SENTRY_DSN', None)
 
         # Verbosity is defined by default in BaseCommand for all commands
         verbosity = options.get('verbosity')

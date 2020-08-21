@@ -308,7 +308,7 @@ class QueuesTest(TestCase):
             call_command('rqworker', *queue_names, burst=True,
                          sentry_dsn='')
 
-        mocked.assert_called_once_with('https://1@sentry.io/1')
+        self.assertEqual(mocked.call_count, 0)
 
     @mock.patch('rq.contrib.sentry.register_sentry')
     def test_sentry_dsn_certs(self, mocked):
@@ -322,9 +322,8 @@ class QueuesTest(TestCase):
     def test_sentry_dsn_debug(self, mocked):
         queue_names = ['django_rq_test']
         call_command('rqworker', *queue_names, burst=True,
-                        sentry_dsn='https://1@sentry.io/1',
-                        sentry_debug=True
-                        )
+                     sentry_dsn='https://1@sentry.io/1',
+                     sentry_debug=True)
         self.assertEqual(mocked.call_count, 1)
         self.assertEqual(mocked.call_args[0][0], 'https://1@sentry.io/1')
         self.assertEqual(mocked.call_args[1]['debug'], True)
