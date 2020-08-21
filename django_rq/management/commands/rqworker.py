@@ -19,6 +19,51 @@ def reset_db_connections():
         c.close()
 
 
+def configure_sentry(sentry_dsn, **options):
+    """
+    Configure the sentry client.
+
+    Raises ImportError if the sentry_sdk is not available.
+
+    """
+    import rq.contrib.sentry
+    rq.contrib.sentry.register_sentry(sentry_dsn, **options)
+
+
+def sentry_options(**options):
+    """
+    Return options to be used to configue Sentry.
+
+    This method combines any existing options, which may have been set in
+    the Django configuration (setting.py), along with any options passed in
+    to the command. The options passed in to the command take precedence.
+
+    The **options arg is the options passed into the Command.handle
+    method. Relevant options are extracted from the full set.
+
+    Raises ImportError if the sentry_sdk is not available.
+
+    """
+    import sentry_sdk
+    if sentry_sdk.Hub.current.client:
+        sentry_options = sentry_sdk.Hub.current.client.options
+    else:
+        sentry_options = {}
+
+    sentry_debug = options.get('sentry-debug') or getattr(
+        settings, 'SENTRY_DEBUG', False
+    )
+    sentry_options['debug'] = sentry_debug
+
+    sentry_ca_certs = options.get('sentry-ca-certs') or getattr(
+        settings, 'SENTRY_CA_CERTS', None
+    )
+    if sentry_ca_certs:
+        sentry_options['ca_certs'] = sentry_ca_certs
+
+    return sentry_options
+
+
 class Command(BaseCommand):
     """
     Runs RQ workers on specified queues. Note that all queues passed into a
@@ -59,50 +104,13 @@ class Command(BaseCommand):
             parser.add_argument('args', nargs='*', type=str,
                                 help='The queues to work on, separated by space')
 
-    def _try_import_sentry_sdk(self):
-        """Try to import sentry_sdk - extracted to facilitate testing."""
-        try:
-            import sentry_sdk
-        except ImportError:
-            self.stderr.write("Please install sentry-sdk using `pip install sentry-sdk`")
-            sys.exit(1)
-
-    def sentry_options(self, **options):
-        """
-        Return options to be used to configue Sentry.
-
-        This method combines any existing options, which may have been set in
-        the Django configuration (setting.py), along with any options passed in
-        to the command. The options passed in to the command take precedence.
-
-        """
-        self._try_import_sentry_sdk()
-
-        if sentry_sdk.Hub.current.client:
-            sentry_options = sentry_sdk.Hub.current.client.options
-        else:
-            sentry_options = {}
-
-        sentry_debug = options.get('sentry-debug') or getattr(
-            settings, 'SENTRY_DEBUG', False
-        )
-        sentry_options['debug'] = sentry_debug
-
-        sentry_ca_certs = options.get('sentry-ca-certs') or getattr(
-            settings, 'SENTRY_CA_CERTS', None
-        )
-        if sentry_ca_certs:
-            sentry_options['ca_certs'] = sentry_ca_certs
-
-        return sentry_options
-
     def handle(self, *args, **options):
         pid = options.get('pid')
         if pid:
             with open(os.path.expanduser(pid), "w") as fp:
                 fp.write(str(os.getpid()))
         sentry_dsn = options.get('sentry-dsn')
-        if sentry_dsn is None:
+        if not sentry_dsn:
             sentry_dsn = getattr(settings, 'SENTRY_DSN', None)
 
         # Verbosity is defined by default in BaseCommand for all commands
@@ -133,11 +141,14 @@ class Command(BaseCommand):
             reset_db_connections()
 
             if sentry_dsn:
-                from rq.contrib.sentry import register_sentry
-                sentry_options = self.sentry_options(**options)
-                register_sentry(sentry_dsn, **sentry_options)
+                opts = sentry_options(**options)
+                configure_sentry(sentry_dsn, **opts)
 
             w.work(burst=options.get('burst', False), with_scheduler=options.get('with_scheduler', False), logging_level=level)
         except ConnectionError as e:
             self.stderr.write(e)
+            sys.exit(1)
+
+        except ImportError:
+            self.stderr.write("Please install sentry-sdk using `pip install sentry-sdk`")
             sys.exit(1)

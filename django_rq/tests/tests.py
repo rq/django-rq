@@ -1,3 +1,4 @@
+import sys
 import datetime
 import time
 from unittest import skipIf, mock
@@ -89,6 +90,14 @@ class RqStatsTest(TestCase):
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class QueuesTest(TestCase):
+
+    def setUp(self):
+        """Used to test with / without sentry_sdk available."""
+        self.mock_sdk = mock.MagicMock()
+        sys.modules["sentry_sdk"] = self.mock_sdk
+
+    def tearDown(self):
+        del sys.modules["sentry_sdk"]
 
     def test_get_connection_default(self):
         """
@@ -267,83 +276,64 @@ class QueuesTest(TestCase):
             self.assertTrue(job['job'].is_finished)
             self.assertIn(job['job'].id, job['finished_job_registry'].get_job_ids())
 
-    @mock.patch("django_rq.management.commands.rqworker.sys")
-    def test__try_import(self, mock_sys):
-        """Check the sentry_sdk import fails as expected."""
-        # this test is included to get test coverage over the bar.
-        with self.assertRaises(ImportError):
-            import sentry_sdk
-        rqworker.Command()._try_import_sentry_sdk()
-        mock_sys.exit.assert_called_once_with(1)
-
-
-    @mock.patch.object(rqworker.Command, '_try_import_sentry_sdk', lambda obj: None)
-    @mock.patch('rq.contrib.sentry.register_sentry')
-    def test_sentry_options__no_client(self, mocked):
-        rqworker.sentry_sdk = mock.MagicMock()
-        rqworker.sentry_sdk.Hub.current.client = None
+    def test_sentry_options(self):
+        self.mock_sdk.Hub.current.client.options = {'environment': 'dev'}
         options = {'sentry-debug': True, 'sentry-ca-certs': '123456'}
         self.assertEqual(
-            rqworker.Command().sentry_options(**options),
+            rqworker.sentry_options(**options),
+            {'debug': True, 'ca_certs': '123456', 'environment': 'dev'}
+        )
+
+    def test_sentry_options__no_client(self):
+        self.mock_sdk.Hub.current.client = None
+        options = {'sentry-debug': True, 'sentry-ca-certs': '123456'}
+        self.assertEqual(
+            rqworker.sentry_options(**options),
             {'debug': True, 'ca_certs': '123456'}
         )
 
-    @mock.patch.object(rqworker.Command, '_try_import_sentry_sdk', lambda obj: None)
-    @mock.patch('rq.contrib.sentry.register_sentry')
-    def test_sentry_options(self, mocked):
-        """Test the existing options are maintained."""
-        rqworker.sentry_sdk = mock.MagicMock()
-        rqworker.sentry_sdk.Hub.current.client = mock.Mock(
-            options={'environment': 'dev'}
-        )
-        options = {'sentry-debug': True, 'sentry-ca-certs': '123456'}
-        opts = rqworker.Command().sentry_options(**options)
-        self.assertEqual(
-            opts, {"debug": True, 'ca_certs': '123456', 'environment': 'dev'}
-        )
-
-    @mock.patch.object(rqworker.Command, 'sentry_options', lambda obj, **opts: {})
-    @mock.patch('rq.contrib.sentry.register_sentry')
+    @mock.patch('django_rq.management.commands.rqworker.sentry_options', lambda **opts: {})
+    @mock.patch('django_rq.management.commands.rqworker.configure_sentry')
     def test_sentry_dsn(self, mocked):
         queue_names = ['django_rq_test']
         call_command('rqworker', *queue_names, burst=True,
                      sentry_dsn='https://1@sentry.io/1')
 
-        self.assertEqual(mocked.call_count, 1)
+        mocked.assert_called_once_with('https://1@sentry.io/1')
 
-    @mock.patch.object(rqworker.Command, 'sentry_options', lambda obj, **opts: {})
-    @mock.patch('rq.contrib.sentry.register_sentry')
+    @mock.patch('django_rq.management.commands.rqworker.sentry_options', lambda **opts: {})
+    @mock.patch('django_rq.management.commands.rqworker.configure_sentry')
     def test_sentry_dsn_setting(self, mocked):
         queue_names = ['django_rq_test']
         with self.settings(SENTRY_DSN='https://1@sentry.io/1'):
             call_command('rqworker', *queue_names, burst=True)
 
-            self.assertEqual(mocked.call_count, 1)
+        mocked.assert_called_once_with('https://1@sentry.io/1')
 
-    @mock.patch.object(rqworker.Command, 'sentry_options', lambda obj, **opts: {})
-    @mock.patch('rq.contrib.sentry.register_sentry')
+    @mock.patch('django_rq.management.commands.rqworker.sentry_options', lambda **opts: {})
+    @mock.patch('django_rq.management.commands.rqworker.configure_sentry')
     def test_sentry_dsn_setting_override(self, mocked):
         queue_names = ['django_rq_test']
         with self.settings(SENTRY_DSN='https://1@sentry.io/1'):
             call_command('rqworker', *queue_names, burst=True,
                          sentry_dsn='')
 
-            self.assertEqual(mocked.call_count, 0)
+        mocked.assert_called_once_with('https://1@sentry.io/1')
 
-    @mock.patch.object(rqworker.Command, 'sentry_options', lambda obj, **opts: {})
-    @mock.patch('rq.contrib.sentry.register_sentry')
+    @mock.patch('django_rq.management.commands.rqworker.sentry_options', lambda **opts: {})
+    @mock.patch('django_rq.management.commands.rqworker.configure_sentry')
     def test_sentry_dsn_certs(self, mocked):
         queue_names = ['django_rq_test']
         with self.settings(SENTRY_DSN='https://1@sentry.io/1'):
             call_command('rqworker', *queue_names, burst=True,
-                         sentry_dsn='https://1@sentry.io/1',
+                         sentry_dsn='https://1@sentry.io/2',
                          sentry_ca_certs="/path/to/cert"
                          )
 
             self.assertEqual(mocked.call_count, 1)
 
-    @mock.patch.object(rqworker.Command, 'sentry_options', lambda obj, **opts: {})
-    @mock.patch('rq.contrib.sentry.register_sentry')
+    @mock.patch('django_rq.management.commands.rqworker.sentry_options', lambda **opts: {})
+    @mock.patch('django_rq.management.commands.rqworker.configure_sentry')
     def test_sentry_dsn_debug(self, mocked):
         queue_names = ['django_rq_test']
         with self.settings(SENTRY_DSN='https://1@sentry.io/1'):
@@ -353,6 +343,16 @@ class QueuesTest(TestCase):
                          )
 
             self.assertEqual(mocked.call_count, 1)
+
+    @mock.patch('django_rq.management.commands.rqworker.sentry_options', lambda **opts: {})
+    @mock.patch('django_rq.management.commands.rqworker.configure_sentry')
+    def test_sentry_sdk_import_error(self, mocked):
+        """Check the command handles import errors as expected."""
+        mocked.side_effect = ImportError()
+        queue_names = ['django_rq_test']
+        with self.assertRaises(SystemExit):
+            call_command('rqworker', *queue_names, burst=True,
+                         sentry_dsn='https://1@sentry.io/1')
 
     def test_get_unique_connection_configs(self):
         connection_params_1 = {
