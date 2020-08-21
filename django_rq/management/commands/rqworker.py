@@ -23,45 +23,38 @@ def configure_sentry(sentry_dsn, **options):
     """
     Configure the sentry client.
 
+    The **options kwargs are passed straight from the command
+    invocation - options relevant to Sentry configuration are
+    extracted, and combined with any existing Sentry config.
+
+    Options passed in via the command take precedence.
+
     Raises ImportError if the sentry_sdk is not available.
 
     """
+    opts = sentry_options()
+    sentry_debug = options.get('sentry-debug') or getattr(settings, 'SENTRY_DEBUG', False)
+    if sentry_debug:
+        opts['debug'] = sentry_debug
+    sentry_ca_certs = options.get('sentry-ca-certs') or getattr(settings, 'SENTRY_CA_CERTS', None)
+    if sentry_ca_certs:
+        opts['ca_certs'] = sentry_ca_certs
+
     import rq.contrib.sentry
-    rq.contrib.sentry.register_sentry(sentry_dsn, **options)
+    rq.contrib.sentry.register_sentry(sentry_dsn, **opts)
 
 
-def sentry_options(**options):
+def sentry_options():
     """
-    Return options to be used to configue Sentry.
-
-    This method combines any existing options, which may have been set in
-    the Django configuration (setting.py), along with any options passed in
-    to the command. The options passed in to the command take precedence.
-
-    The **options arg is the options passed into the Command.handle
-    method. Relevant options are extracted from the full set.
+    Extract any currently active Sentry configuration options.
 
     Raises ImportError if the sentry_sdk is not available.
 
     """
     import sentry_sdk
     if sentry_sdk.Hub.current.client:
-        sentry_options = sentry_sdk.Hub.current.client.options
-    else:
-        sentry_options = {}
-
-    sentry_debug = options.get('sentry-debug') or getattr(
-        settings, 'SENTRY_DEBUG', False
-    )
-    sentry_options['debug'] = sentry_debug
-
-    sentry_ca_certs = options.get('sentry-ca-certs') or getattr(
-        settings, 'SENTRY_CA_CERTS', None
-    )
-    if sentry_ca_certs:
-        sentry_options['ca_certs'] = sentry_ca_certs
-
-    return sentry_options
+        return sentry_sdk.Hub.current.client.options
+    return {}
 
 
 class Command(BaseCommand):
@@ -109,9 +102,8 @@ class Command(BaseCommand):
         if pid:
             with open(os.path.expanduser(pid), "w") as fp:
                 fp.write(str(os.getpid()))
-        sentry_dsn = options.get('sentry-dsn')
-        if not sentry_dsn:
-            sentry_dsn = getattr(settings, 'SENTRY_DSN', None)
+
+        sentry_dsn = options.pop('sentry-dsn') or getattr(settings, 'SENTRY_DSN', None)
 
         # Verbosity is defined by default in BaseCommand for all commands
         verbosity = options.get('verbosity')
@@ -141,8 +133,7 @@ class Command(BaseCommand):
             reset_db_connections()
 
             if sentry_dsn:
-                opts = sentry_options(**options)
-                configure_sentry(sentry_dsn, **opts)
+                configure_sentry(sentry_dsn, **options)
 
             w.work(burst=options.get('burst', False), with_scheduler=options.get('with_scheduler', False), logging_level=level)
         except ConnectionError as e:
