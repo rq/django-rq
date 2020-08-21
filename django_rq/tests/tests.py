@@ -269,16 +269,19 @@ class QueuesTest(TestCase):
 
     @mock.patch.object(rqworker.Command, '_try_import_sentry_sdk', lambda obj: None)
     @mock.patch('rq.contrib.sentry.register_sentry')
-    def test_sentry_options(self, mocked):
+    def test_sentry_options__no_client(self, mocked):
         rqworker.sentry_sdk = mock.MagicMock()
-        rqworker.sentry_sdk.Hub.current.client = mock.Mock(options={})
+        rqworker.sentry_sdk.Hub.current.client = None
         options = {'sentry-debug': True, 'sentry-ca-certs': '123456'}
-        opts = rqworker.Command().sentry_options(**options)
-        self.assertEqual(opts, {'debug': True, 'ca_certs': '123456'})
+        self.assertEqual(
+            rqworker.Command().sentry_options(**options),
+            {'debug': True, 'ca_certs': '123456'}
+        )
 
     @mock.patch.object(rqworker.Command, '_try_import_sentry_sdk', lambda obj: None)
     @mock.patch('rq.contrib.sentry.register_sentry')
-    def test_sentry_options__no_override(self, mocked):
+    def test_sentry_options(self, mocked):
+        """Test the existing options are maintained."""
         rqworker.sentry_sdk = mock.MagicMock()
         rqworker.sentry_sdk.Hub.current.client = mock.Mock(
             options={'environment': 'dev'}
