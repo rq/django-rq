@@ -139,5 +139,5 @@ class Command(BaseCommand):
 
             w.work(burst=options.get('burst', False), with_scheduler=options.get('with_scheduler', False), logging_level=level)
         except ConnectionError as e:
-            self.stdout.write(self.style.ERROR(e))
+            self.stderr.write(e)
             sys.exit(1)

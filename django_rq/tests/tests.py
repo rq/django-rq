@@ -267,6 +267,16 @@ class QueuesTest(TestCase):
             self.assertTrue(job['job'].is_finished)
             self.assertIn(job['job'].id, job['finished_job_registry'].get_job_ids())
 
+    @mock.patch("django_rq.management.commands.rqworker.sys")
+    def test__try_import(self, mock_sys):
+        """Check the sentry_sdk import fails as expected."""
+        # this test is included to get test coverage over the bar.
+        with self.assertRaises(ImportError):
+            import sentry_sdk
+        rqworker.Command()._try_import_sentry_sdk()
+        mock_sys.exit.assert_called_once_with(1)
+
+
     @mock.patch.object(rqworker.Command, '_try_import_sentry_sdk', lambda obj: None)
     @mock.patch('rq.contrib.sentry.register_sentry')
     def test_sentry_options__no_client(self, mocked):
