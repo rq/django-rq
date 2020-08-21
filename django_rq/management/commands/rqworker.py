@@ -59,6 +59,14 @@ class Command(BaseCommand):
             parser.add_argument('args', nargs='*', type=str,
                                 help='The queues to work on, separated by space')
 
+    def _try_import_sentry_sdk(self):
+        """Try to import sentry_sdk - extracted to facilitate testing."""
+        try:
+            import sentry_sdk
+        except ImportError:
+            self.stderr.write("Please install sentry-sdk using `pip install sentry-sdk`")
+            sys.exit(1)
+
     def sentry_options(self, **options):
         """
         Return options to be used to configue Sentry.
@@ -68,11 +76,7 @@ class Command(BaseCommand):
         to the command. The options passed in to the command take precedence.
 
         """
-        try:
-            import sentry_sdk
-        except ImportError:
-            self.stdout.write(self.style.ERROR("Please install sentry-sdk using `pip install sentry-sdk`"))
-            sys.exit(1)
+        self._try_import_sentry_sdk()
 
         if sentry_sdk.Hub.current.client:
             sentry_options = sentry_sdk.Hub.current.client.options

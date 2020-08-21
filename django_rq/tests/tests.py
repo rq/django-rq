@@ -267,6 +267,28 @@ class QueuesTest(TestCase):
             self.assertTrue(job['job'].is_finished)
             self.assertIn(job['job'].id, job['finished_job_registry'].get_job_ids())
 
+    @mock.patch.object(rqworker.Command, '_try_import_sentry_sdk', lambda obj: None)
+    @mock.patch('rq.contrib.sentry.register_sentry')
+    def test_sentry_options(self, mocked):
+        rqworker.sentry_sdk = mock.MagicMock()
+        rqworker.sentry_sdk.Hub.current.client = mock.Mock(options={})
+        options = {'sentry-debug': True, 'sentry-ca-certs': '123456'}
+        opts = rqworker.Command().sentry_options(**options)
+        self.assertEqual(opts, {'debug': True, 'ca_certs': '123456'})
+
+    @mock.patch.object(rqworker.Command, '_try_import_sentry_sdk', lambda obj: None)
+    @mock.patch('rq.contrib.sentry.register_sentry')
+    def test_sentry_options__no_override(self, mocked):
+        rqworker.sentry_sdk = mock.MagicMock()
+        rqworker.sentry_sdk.Hub.current.client = mock.Mock(
+            options={'environment': 'dev'}
+        )
+        options = {'sentry-debug': True, 'sentry-ca-certs': '123456'}
+        opts = rqworker.Command().sentry_options(**options)
+        self.assertEqual(
+            opts, {"debug": True, 'ca_certs': '123456', 'environment': 'dev'}
+        )
+
     @mock.patch.object(rqworker.Command, 'sentry_options', lambda obj, **opts: {})
     @mock.patch('rq.contrib.sentry.register_sentry')
     def test_sentry_dsn(self, mocked):
@@ -275,17 +297,6 @@ class QueuesTest(TestCase):
                      sentry_dsn='https://1@sentry.io/1')
 
         self.assertEqual(mocked.call_count, 1)
-
-    @mock.patch.object(rqworker.Command, 'sentry_options')
-    @mock.patch('rq.contrib.sentry.register_sentry')
-    def test_sentry_options(self, mocked, mock_options):
-        mock_options.return_value = {'environment': 'dev'}
-        queue_names = ['django_rq_test']
-        call_command('rqworker', *queue_names, burst=True,
-                     sentry_dsn='https://1@sentry.io/1')
-
-        self.assertEqual(mocked.call_count, 1)
-        mocked.assert_called_once_with('https://1@sentry.io/1', environment='dev')
 
     @mock.patch.object(rqworker.Command, 'sentry_options', lambda obj, **opts: {})
     @mock.patch('rq.contrib.sentry.register_sentry')
