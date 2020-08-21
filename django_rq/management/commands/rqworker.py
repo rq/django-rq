@@ -32,11 +32,12 @@ def configure_sentry(sentry_dsn, **options):
     Raises ImportError if the sentry_sdk is not available.
 
     """
-    opts = sentry_options()
-    sentry_debug = options.get('sentry-debug') or getattr(settings, 'SENTRY_DEBUG', False)
+    # remove 'integrations' as this clashes with the register_sentry function
+    opts = {k:v for k,v in sentry_options().items() if k != 'integrations'}
+    sentry_debug = options.get('sentry_debug') or getattr(settings, 'SENTRY_DEBUG', False)
     if sentry_debug:
         opts['debug'] = sentry_debug
-    sentry_ca_certs = options.get('sentry-ca-certs') or getattr(settings, 'SENTRY_CA_CERTS', None)
+    sentry_ca_certs = options.get('sentry_ca_certs') or getattr(settings, 'SENTRY_CA_CERTS', None)
     if sentry_ca_certs:
         opts['ca_certs'] = sentry_ca_certs
 
@@ -86,11 +87,11 @@ class Command(BaseCommand):
         parser.add_argument('--worker-ttl', action='store', type=int,
                             dest='worker_ttl', default=420,
                             help='Default worker timeout to be used')
-        parser.add_argument('--sentry-dsn', action='store', default=None, dest='sentry-dsn',
+        parser.add_argument('--sentry-dsn', action='store', default=None, dest='sentry_dsn',
                             help='Report exceptions to this Sentry DSN')
-        parser.add_argument('--sentry-ca-certs', action='store', default=None, dest='sentry-ca-certs',
+        parser.add_argument('--sentry-ca-certs', action='store', default=None, dest='sentry_ca_certs',
                             help='A path to an alternative CA bundle file in PEM-format')
-        parser.add_argument('--sentry-debug', action='store', default=False, dest='sentry-debug',
+        parser.add_argument('--sentry-debug', action='store', default=False, dest='sentry_debug',
                             help='Turns debug mode on or off.')
 
         if LooseVersion(get_version()) >= LooseVersion('1.10'):
@@ -103,7 +104,7 @@ class Command(BaseCommand):
             with open(os.path.expanduser(pid), "w") as fp:
                 fp.write(str(os.getpid()))
 
-        sentry_dsn = options.get('sentry-dsn')
+        sentry_dsn = options.pop('sentry_dsn')
         if sentry_dsn is None:
             sentry_dsn = getattr(settings, 'SENTRY_DSN', None)
 

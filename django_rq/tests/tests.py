@@ -286,6 +286,39 @@ class QueuesTest(TestCase):
         self.assertEqual(rqworker.sentry_options(), {})
 
     @mock.patch('rq.contrib.sentry.register_sentry')
+    def test_configure_sentry(self, mocked):
+        rqworker.configure_sentry('sentry_dsn')
+        mocked.assert_called_once_with('sentry_dsn')
+
+    @mock.patch('rq.contrib.sentry.register_sentry')
+    def test_configure_sentry__integrations(self, mocked):
+        """Check that custom 'integrations' are not passed in to Sentry."""
+        self.mock_sdk.Hub.current.client.options = {'integrations': ['foo']}
+        rqworker.configure_sentry('sentry_dsn')
+        mocked.assert_called_once_with('sentry_dsn')
+
+    @mock.patch('rq.contrib.sentry.register_sentry')
+    def test_configure_sentry__integrations_removed(self, mocked):
+        """Check that custom 'integrations' are not passed in to Sentry."""
+        self.mock_sdk.Hub.current.client.options = {'integrations': []}
+        rqworker.configure_sentry('sentry_dsn')
+        mocked.assert_called_once_with('sentry_dsn')
+
+    @mock.patch('rq.contrib.sentry.register_sentry')
+    def test_configure_sentry__debug(self, mocked):
+        """Check that custom 'integrations' are not passed in to Sentry."""
+        self.mock_sdk.Hub.current.client.options = {'debug': False}
+        rqworker.configure_sentry('sentry_dsn', sentry_debug=True)
+        mocked.assert_called_once_with('sentry_dsn', debug=True)
+
+    @mock.patch('rq.contrib.sentry.register_sentry')
+    def test_configure_sentry__ca_certs(self, mocked):
+        """Check that custom 'integrations' are not passed in to Sentry."""
+        self.mock_sdk.Hub.current.client.options = {'ca_certs': None}
+        rqworker.configure_sentry('sentry_dsn', sentry_ca_certs='/path')
+        mocked.assert_called_once_with('sentry_dsn', ca_certs='/path')
+
+    @mock.patch('rq.contrib.sentry.register_sentry')
     def test_sentry_dsn(self, mocked):
         queue_names = ['django_rq_test']
         call_command('rqworker', *queue_names, burst=True,
