@@ -38,6 +38,7 @@ def configure_sentry(sentry_dsn, **options):
         'debug': options.get('sentry_debug', False),
         'ca_certs': options.get('sentry_ca_certs', None),
         'integrations': [
+            sentry_sdk.integrations.redis.RedisIntegration(),
             sentry_sdk.integrations.rq.RqIntegration(),
             sentry_sdk.integrations.django.DjangoIntegration()
         ]

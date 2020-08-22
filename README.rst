@@ -331,7 +331,7 @@ setting the following Sentry options:
     {
         'debug': options.get('sentry_debug'),
         'ca_certs': options.get('sentry_ca_certs'),
-        'integrations': [RqIntegration(), DjangoIntegration()]
+        'integrations': [RedisIntegration(), RqIntegration(), DjangoIntegration()]
     }
 
 

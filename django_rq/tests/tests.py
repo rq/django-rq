@@ -285,6 +285,7 @@ class QueuesTest(TestCase):
             ca_certs=None,
             debug=False,
             integrations=[
+                self.mock_sdk.integrations.redis.RedisIntegration(),
                 self.mock_sdk.integrations.rq.RqIntegration(),
                 self.mock_sdk.integrations.django.DjangoIntegration(),
             ]
@@ -298,6 +299,7 @@ class QueuesTest(TestCase):
             ca_certs='/certs',
             debug=True,
             integrations=[
+                self.mock_sdk.integrations.redis.RedisIntegration(),
                 self.mock_sdk.integrations.rq.RqIntegration(),
                 self.mock_sdk.integrations.django.DjangoIntegration(),
             ]
@@ -314,6 +316,7 @@ class QueuesTest(TestCase):
             ca_certs='/certs',
             debug=True,
             integrations=[
+                self.mock_sdk.integrations.redis.RedisIntegration(),
                 self.mock_sdk.integrations.rq.RqIntegration(),
                 self.mock_sdk.integrations.django.DjangoIntegration(),
             ]
