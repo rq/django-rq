@@ -6,7 +6,6 @@ from redis.exceptions import ConnectionError
 from rq import use_connection
 from rq.logutils import setup_loghandlers
 
-from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connections
 from django.utils.version import get_version
@@ -21,41 +20,29 @@ def reset_db_connections():
 
 def configure_sentry(sentry_dsn, **options):
     """
-    Configure the sentry client.
+    Configure the Sentry client.
 
     The **options kwargs are passed straight from the command
     invocation - options relevant to Sentry configuration are
-    extracted, and combined with any existing Sentry config.
+    extracted.
 
-    Options passed in via the command take precedence.
-
-    Raises ImportError if the sentry_sdk is not available.
-
-    """
-    # remove 'integrations' as this clashes with the register_sentry function
-    opts = {k:v for k,v in sentry_options().items() if k != 'integrations'}
-    sentry_debug = options.get('sentry_debug') or getattr(settings, 'SENTRY_DEBUG', False)
-    if sentry_debug:
-        opts['debug'] = sentry_debug
-    sentry_ca_certs = options.get('sentry_ca_certs') or getattr(settings, 'SENTRY_CA_CERTS', None)
-    if sentry_ca_certs:
-        opts['ca_certs'] = sentry_ca_certs
-
-    import rq.contrib.sentry
-    rq.contrib.sentry.register_sentry(sentry_dsn, **opts)
-
-
-def sentry_options():
-    """
-    Extract any currently active Sentry configuration options.
+    In addition to the 'debug' and 'ca_certs' options, which can
+    be passed in as command options, we add the RqIntegration and
+    DjangoIntegration to the config.
 
     Raises ImportError if the sentry_sdk is not available.
 
     """
     import sentry_sdk
-    if sentry_sdk.Hub.current.client:
-        return sentry_sdk.Hub.current.client.options
-    return {}
+    sentry_options = {
+        'debug': options.get('sentry_debug', False),
+        'ca_certs': options.get('sentry_ca_certs', None),
+        'integrations': [
+            sentry_sdk.integrations.rq.RqIntegration(),
+            sentry_sdk.integrations.django.DjangoIntegration()
+        ]
+    }
+    sentry_sdk.init(sentry_dsn, **sentry_options)
 
 
 class Command(BaseCommand):
@@ -104,10 +91,6 @@ class Command(BaseCommand):
             with open(os.path.expanduser(pid), "w") as fp:
                 fp.write(str(os.getpid()))
 
-        sentry_dsn = options.pop('sentry_dsn')
-        if sentry_dsn is None:
-            sentry_dsn = getattr(settings, 'SENTRY_DSN', None)
-
         # Verbosity is defined by default in BaseCommand for all commands
         verbosity = options.get('verbosity')
         if verbosity >= 2:
@@ -117,6 +100,14 @@ class Command(BaseCommand):
         else:
             level = 'INFO'
         setup_loghandlers(level)
+
+        sentry_dsn = options.pop('sentry_dsn')
+        if sentry_dsn:
+            try:
+                configure_sentry(sentry_dsn, **options)
+            except ImportError:
+                self.stderr.write("Please install sentry-sdk using `pip install sentry-sdk`")
+                sys.exit(1)
 
         try:
             # Instantiate a worker
@@ -135,14 +126,7 @@ class Command(BaseCommand):
             # Close any opened DB connection before any fork
             reset_db_connections()
 
-            if sentry_dsn:
-                configure_sentry(sentry_dsn, **options)
-
             w.work(burst=options.get('burst', False), with_scheduler=options.get('with_scheduler', False), logging_level=level)
         except ConnectionError as e:
-            self.stderr.write(e)
-            sys.exit(1)
-
-        except ImportError:
-            self.stderr.write("Please install sentry-sdk using `pip install sentry-sdk`")
+            self.stderr.write(str(e))
             sys.exit(1)

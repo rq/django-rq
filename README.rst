@@ -315,13 +315,24 @@ Additionally, these statistics are also accessible from  the command line.
 
 Configuring Sentry
 -------------------
-Django-RQ >= 2.0 uses ``sentry-sdk`` instead of the deprecated ``raven`` library. The ``SENTRY_DSN`` value from ``settings.py`` is used by default:
+Django-RQ >= 2.0 uses ``sentry-sdk`` instead of the deprecated ``raven`` library. Sentry
+should be configured within the Django ``settings.py`` as described in the `Sentry docs <https://docs.sentry.io/platforms/python/django/>`__.
 
-``SENTRY_DSN = 'https://*****@sentry.io/222222'``
-
-Also you can specify ``sentry-dsn`` parameter when running rqworker:
+You can override the default Django Sentry configuration when running the ``rqworker`` command
+by passing the ``sentry-dsn`` option:
 
 ``./manage.py rqworker --sentry-dsn=https://*****@sentry.io/222222``
+
+This will override any existing Django configuration and reinitialise Sentry,
+setting the following Sentry options:
+
+.. code-block:: python
+
+    {
+        'debug': options.get('sentry_debug'),
+        'ca_certs': options.get('sentry_ca_certs'),
+        'integrations': [RqIntegration(), DjangoIntegration()]
+    }
 
 
 Configuring Logging
