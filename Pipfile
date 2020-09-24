@@ -8,6 +8,7 @@ django-redis = {editable = true,git = "https://github.com/niwinz/django-redis.gi
 docutils = "*"
 pygments = "*"
 rq-scheduler = "*"
+coverage = "*"
 
 [packages]
 django-rq = {editable = true,path = "."}
