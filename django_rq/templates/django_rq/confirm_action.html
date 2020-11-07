@@ -36,7 +36,7 @@
         <li><a href="{% url 'rq_job_detail' queue_index job_id %}" target="_blank">{{ job_id }}</a></li>
     {% endfor %}
     </ul>
-    <form action="" method="post">
+    <form action="{% url 'rq_actions' queue_index %}" method="post">
         {% csrf_token %}
         <div>
             {% for job_id in job_ids %}

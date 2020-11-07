@@ -44,7 +44,7 @@
         <li><a href="{% url 'rq_clear' queue_index %}" class="deletelink">Empty Queue</a></li>
     </ul>
     <div class="module" id="changelist">
-        <form id="changelist-form" action="{% url 'rq_actions' queue_index %}" method="post">
+        <form id="changelist-form" action="{% url 'rq_confirm_action' queue_index %}" method="post">
             {% csrf_token %}
             <div class="actions">
                 <label>Actions:

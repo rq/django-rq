@@ -421,13 +421,13 @@ def requeue_all(request, queue_index):
 
 
 @staff_member_required
-def actions(request, queue_index):
+def confirm_action(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
+    next_url = request.META.get('HTTP_REFERER') or reverse('rq_jobs', args=[queue_index])
 
     if request.method == 'POST' and request.POST.get('action', False):
         # confirm action
-        next_url = request.META.get('HTTP_REFERER') or reverse('rq_jobs', args=[queue_index])
         if request.POST.get('_selected_action', False):
             context_data = {
                 **admin.site.each_context(request),
@@ -439,10 +439,19 @@ def actions(request, queue_index):
             }
             return render(request, 'django_rq/confirm_action.html', context_data)
 
+    return redirect(next_url)
+
+
+@staff_member_required
+def actions(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    next_url = request.POST.get('next_url') or reverse('rq_jobs', args=[queue_index])
+
+    if request.method == 'POST' and request.POST.get('action', False):
         # do confirmed action
-        elif request.POST.get('job_ids', False):
+        if request.POST.get('job_ids', False):
             job_ids = request.POST.getlist('job_ids')
-            next_url = request.POST.get('next_url') or reverse('rq_jobs', args=[queue_index])
 
             if request.POST['action'] == 'delete':
                 for job_id in job_ids:
