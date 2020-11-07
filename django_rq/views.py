@@ -6,6 +6,7 @@ from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 
 from redis.exceptions import ResponseError
 from rq import requeue_job
@@ -420,9 +421,10 @@ def requeue_all(request, queue_index):
 
 
 @staff_member_required
-def actions(request, queue_index):
+def confirm_action(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
+    next_url = request.META.get('HTTP_REFERER') or reverse('rq_jobs', args=[queue_index])
 
     if request.method == 'POST' and request.POST.get('action', False):
         # confirm action
@@ -433,11 +435,22 @@ def actions(request, queue_index):
                 'action': request.POST['action'],
                 'job_ids': request.POST.getlist('_selected_action'),
                 'queue': queue,
+                'next_url': next_url,
             }
             return render(request, 'django_rq/confirm_action.html', context_data)
 
+    return redirect(next_url)
+
+
+@staff_member_required
+def actions(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    next_url = request.POST.get('next_url') or reverse('rq_jobs', args=[queue_index])
+
+    if request.method == 'POST' and request.POST.get('action', False):
         # do confirmed action
-        elif request.POST.get('job_ids', False):
+        if request.POST.get('job_ids', False):
             job_ids = request.POST.getlist('job_ids')
 
             if request.POST['action'] == 'delete':
@@ -452,7 +465,7 @@ def actions(request, queue_index):
                     requeue_job(job_id, connection=queue.connection)
                 messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
 
-    return redirect('rq_jobs', queue_index)
+    return redirect(next_url)
 
 
 @staff_member_required

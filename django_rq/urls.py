@@ -32,6 +32,8 @@ urlpatterns = [
             views.job_detail, name='rq_job_detail'),
     re_path(r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[-\w\.\:\$]+)/delete/$',
             views.delete_job, name='rq_delete_job'),
+    re_path(r'^queues/confirm-action/(?P<queue_index>[\d]+)/$',
+            views.confirm_action, name='rq_confirm_action'),
     re_path(r'^queues/actions/(?P<queue_index>[\d]+)/$',
             views.actions, name='rq_actions'),
     re_path(r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[-\w\.\:\$]+)/requeue/$',
