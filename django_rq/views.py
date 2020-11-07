@@ -427,7 +427,7 @@ def actions(request, queue_index):
 
     if request.method == 'POST' and request.POST.get('action', False):
         # confirm action
-        next_url = request.META['HTTP_REFERER'] or reverse('rq_jobs', args=[queue_index])
+        next_url = request.META.get('HTTP_REFERER') or reverse('rq_jobs', args=[queue_index])
         if request.POST.get('_selected_action', False):
             context_data = {
                 **admin.site.each_context(request),
