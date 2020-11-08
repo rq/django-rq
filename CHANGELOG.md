@@ -1,3 +1,7 @@
+# Version 2.4.0 (2020-11-08)
+* Various admin interface improvements. Thanks @selwin and @atten!
+* Improved Sentry integration. Thanks @hugorodgerbrown and @kichawa!
+
 # Version 2.3.2 (2020-05-13)
 * Compatibility with RQ >= 1.4.0 which implements customizable serialization method. Thanks @selwin!
 
