@@ -497,3 +497,28 @@ def enqueue_job(request, queue_index, job_id):
         'queue': queue,
     }
     return render(request, 'django_rq/delete_job.html', context_data)
+
+
+@staff_member_required
+def update_timeout_job(request, queue_index, job_id):
+    """ Update timeout of job by queue settings
+    """
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    job = Job.fetch(job_id, connection=queue.connection)
+
+    queue_name = queue.name
+    old_timeout = job.timeout
+
+    from .settings import QUEUES
+    default_timeout = QUEUES[queue_name].get('DEFAULT_TIMEOUT', None)
+    new_timeout = default_timeout
+
+    if old_timeout != new_timeout:
+        job.timeout = new_timeout
+        job.save()
+        messages.success(request, 'You have successfully changed timeout of job from %d to %s' % (old_timeout, new_timeout))
+    else:
+        messages.info(request, 'Job has already default queue timeout')
+
+    return redirect('rq_job_detail', queue_index, job_id)
