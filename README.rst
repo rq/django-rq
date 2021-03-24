@@ -132,8 +132,8 @@ number of connections to Redis server. For example:
     import django_rq
     import redis
     redis_cursor = redis.StrictRedis(host='', port='', db='', password='')
-    high_queue = django_rq.get('high', connection=redis_cursor)
-    low_queue = django_rq.get('low', connection=redis_cursor)
+    high_queue = django_rq.get_queue('high', connection=redis_cursor)
+    low_queue = django_rq.get_queue('low', connection=redis_cursor)
 
 
 * ``get_connection`` - accepts a single queue name argument (defaults to "default")
