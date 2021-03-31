@@ -1,3 +1,6 @@
+# Version 2.4.1 (2021-03-31)
+* Added `ssl_cert_reqs` and `username` to queue config. Thanks @jeyang!
+
 # Version 2.4.0 (2020-11-08)
 * Various admin interface improvements. Thanks @selwin and @atten!
 * Improved Sentry integration. Thanks @hugorodgerbrown and @kichawa!
