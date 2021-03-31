@@ -469,7 +469,7 @@ configuration in your settings file:
     # ... Regular RQ_QUEUES setup code ...
 
     if DEBUG or TESTING:
-        for queueConfig in RQ_QUEUES.itervalues():
+        for queueConfig in RQ_QUEUES.values():
             queueConfig['ASYNC'] = False
 
 Note that setting the ``is_async`` parameter explicitly when calling ``get_queue``
