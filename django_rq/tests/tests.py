@@ -9,6 +9,7 @@ from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils.html import SafeString
 
 from redis.exceptions import ConnectionError
 from rq import get_current_job, Queue
@@ -26,7 +27,7 @@ from django_rq.queues import (
     get_redis_connection
 )
 from django_rq import thread_queue
-from django_rq.templatetags.django_rq import to_localtime
+from django_rq.templatetags.django_rq import force_escape, to_localtime
 from django_rq.tests.fixtures import DummyJob, DummyQueue, DummyWorker
 from django_rq.utils import get_jobs, get_statistics
 from django_rq.workers import get_worker, get_worker_class
@@ -797,6 +798,25 @@ class TemplateTagTest(TestCase):
 
             self.assertIsNotNone(time.tzinfo)
             self.assertEqual(time.strftime("%z"), '+0700')
+
+    def test_force_escape_safe_string(self):
+        html = "<h1>hello world</h1>"
+        safe_string = SafeString(html)
+
+        escaped_string = force_escape(safe_string)
+        expected = "&lt;h1&gt;hello world&lt;/h1&gt;"
+
+        self.assertEqual(escaped_string, expected)
+
+    def test_force_escape_regular_string(self):
+        html = "hello world"
+        safe_string = SafeString(html)
+
+        escaped_string = force_escape(safe_string)
+        expected = "hello world"
+
+        self.assertEqual(escaped_string, expected)
+
 
 
 class UtilsTest(TestCase):

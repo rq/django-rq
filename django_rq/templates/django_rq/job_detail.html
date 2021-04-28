@@ -128,7 +128,7 @@
                         {% if job.args %}
                           <ul>
                               {% for arg in job.args %}
-                                  <li>{{ arg }}</li>
+                                  <li>{{ arg|force_escape }}</li>
                               {% endfor %}
                           </ul>
                         {% endif %}
@@ -147,7 +147,7 @@
                         {% if job.kwargs %}
                             <ul>
                                 {% for key, value in job.kwargs.items %}
-                                    <li>{{ key }}: {{ value|escape }}</li>
+                                    <li>{{ key }}: {{ value|force_escape }}</li>
                                 {% endfor %}
                             </ul>
                         {% endif %}
