@@ -9,7 +9,7 @@ from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.utils.html import SafeString
+from django.utils.safestring import SafeString
 
 from redis.exceptions import ConnectionError
 from rq import get_current_job, Queue
