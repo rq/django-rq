@@ -112,7 +112,16 @@ def get_redis_connection(config, use_strict_redis=False):
             service_name=config['MASTER_NAME'], redis_class=redis_cls,
         )
 
-    return redis_cls(host=config['HOST'], port=config['PORT'], db=config.get('DB', 0), username=config.get('USERNAME', None), password=config.get('PASSWORD'), ssl=config.get('SSL', False), ssl_cert_reqs=config.get('SSL_CERT_REQS', 'required'))
+    return redis_cls(
+        host=config['HOST'],
+        port=config['PORT'],
+        db=config.get('DB', 0),
+        username=config.get('USERNAME', None),
+        password=config.get('PASSWORD'),
+        ssl=config.get('SSL', False),
+        ssl_cert_reqs=config.get('SSL_CERT_REQS', 'required'),
+        **config.get('REDIS_CLIENT_KWARGS', {})
+    )
 
 
 def get_connection(name='default', use_strict_redis=False):
