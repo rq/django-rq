@@ -7,6 +7,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.views.decorators.cache import never_cache
 
 from redis.exceptions import ResponseError
 from rq import requeue_job
@@ -26,6 +27,7 @@ from .settings import API_TOKEN
 from .utils import get_statistics, get_jobs
 
 
+@never_cache
 @staff_member_required
 def stats(request):
     context_data = {
@@ -45,6 +47,7 @@ def stats_json(request, token=None):
     })
 
 
+@never_cache
 @staff_member_required
 def jobs(request, queue_index):
     queue_index = int(queue_index)
@@ -76,6 +79,7 @@ def jobs(request, queue_index):
     return render(request, 'django_rq/jobs.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def finished_jobs(request, queue_index):
     queue_index = int(queue_index)
@@ -111,6 +115,7 @@ def finished_jobs(request, queue_index):
     return render(request, 'django_rq/jobs.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def failed_jobs(request, queue_index):
     queue_index = int(queue_index)
@@ -146,6 +151,7 @@ def failed_jobs(request, queue_index):
     return render(request, 'django_rq/jobs.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def scheduled_jobs(request, queue_index):
     queue_index = int(queue_index)
@@ -184,6 +190,7 @@ def scheduled_jobs(request, queue_index):
     return render(request, 'django_rq/jobs.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def started_jobs(request, queue_index):
     queue_index = int(queue_index)
@@ -219,6 +226,7 @@ def started_jobs(request, queue_index):
     return render(request, 'django_rq/jobs.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def workers(request, queue_index):
     queue_index = int(queue_index)
@@ -236,6 +244,7 @@ def workers(request, queue_index):
     return render(request, 'django_rq/workers.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def worker_details(request, queue_index, key):
     queue_index = int(queue_index)
@@ -258,6 +267,7 @@ def worker_details(request, queue_index, key):
     return render(request, 'django_rq/worker_details.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def deferred_jobs(request, queue_index):
     queue_index = int(queue_index)
@@ -298,6 +308,7 @@ def deferred_jobs(request, queue_index):
     return render(request, 'django_rq/jobs.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def job_detail(request, queue_index, job_id):
     queue_index = int(queue_index)
@@ -324,6 +335,7 @@ def job_detail(request, queue_index, job_id):
     return render(request, 'django_rq/job_detail.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def delete_job(request, queue_index, job_id):
     queue_index = int(queue_index)
@@ -346,6 +358,7 @@ def delete_job(request, queue_index, job_id):
     return render(request, 'django_rq/delete_job.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def requeue_job_view(request, queue_index, job_id):
     queue_index = int(queue_index)
@@ -366,6 +379,7 @@ def requeue_job_view(request, queue_index, job_id):
     return render(request, 'django_rq/delete_job.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def clear_queue(request, queue_index):
     queue_index = int(queue_index)
@@ -390,6 +404,7 @@ def clear_queue(request, queue_index):
     return render(request, 'django_rq/clear_queue.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def requeue_all(request, queue_index):
     queue_index = int(queue_index)
@@ -420,6 +435,7 @@ def requeue_all(request, queue_index):
     return render(request, 'django_rq/requeue_all.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def confirm_action(request, queue_index):
     queue_index = int(queue_index)
@@ -442,6 +458,7 @@ def confirm_action(request, queue_index):
     return redirect(next_url)
 
 
+@never_cache
 @staff_member_required
 def actions(request, queue_index):
     queue_index = int(queue_index)
@@ -468,6 +485,7 @@ def actions(request, queue_index):
     return redirect(next_url)
 
 
+@never_cache
 @staff_member_required
 def enqueue_job(request, queue_index, job_id):
     """ Enqueue deferred jobs
