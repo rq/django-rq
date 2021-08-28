@@ -4,27 +4,22 @@ from math import ceil
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core.exceptions import ImproperlyConfigured
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
-
 from redis.exceptions import ResponseError
 from rq import requeue_job
 from rq.exceptions import NoSuchJobError
 from rq.job import Job, JobStatus
-from rq.registry import (
-    DeferredJobRegistry, 
-    FailedJobRegistry, 
-    FinishedJobRegistry, 
-    ScheduledJobRegistry,
-    StartedJobRegistry, 
-)
+from rq.registry import (DeferredJobRegistry, FailedJobRegistry,
+                         FinishedJobRegistry, StartedJobRegistry)
 from rq.worker import Worker
 
-from .queues import get_queue_by_index
+from .queues import get_queue_by_index, get_scheduler
 from .settings import API_TOKEN
-from .utils import get_statistics, get_jobs
+from .utils import get_jobs, get_statistics
 
 
 @never_cache
@@ -32,7 +27,7 @@ from .utils import get_statistics, get_jobs
 def stats(request):
     context_data = {
         **admin.site.each_context(request),
-        **get_statistics(run_maintenance_tasks=True)
+        **get_statistics(run_maintenance_tasks=True),
     }
     return render(request, 'django_rq/stats.html', context_data)
 
@@ -41,10 +36,12 @@ def stats_json(request, token=None):
     if request.user.is_staff or (token and token == API_TOKEN):
         return JsonResponse(get_statistics())
 
-    return JsonResponse({
-        "error": True,
-        "description": "Please configure API_TOKEN in settings.py before accessing this view."
-    })
+    return JsonResponse(
+        {
+            "error": True,
+            "description": "Please configure API_TOKEN in settings.py before accessing this view.",
+        }
+    )
 
 
 @never_cache
@@ -157,10 +154,14 @@ def scheduled_jobs(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
 
-    registry = ScheduledJobRegistry(queue.name, queue.connection)
+    try:
+        scheduler = get_scheduler(queue.name)
+        num_jobs = scheduler.count()
+    except ImproperlyConfigured:
+        num_jobs = 0
 
     items_per_page = 100
-    num_jobs = len(registry)
+
     page = int(request.GET.get('page', 1))
     jobs = []
 
@@ -168,12 +169,13 @@ def scheduled_jobs(request, queue_index):
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
 
-        jobs = get_jobs(queue, job_ids, registry)
-        for job in jobs:
-            job.scheduled_at = registry.get_scheduled_time(job)
-
+        for job, scheduled_at in scheduler.get_jobs(
+            offset=offset, length=items_per_page, with_times=True
+        ):
+            job.scheduled_at = scheduled_at
+            job.get_status = 'Scheduled'
+            jobs.append(job)
     else:
         page_range = []
 
@@ -232,8 +234,7 @@ def workers(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
     all_workers = Worker.all(queue.connection)
-    workers = [worker for worker in all_workers
-               if queue.name in worker.queue_names()]
+    workers = [worker for worker in all_workers if queue.name in worker.queue_names()]
 
     context_data = {
         **admin.site.each_context(request),
@@ -262,7 +263,7 @@ def worker_details(request, queue_index, key):
         'worker': worker,
         'queue_names': queue_names,
         'job': worker.get_current_job(),
-        'total_working_time': worker.total_working_time * 1000
+        'total_working_time': worker.total_working_time * 1000,
     }
     return render(request, 'django_rq/worker_details.html', context_data)
 
@@ -328,9 +329,9 @@ def job_detail(request, queue_index, job_id):
         **admin.site.each_context(request),
         'queue_index': queue_index,
         'job': job,
-        'dependency_id': job._dependency_id, 
+        'dependency_id': job._dependency_id,
         'queue': queue,
-        'data_is_valid': data_is_valid
+        'data_is_valid': data_is_valid,
     }
     return render(request, 'django_rq/job_detail.html', context_data)
 
@@ -388,10 +389,15 @@ def clear_queue(request, queue_index):
     if request.method == 'POST':
         try:
             queue.empty()
-            messages.info(request, 'You have successfully cleared the queue %s' % queue.name)
+            messages.info(
+                request, 'You have successfully cleared the queue %s' % queue.name
+            )
         except ResponseError as e:
             if 'EVALSHA' in e.message:
-                messages.error(request, 'This action is not supported on Redis versions < 2.6.0, please use the bulk delete command instead')
+                messages.error(
+                    request,
+                    'This action is not supported on Redis versions < 2.6.0, please use the bulk delete command instead',
+                )
             else:
                 raise e
         return redirect('rq_jobs', queue_index)
@@ -476,11 +482,15 @@ def actions(request, queue_index):
                     # Remove job id from queue and delete the actual job
                     queue.connection.lrem(queue.key, 0, job.id)
                     job.delete()
-                messages.info(request, 'You have successfully deleted %s jobs!' % len(job_ids))
+                messages.info(
+                    request, 'You have successfully deleted %s jobs!' % len(job_ids)
+                )
             elif request.POST['action'] == 'requeue':
                 for job_id in job_ids:
                     requeue_job(job_id, connection=queue.connection)
-                messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
+                messages.info(
+                    request, 'You have successfully requeued %d  jobs!' % len(job_ids)
+                )
 
     return redirect(next_url)
 
