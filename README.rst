@@ -41,7 +41,7 @@ Installation
         "django_rq",
     )
 
-* Configure your queues in django's ``settings.py`` (syntax based on Django's database config):
+* Configure your queues in django's ``settings.py``:
 
 .. code-block:: python
 
