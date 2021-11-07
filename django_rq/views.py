@@ -14,13 +14,14 @@ from rq import requeue_job
 from rq.exceptions import NoSuchJobError
 from rq.job import Job, JobStatus
 from rq.registry import (
-    DeferredJobRegistry, 
-    FailedJobRegistry, 
-    FinishedJobRegistry, 
+    DeferredJobRegistry,
+    FailedJobRegistry,
+    FinishedJobRegistry,
     ScheduledJobRegistry,
-    StartedJobRegistry, 
+    StartedJobRegistry,
 )
 from rq.worker import Worker
+from rq.worker_registration import clean_worker_registry
 
 from .queues import get_queue_by_index
 from .settings import API_TOKEN
@@ -231,6 +232,7 @@ def started_jobs(request, queue_index):
 def workers(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
+    clean_worker_registry(queue)
     all_workers = Worker.all(queue.connection)
     workers = [worker for worker in all_workers
                if queue.name in worker.queue_names()]
@@ -328,7 +330,7 @@ def job_detail(request, queue_index, job_id):
         **admin.site.each_context(request),
         'queue_index': queue_index,
         'job': job,
-        'dependency_id': job._dependency_id, 
+        'dependency_id': job._dependency_id,
         'queue': queue,
         'data_is_valid': data_is_valid
     }
