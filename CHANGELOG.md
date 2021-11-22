@@ -1,4 +1,7 @@
-# Version 2.5.0 (2021-03-31)
+# Version 2.5.1 (2021-11-22)
+* `Redis.from_url` does not accept `ssl_cert_reqs` argument for non SSL Redis URL. Thanks @barash-asenov! 
+
+# Version 2.5.0 (2021-11-17)
 * Better integration with Django admin, along with a new `Access admin page` permission that you can selectively grant to users. Thanks @haakenlid!
 * Worker count is now updated everytime you view workers for that specific queue. Thanks @cgl!
 * Add the capability to pass arbitrary Redis client kwargs. Thanks @juanjgarcia!
