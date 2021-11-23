@@ -506,6 +506,9 @@ def enqueue_job(request, queue_index, job_id):
         elif job.get_status() == JobStatus.FINISHED:
             registry = FinishedJobRegistry(queue.name, queue.connection)
             registry.remove(job)
+        elif job.get_status() == JobStatus.SCHEDULED:
+            registry = ScheduledJobRegistry(queue.name, queue.connection)
+            registry.remove(job)
 
         messages.info(request, 'You have successfully enqueued %s' % job.id)
         return redirect('rq_job_detail', queue_index, job_id)
