@@ -224,12 +224,27 @@ with the path to your queue class::
 
 To use a custom job class, provide ``--job-class`` flag.
 
-Support for RQ Scheduler
-------------------------
+Support for scheduled jobs
+--------------------------
 
-If you have `RQ Scheduler <https://github.com/ui/rq-scheduler>`__ installed,
-you can also use the ``get_scheduler`` function to return a ``Scheduler``
-instance for queues defined in settings.py's ``RQ_QUEUES``. For example:
+With RQ 1.2.0. you can use `built-in scheduler <https://python-rq.org/docs/scheduling/>`__
+for your jobs. For example:
+
+.. code-block:: python
+
+    from django_rq.queues import get_queue
+    queue = get_queue('default')
+    job = queue.enqueue_at(datetime(2020, 10, 10), func)
+    
+If you using built-in scheduler you have to start workers with scheduler support::
+
+    python manage.py rqworker --with-scheduler
+
+
+Alternatively you can use `RQ Scheduler <https://github.com/ui/rq-scheduler>`__.
+After install you can also use the ``get_scheduler`` function to return a
+``Scheduler`` instance for queues defined in settings.py's ``RQ_QUEUES``.
+For example:
 
 .. code-block:: python
 
@@ -240,6 +255,7 @@ instance for queues defined in settings.py's ``RQ_QUEUES``. For example:
 You can also use the management command ``rqscheduler`` to start the scheduler::
 
     python manage.py rqscheduler
+
 
 Support for django-redis and django-redis-cache
 -----------------------------------------------
@@ -301,6 +317,8 @@ HTTP clients (for monitoring purposes), you can define ``RQ_API_TOKEN`` and acce
 
 .. image::  demo-django-rq-json-dashboard.png
 
+Note: Statistics of scheduled jobs display jobs from `RQ built-in scheduler <https://python-rq.org/docs/scheduling/>`__,
+not optional `RQ scheduler <https://github.com/rq/rq-scheduler>`__.
 
 Additionally, these statistics are also accessible from  the command line.
 
