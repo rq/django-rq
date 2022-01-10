@@ -1,6 +1,5 @@
 import os
 import sys
-from distutils.version import LooseVersion
 
 from redis.exceptions import ConnectionError
 from rq import use_connection
@@ -8,7 +7,6 @@ from rq.logutils import setup_loghandlers
 
 from django.core.management.base import BaseCommand
 from django.db import connections
-from django.utils.version import get_version
 
 from ...workers import get_worker
 
@@ -81,10 +79,8 @@ class Command(BaseCommand):
                             help='A path to an alternative CA bundle file in PEM-format')
         parser.add_argument('--sentry-debug', action='store', default=False, dest='sentry_debug',
                             help='Turns debug mode on or off.')
-
-        if LooseVersion(get_version()) >= LooseVersion('1.10'):
-            parser.add_argument('args', nargs='*', type=str,
-                                help='The queues to work on, separated by space')
+        parser.add_argument('args', nargs='*', type=str,
+                            help='The queues to work on, separated by space')
 
     def handle(self, *args, **options):
         pid = options.get('pid')
