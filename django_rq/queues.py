@@ -77,7 +77,17 @@ def get_redis_connection(config, use_strict_redis=False):
     redis_cls = redis.StrictRedis if use_strict_redis else redis.Redis
 
     if 'URL' in config:
-        return redis_cls.from_url(config['URL'], db=config.get('DB'))
+        if config.get('SSL') or config.get('URL').startswith('rediss://'):
+            return redis_cls.from_url(
+                config['URL'],
+                db=config.get('DB'),
+                ssl_cert_reqs=config.get('SSL_CERT_REQS', 'required'),
+            )
+        else:
+            return redis_cls.from_url(
+                config['URL'],
+                db=config.get('DB'),
+            )
 
     if 'USE_REDIS_CACHE' in config.keys():
 
@@ -112,7 +122,16 @@ def get_redis_connection(config, use_strict_redis=False):
             service_name=config['MASTER_NAME'], redis_class=redis_cls,
         )
 
-    return redis_cls(host=config['HOST'], port=config['PORT'], db=config['DB'], password=config.get('PASSWORD'), ssl=config.get('SSL', False))
+    return redis_cls(
+        host=config['HOST'],
+        port=config['PORT'],
+        db=config.get('DB', 0),
+        username=config.get('USERNAME', None),
+        password=config.get('PASSWORD'),
+        ssl=config.get('SSL', False),
+        ssl_cert_reqs=config.get('SSL_CERT_REQS', 'required'),
+        **config.get('REDIS_CLIENT_KWARGS', {})
+    )
 
 
 def get_connection(name='default', use_strict_redis=False):

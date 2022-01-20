@@ -7,25 +7,28 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.views.decorators.cache import never_cache
 
 from redis.exceptions import ResponseError
 from rq import requeue_job
 from rq.exceptions import NoSuchJobError
 from rq.job import Job, JobStatus
 from rq.registry import (
-    DeferredJobRegistry, 
-    FailedJobRegistry, 
-    FinishedJobRegistry, 
+    DeferredJobRegistry,
+    FailedJobRegistry,
+    FinishedJobRegistry,
     ScheduledJobRegistry,
-    StartedJobRegistry, 
+    StartedJobRegistry,
 )
 from rq.worker import Worker
+from rq.worker_registration import clean_worker_registry
 
 from .queues import get_queue_by_index
 from .settings import API_TOKEN
 from .utils import get_statistics, get_jobs
 
 
+@never_cache
 @staff_member_required
 def stats(request):
     context_data = {
@@ -45,6 +48,7 @@ def stats_json(request, token=None):
     })
 
 
+@never_cache
 @staff_member_required
 def jobs(request, queue_index):
     queue_index = int(queue_index)
@@ -76,6 +80,7 @@ def jobs(request, queue_index):
     return render(request, 'django_rq/jobs.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def finished_jobs(request, queue_index):
     queue_index = int(queue_index)
@@ -111,6 +116,7 @@ def finished_jobs(request, queue_index):
     return render(request, 'django_rq/jobs.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def failed_jobs(request, queue_index):
     queue_index = int(queue_index)
@@ -146,6 +152,7 @@ def failed_jobs(request, queue_index):
     return render(request, 'django_rq/jobs.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def scheduled_jobs(request, queue_index):
     queue_index = int(queue_index)
@@ -184,6 +191,7 @@ def scheduled_jobs(request, queue_index):
     return render(request, 'django_rq/jobs.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def started_jobs(request, queue_index):
     queue_index = int(queue_index)
@@ -219,10 +227,12 @@ def started_jobs(request, queue_index):
     return render(request, 'django_rq/jobs.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def workers(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
+    clean_worker_registry(queue)
     all_workers = Worker.all(queue.connection)
     workers = [worker for worker in all_workers
                if queue.name in worker.queue_names()]
@@ -236,6 +246,7 @@ def workers(request, queue_index):
     return render(request, 'django_rq/workers.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def worker_details(request, queue_index, key):
     queue_index = int(queue_index)
@@ -258,6 +269,7 @@ def worker_details(request, queue_index, key):
     return render(request, 'django_rq/worker_details.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def deferred_jobs(request, queue_index):
     queue_index = int(queue_index)
@@ -298,6 +310,7 @@ def deferred_jobs(request, queue_index):
     return render(request, 'django_rq/jobs.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def job_detail(request, queue_index, job_id):
     queue_index = int(queue_index)
@@ -317,13 +330,14 @@ def job_detail(request, queue_index, job_id):
         **admin.site.each_context(request),
         'queue_index': queue_index,
         'job': job,
-        'dependency_id': job._dependency_id, 
+        'dependency_id': job._dependency_id,
         'queue': queue,
         'data_is_valid': data_is_valid
     }
     return render(request, 'django_rq/job_detail.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def delete_job(request, queue_index, job_id):
     queue_index = int(queue_index)
@@ -346,6 +360,7 @@ def delete_job(request, queue_index, job_id):
     return render(request, 'django_rq/delete_job.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def requeue_job_view(request, queue_index, job_id):
     queue_index = int(queue_index)
@@ -366,6 +381,7 @@ def requeue_job_view(request, queue_index, job_id):
     return render(request, 'django_rq/delete_job.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def clear_queue(request, queue_index):
     queue_index = int(queue_index)
@@ -390,6 +406,7 @@ def clear_queue(request, queue_index):
     return render(request, 'django_rq/clear_queue.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def requeue_all(request, queue_index):
     queue_index = int(queue_index)
@@ -420,6 +437,7 @@ def requeue_all(request, queue_index):
     return render(request, 'django_rq/requeue_all.html', context_data)
 
 
+@never_cache
 @staff_member_required
 def confirm_action(request, queue_index):
     queue_index = int(queue_index)
@@ -442,6 +460,7 @@ def confirm_action(request, queue_index):
     return redirect(next_url)
 
 
+@never_cache
 @staff_member_required
 def actions(request, queue_index):
     queue_index = int(queue_index)
@@ -468,6 +487,7 @@ def actions(request, queue_index):
     return redirect(next_url)
 
 
+@never_cache
 @staff_member_required
 def enqueue_job(request, queue_index, job_id):
     """ Enqueue deferred jobs
@@ -485,6 +505,9 @@ def enqueue_job(request, queue_index, job_id):
             registry.remove(job)
         elif job.get_status() == JobStatus.FINISHED:
             registry = FinishedJobRegistry(queue.name, queue.connection)
+            registry.remove(job)
+        elif job.get_status() == JobStatus.SCHEDULED:
+            registry = ScheduledJobRegistry(queue.name, queue.connection)
             registry.remove(job)
 
         messages.info(request, 'You have successfully enqueued %s' % job.id)

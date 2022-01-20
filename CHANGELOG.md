@@ -1,3 +1,17 @@
+# Version 2.5.1 (2021-11-22)
+* `Redis.from_url` does not accept `ssl_cert_reqs` argument for non SSL Redis URL. Thanks @barash-asenov! 
+
+# Version 2.5.0 (2021-11-17)
+* Better integration with Django admin, along with a new `Access admin page` permission that you can selectively grant to users. Thanks @haakenlid!
+* Worker count is now updated everytime you view workers for that specific queue. Thanks @cgl!
+* Add the capability to pass arbitrary Redis client kwargs. Thanks @juanjgarcia!
+* Always escape text when rendering job arguments. Thanks @rhenanbartels!
+* Add `@never_cache` decorator to all Django-RQ views. Thanks @Cybernisk!
+* `SSL_CERT_REQS` argument should also be passed to Redis client even when Redis URL is used. Thanks @paltman!
+
+# Version 2.4.1 (2021-03-31)
+* Added `ssl_cert_reqs` and `username` to queue config. Thanks @jeyang!
+
 # Version 2.4.0 (2020-11-08)
 * Various admin interface improvements. Thanks @selwin and @atten!
 * Improved Sentry integration. Thanks @hugorodgerbrown and @kichawa!

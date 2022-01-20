@@ -1,5 +1,6 @@
 from django import template
 from django.utils import timezone
+from django.utils.html import escape
 
 
 register = template.Library()
@@ -21,3 +22,8 @@ def show_func_name(job):
         return job.func_name
     except Exception as e:
         return repr(e)
+
+
+@register.filter
+def force_escape(text):
+    return escape(text)
