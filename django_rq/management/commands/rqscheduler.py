@@ -1,9 +1,7 @@
 import os
-from distutils.version import LooseVersion
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import BaseCommand
-from django.utils.version import get_version
 
 from ... import get_scheduler
 
@@ -29,9 +27,7 @@ class Command(BaseCommand):
                             queue (in seconds).""")
         parser.add_argument('--queue', dest='queue', default='default',
                             help="Name of the queue used for scheduling.",)
-
-        if LooseVersion(get_version()) >= LooseVersion('1.9'):
-            parser.add_argument('args', nargs='*')
+        parser.add_argument('args', nargs='*')
 
     def handle(self, *args, **options):
         pid = options.get('pid')

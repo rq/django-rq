@@ -1,7 +1,4 @@
-from distutils.version import LooseVersion
-
 from django.core.management.base import BaseCommand
-from django.utils.version import get_version
 
 from ... import get_queue
 
@@ -18,9 +15,7 @@ class Command(BaseCommand):
                             help='Specify the queue [default]')
         parser.add_argument('--timeout', '-t', type=int, dest='timeout',
                             help='A timeout in seconds')
-
-        if LooseVersion(get_version()) >= LooseVersion('1.9'):
-            parser.add_argument('args', nargs='*')
+        parser.add_argument('args', nargs='*')
 
     def handle(self, *args, **options):
         """
