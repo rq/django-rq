@@ -74,6 +74,7 @@
                                 <th><div class = 'text'><span>Scheduled</span></div></th>
                             {% endif %}
                             <th><div class = 'text'><span>Enqueued</span></div></th>
+                            <th><div class = 'text'><span>Ended</span></div></th>
                             <th><div class = 'text'><span>Status</span></div></th>
                             <th><div class = 'text'><span>Callable</span></div></th>
                             {% block extra_columns %}
@@ -106,6 +107,11 @@
                                 <td>
                                     {% if job.enqueued_at %}
                                         {{ job.enqueued_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if job.ended_at %}
+                                        {{ job.ended_at|to_localtime|date:"Y-m-d, H:i:s" }}
                                     {% endif %}
                                 </td>
                                 <td>{{ job.get_status }}</td>
