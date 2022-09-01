@@ -453,7 +453,7 @@ Custom job class should inherit from ``rq.job.Job``. It will be used for all job
 if configured.
 
 Custom worker class should inherit from ``rq.worker.Worker``. It will be used for running
-all workers unless overriden by ``rqworker`` management command ``worker-class`` option.
+all workers unless overridden by ``rqworker`` management command ``worker-class`` option.
 
 Testing Tip
 -----------

@@ -7,7 +7,7 @@ _thread_data = threading.local()
 def get_queue():
     """
     Returns a temporary queue to store jobs before they're committed
-    later in the request/responsce cycle. Each job is stored as a tuple
+    later in the request/response cycle. Each job is stored as a tuple
     containing the queue, args and kwargs.
 
     For example, if we call ``queue.enqueue_call(foo, kwargs={'bar': 'baz'})`` during the
