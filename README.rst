@@ -236,7 +236,7 @@ for your jobs. For example:
     queue = get_queue('default')
     job = queue.enqueue_at(datetime(2020, 10, 10), func)
     
-If you using built-in scheduler you have to start workers with scheduler support::
+If you are using built-in scheduler you have to start workers with scheduler support::
 
     python manage.py rqworker --with-scheduler
 
