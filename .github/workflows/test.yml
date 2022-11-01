@@ -38,4 +38,4 @@ jobs:
 
     - name: Run Test
       run: |
-        `which django-admin.py` test django_rq --settings=django_rq.tests.settings --pythonpath=.
+        `which django-admin` test django_rq --settings=django_rq.tests.settings --pythonpath=.
