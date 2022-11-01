@@ -771,12 +771,12 @@ class QueueClassTest(TestCase):
 class WorkerClassTest(TestCase):
 
     def test_default_worker_class(self):
-        worker = get_worker('test')
+        worker = get_worker()
         self.assertIsInstance(worker, Worker)
 
     @override_settings(RQ={'WORKER_CLASS': 'django_rq.tests.fixtures.DummyWorker'})
     def test_custom_class(self):
-        worker = get_worker('test')
+        worker = get_worker()
         self.assertIsInstance(worker, DummyWorker)
 
     def test_local_override(self):
