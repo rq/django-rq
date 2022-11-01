@@ -79,6 +79,8 @@ class Command(BaseCommand):
                             help='A path to an alternative CA bundle file in PEM-format')
         parser.add_argument('--sentry-debug', action='store', default=False, dest='sentry_debug',
                             help='Turns debug mode on or off.')
+        parser.add_argument('--max-jobs', action='store', default=None, dest='max_jobs', type=int,
+                            help='Maximum number of jobs to execute')
         parser.add_argument('args', nargs='*', type=str,
                             help='The queues to work on, separated by space')
 
@@ -123,7 +125,10 @@ class Command(BaseCommand):
             # Close any opened DB connection before any fork
             reset_db_connections()
 
-            w.work(burst=options.get('burst', False), with_scheduler=options.get('with_scheduler', False), logging_level=level)
+            w.work(
+                burst=options.get('burst', False), with_scheduler=options.get('with_scheduler', False),
+                logging_level=level, max_jobs=options['max_jobs']
+            )
         except ConnectionError as e:
             self.stderr.write(str(e))
             sys.exit(1)
