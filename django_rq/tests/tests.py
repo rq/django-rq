@@ -224,7 +224,7 @@ class QueuesTest(TestCase):
         self.assertEqual(queue.name, 'url_default_db')
         self.assertEqual(connection_kwargs['host'], 'host')
         self.assertEqual(connection_kwargs['port'], 1234)
-        self.assertEqual(connection_kwargs['db'], 0)
+        self.assertEqual(connection_kwargs['db'], None)
         self.assertEqual(connection_kwargs['password'], 'password')
 
     def test_get_queue_test(self):
@@ -522,14 +522,13 @@ class WorkersTest(TestCase):
         Checks if a worker with specified queues is created when queue
         names are given.
         """
-        w = get_worker('test')
+        w = get_worker('test3')
         self.assertEqual(len(w.queues), 1)
         queue = w.queues[0]
-        self.assertEqual(queue.name, 'test')
+        self.assertEqual(queue.name, 'test3')
 
     def test_get_worker_custom_classes(self):
-        w = get_worker('test',
-                       job_class='django_rq.tests.fixtures.DummyJob',
+        w = get_worker(job_class='django_rq.tests.fixtures.DummyJob',
                        queue_class='django_rq.tests.fixtures.DummyQueue',
                        worker_class='django_rq.tests.fixtures.DummyWorker')
         self.assertIs(w.job_class, DummyJob)
