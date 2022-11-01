@@ -1,4 +1,4 @@
-A sample project to test rqworker and site interraction
+A sample project to test rqworker and site interaction
 
 ## Prerequisites
 

@@ -180,7 +180,7 @@ class ViewTest(TestCase):
             job = queue.enqueue(access_self, depends_on=previous_job)
             previous_job = job
 
-        # This job is deffered
+        # This job is deferred
         last_job = job
         self.assertEqual(last_job.get_status(), JobStatus.DEFERRED)
         self.assertIsNone(last_job.enqueued_at)
