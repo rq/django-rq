@@ -28,3 +28,7 @@ except ImportError:
 
 def access_self():
     return get_current_job().id
+
+
+def failing_job():
+    raise ValueError
