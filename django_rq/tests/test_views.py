@@ -42,12 +42,6 @@ class ViewTest(TestCase):
         response = self.client.get(reverse('rq_jobs', args=[queue_index]))
         self.assertEqual(response.context['jobs'], [job])
 
-        # This page shouldn't fail when job.data is corrupt
-        queue.connection.hset(job.key, 'data', 'unpickleable data')
-        response = self.client.get(reverse('rq_jobs', args=[queue_index]))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('UnpicklingError', response.content.decode('utf-8'))
-
     def test_job_details(self):
         """Job data is displayed properly"""
         queue = get_queue('default')
@@ -62,7 +56,7 @@ class ViewTest(TestCase):
         queue.connection.hset(job.key, 'data', 'unpickleable data')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('UnpicklingError', response.content.decode())
+        self.assertIn('DeserializationError', response.content.decode())
     
     def test_job_details_on_deleted_dependency(self):
         """Page doesn't crash even if job.dependency has been deleted"""
