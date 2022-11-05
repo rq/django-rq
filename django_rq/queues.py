@@ -117,7 +117,7 @@ def get_redis_connection(config, use_strict_redis=False):
             'socket_timeout': config.get('SOCKET_TIMEOUT'),
         }
         sentinel_kwargs.update(config.get('CONNECTION_KWARGS', {}))
-        sentinel = Sentinel(config['SENTINELS'], **sentinel_kwargs)
+        sentinel = Sentinel(config['SENTINELS'], sentinel_kwargs=sentinel_kwargs, **sentinel_kwargs)
         return sentinel.master_for(
             service_name=config['MASTER_NAME'], redis_class=redis_cls,
         )
