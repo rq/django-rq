@@ -1,3 +1,8 @@
+# Version 2.5.2 (2022-11-05)
+* Added `--max-jobs` argument to `rqworker` management command. Thanks @arpit-goel!
+* Remove job from `ScheduledJobRegistry` if a scheduled job is enqueued from admin. Thanks @robertaistleitner!
+* Minor code cleanup. Thanks @reybog90! 
+
 # Version 2.5.1 (2021-11-22)
 * `Redis.from_url` does not accept `ssl_cert_reqs` argument for non SSL Redis URL. Thanks @barash-asenov! 
 
