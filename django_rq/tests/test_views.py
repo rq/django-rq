@@ -18,7 +18,7 @@ from rq.registry import (
 
 from django_rq import get_queue
 from django_rq.workers import get_worker
-from .fixtures import access_self
+from .fixtures import access_self, failing_job
 from .utils import get_queue_index
 
 
@@ -75,9 +75,6 @@ class ViewTest(TestCase):
         """
         Ensure that a failed job gets requeued when rq_requeue_job is called
         """
-        def failing_job():
-            raise ValueError
-
         queue = get_queue('default')
         queue_index = get_queue_index('default')
         job = queue.enqueue(failing_job)
@@ -94,12 +91,9 @@ class ViewTest(TestCase):
         """
         Ensure that requeuing all failed job work properly
         """
-        def failing_job():
-            raise ValueError
-
         queue = get_queue('default')
         queue_index = get_queue_index('default')
-        job = queue.enqueue(failing_job)
+        queue.enqueue(failing_job)
         queue.enqueue(failing_job)
         worker = get_worker('default')
         worker.work(burst=True)
@@ -114,9 +108,6 @@ class ViewTest(TestCase):
         """
         Ensure that requeuing all failed job work properly
         """
-        def failing_job():
-            raise ValueError
-
         queue = get_queue('default')
         queue_index = get_queue_index('default')
         job = queue.enqueue(failing_job)
@@ -188,9 +179,6 @@ class ViewTest(TestCase):
         self.assertIsNotNone(last_job.enqueued_at)
 
     def test_action_requeue_jobs(self):
-        def failing_job():
-            raise ValueError
-
         queue = get_queue('django_rq_test')
         queue_index = get_queue_index('django_rq_test')
 
