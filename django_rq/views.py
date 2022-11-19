@@ -331,7 +331,11 @@ def job_detail(request, queue_index, job_id):
     rv = job.connection.hget(job.key, 'result')
     if rv is not None:
         # cache the result
-        job.legacy_result = job.serializer.loads(rv)
+        job.legacy_result = job.serializer.loads(rv)    
+    try:
+        exc_info = job._exc_info
+    except AttributeError:
+        exc_info = None
 
     context_data = {
         **admin.site.each_context(request),
@@ -340,7 +344,7 @@ def job_detail(request, queue_index, job_id):
         'dependency_id': job._dependency_id,
         'queue': queue,
         'data_is_valid': data_is_valid,
-        'exc_info': job._exc_info,  # Backward compatibility for RQ < 1.12.0
+        'exc_info': exc_info,
     }
     return render(request, 'django_rq/job_detail.html', context_data)
 
