@@ -52,7 +52,9 @@
         <div class="form-row">
             <div>
                 <label class="required">Timeout:</label>
-                <div class="data">{{ job.timeout }}</div>
+                <div class="data">{{ job.timeout }}
+                    <br><a href="{% url 'rq_update_timeout_job' queue_index job.id %}">Update timeout</a>
+                </div>
             </div>
         </div>
 
