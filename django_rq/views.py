@@ -315,6 +315,7 @@ def deferred_jobs(request, queue_index):
 def job_detail(request, queue_index, job_id):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
+
     try:
         job = Job.fetch(job_id, connection=queue.connection)
     except NoSuchJobError:
@@ -326,13 +327,24 @@ def job_detail(request, queue_index, job_id):
     except:
         data_is_valid = False
 
+    # Backward compatibility support for RQ < 1.12.0
+    rv = job.connection.hget(job.key, 'result')
+    if rv is not None:
+        # cache the result
+        job.legacy_result = job.serializer.loads(rv)    
+    try:
+        exc_info = job._exc_info
+    except AttributeError:
+        exc_info = None
+
     context_data = {
         **admin.site.each_context(request),
         'queue_index': queue_index,
         'job': job,
         'dependency_id': job._dependency_id,
         'queue': queue,
-        'data_is_valid': data_is_valid
+        'data_is_valid': data_is_valid,
+        'exc_info': exc_info,
     }
     return render(request, 'django_rq/job_detail.html', context_data)
 
