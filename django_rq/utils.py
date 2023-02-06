@@ -66,7 +66,7 @@ def get_statistics(run_maintenance_tasks=False):
             'oldest_job_timestamp': oldest_job_timestamp,
             'index': index,
             'connection_kwargs': connection_kwargs,
-            'scheduler_PID': scheduler_pid(queue),
+            'scheduler_pid': scheduler_pid(queue),
         }
 
         connection = get_connection(queue.name)
