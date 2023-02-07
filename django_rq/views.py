@@ -31,10 +31,7 @@ from .utils import get_statistics, get_jobs
 @never_cache
 @staff_member_required
 def stats(request):
-    context_data = {
-        **admin.site.each_context(request),
-        **get_statistics(run_maintenance_tasks=True)
-    }
+    context_data = {**admin.site.each_context(request), **get_statistics(run_maintenance_tasks=True)}
     return render(request, 'django_rq/stats.html', context_data)
 
 
@@ -42,10 +39,9 @@ def stats_json(request, token=None):
     if request.user.is_staff or (token and token == API_TOKEN):
         return JsonResponse(get_statistics())
 
-    return JsonResponse({
-        "error": True,
-        "description": "Please configure API_TOKEN in settings.py before accessing this view."
-    })
+    return JsonResponse(
+        {"error": True, "description": "Please configure API_TOKEN in settings.py before accessing this view."}
+    )
 
 
 @never_cache
@@ -234,8 +230,7 @@ def workers(request, queue_index):
     queue = get_queue_by_index(queue_index)
     clean_worker_registry(queue)
     all_workers = Worker.all(queue.connection)
-    workers = [worker for worker in all_workers
-               if queue.name in worker.queue_names()]
+    workers = [worker for worker in all_workers if queue.name in worker.queue_names()]
 
     context_data = {
         **admin.site.each_context(request),
@@ -264,7 +259,7 @@ def worker_details(request, queue_index, key):
         'worker': worker,
         'queue_names': queue_names,
         'job': worker.get_current_job(),
-        'total_working_time': worker.total_working_time * 1000
+        'total_working_time': worker.total_working_time * 1000,
     }
     return render(request, 'django_rq/worker_details.html', context_data)
 
@@ -331,7 +326,7 @@ def job_detail(request, queue_index, job_id):
     rv = job.connection.hget(job.key, 'result')
     if rv is not None:
         # cache the result
-        job.legacy_result = job.serializer.loads(rv)    
+        job.legacy_result = job.serializer.loads(rv)
     try:
         exc_info = job._exc_info
     except AttributeError:
@@ -405,7 +400,10 @@ def clear_queue(request, queue_index):
             messages.info(request, 'You have successfully cleared the queue %s' % queue.name)
         except ResponseError as e:
             if 'EVALSHA' in e.message:
-                messages.error(request, 'This action is not supported on Redis versions < 2.6.0, please use the bulk delete command instead')
+                messages.error(
+                    request,
+                    'This action is not supported on Redis versions < 2.6.0, please use the bulk delete command instead',
+                )
             else:
                 raise e
         return redirect('rq_jobs', queue_index)
@@ -502,8 +500,7 @@ def actions(request, queue_index):
 @never_cache
 @staff_member_required
 def enqueue_job(request, queue_index, job_id):
-    """ Enqueue deferred jobs
-    """
+    """Enqueue deferred jobs"""
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection)

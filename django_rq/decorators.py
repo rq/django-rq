@@ -40,4 +40,3 @@ def job(func_or_queue, connection=None, *args, **kwargs):
     if func:
         return decorator(func)
     return decorator
-
