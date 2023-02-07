@@ -27,11 +27,11 @@ def scheduler_pid(queue):
         lock_key = scheduler.scheduler_lock_key
         with scheduler.connection.pipeline() as p:
             if _ := p.get(lock_key):
-                return scheduler.pid()
+                return scheduler.pid
             else:
                 for key in p.keys(f"{scheduler.redis_scheduler_namespace_prefix}*"):
                     if not p.hexists(key, 'death'):
-                        return scheduler.pid()
+                        return scheduler.pid
     except ImproperlyConfigured:
         from rq.scheduler import RQScheduler
         # When a scheduler acquires a lock it adds an expiring key: (e.g: rq:scheduler-lock:<queue.name>)
