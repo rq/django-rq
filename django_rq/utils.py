@@ -21,19 +21,17 @@ def scheduler_pid(queue):
         If rq_scheduler is used, return True
     '''
     try:
-        print("getting scheduler")
+        # first try to use rq-scheduler
         scheduler = get_scheduler()  # should fail if rq_scheduler not present
-        print("got scheduler. getting lock_key")
+        # currently, scheduler_lock_key is not used but, just in case, try
         lock_key = scheduler.scheduler_lock_key
-        print(f"got lock_key {lock_key}. getting value")
         with scheduler.connection.pipeline() as p:
             if _ := p.get(lock_key):
-                print(f"got value {_}, returning True")
                 return True  # Since no pid info provided, return True
             else:
                 for key in p.keys(f"{scheduler.redis_scheduler_namespace_prefix}*"):
                     if not p.hexists(key, 'death'):
-                        return True
+                        return scheduler.pid()
     except ImproperlyConfigured:
         from rq.scheduler import RQScheduler
         # When a scheduler acquires a lock it adds an expiring key: (e.g: rq:scheduler-lock:<queue.name>)
