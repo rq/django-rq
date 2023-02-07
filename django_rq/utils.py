@@ -21,9 +21,13 @@ def scheduler_pid(queue):
         If rq_scheduler is used, return True
     '''
     try:
+        print("getting scheduler")
         scheduler = get_scheduler()  # should fail if rq_scheduler not present
+        print("got scheduler. getting lock_key")
         lock_key = scheduler.scheduler_lock_key
+        print(f"got lock_key {lock_key}. getting value")
         if _ := scheduler.connection.get(lock_key):
+            print(f"got value {_}, returning True")
             return True  # Since no pid info provided, return True
     except ImproperlyConfigured:
         from rq.scheduler import RQScheduler
@@ -31,6 +35,8 @@ def scheduler_pid(queue):
         # If the key exists
         if pid := queue.connection.get(RQScheduler.get_locking_key(queue.name)):
             return pid
+    except Exception as e:
+        return str(e)
     return None
 
 
