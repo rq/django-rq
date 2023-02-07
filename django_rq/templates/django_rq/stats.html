@@ -85,7 +85,7 @@
                         <td>{{ queue.connection_kwargs.host }}</td>
                         <td>{{ queue.connection_kwargs.port }}</td>
                         <td>{{ queue.connection_kwargs.db }}</td>
-                        <td>{{ queue.scheduler_pid|default_if_none:False }}</td>
+                        <td>{{ queue.scheduler_pid|default_if_none:"Inactive" }}</td>
                     </tr>
                 {% endfor %}
             </tbody>

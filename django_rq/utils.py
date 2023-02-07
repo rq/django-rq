@@ -27,7 +27,7 @@ def scheduler_pid(queue):
         lock_key = scheduler.scheduler_lock_key
         with scheduler.connection.pipeline() as p:
             if _ := p.get(lock_key):
-                return True  # Since no pid info provided, return True
+                return scheduler.pid()
             else:
                 for key in p.keys(f"{scheduler.redis_scheduler_namespace_prefix}*"):
                     if not p.hexists(key, 'death'):
