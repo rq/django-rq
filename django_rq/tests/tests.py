@@ -22,9 +22,12 @@ from django_rq.decorators import job
 from django_rq.jobs import get_job_class
 from django_rq.management.commands import rqworker
 from django_rq.queues import (
-    get_connection, get_queue, get_queues,
-    get_unique_connection_configs, DjangoRQ,
-    get_redis_connection
+    get_connection,
+    get_queue,
+    get_queues,
+    get_unique_connection_configs,
+    DjangoRQ,
+    get_redis_connection,
 )
 from django_rq import thread_queue
 from django_rq.templatetags.django_rq import force_escape, to_localtime
@@ -36,6 +39,7 @@ try:
     from rq_scheduler import Scheduler
     from ..queues import get_scheduler
     from django_rq.tests.fixtures import DummyScheduler
+
     RQ_SCHEDULER_INSTALLED = True
 except ImportError:
     RQ_SCHEDULER_INSTALLED = False
@@ -68,22 +72,22 @@ def flush_registry(registry):
 
 
 class RqStatsTest(TestCase):
-
     def test_get_connection_default(self):
         """
         Test that rqstats returns the right statistics
         """
         # Override testing RQ_QUEUES
-        queues = [{
-            'connection_config': {
-                'DB': 0,
-                'HOST': 'localhost',
-                'PORT': 6379,
-            },
-            'name': 'default'
-        }]
-        with patch('django_rq.utils.QUEUES_LIST',
-                   new_callable=PropertyMock(return_value=queues)):
+        queues = [
+            {
+                'connection_config': {
+                    'DB': 0,
+                    'HOST': 'localhost',
+                    'PORT': 6379,
+                },
+                'name': 'default',
+            }
+        ]
+        with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
             # Only to make sure it doesn't crash
             call_command('rqstats')
             call_command('rqstats', '-j')
@@ -92,7 +96,6 @@ class RqStatsTest(TestCase):
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class QueuesTest(TestCase):
-
     def setUp(self):
         """Used to test with / without sentry_sdk available."""
         self.mock_sdk = mock.MagicMock()
@@ -147,8 +150,7 @@ class QueuesTest(TestCase):
         self.assertListEqual(config['SENTINELS'], sentinel_instances)
 
         connection_kwargs = sentinel_mock.master_for.call_args[1]
-        self.assertEqual(connection_kwargs['service_name'],
-                         config['MASTER_NAME'])
+        self.assertEqual(connection_kwargs['service_name'], config['MASTER_NAME'])
 
     @patch('django_rq.queues.Sentinel')
     def test_sentinel_class_initialized_with_kw_args(self, sentinel_class_mock):
@@ -160,16 +162,13 @@ class QueuesTest(TestCase):
             'MASTER_NAME': 'test_master',
             'SOCKET_TIMEOUT': 0.2,
             'DB': 0,
-            'CONNECTION_KWARGS': {
-                'socket_connect_timeout': 0.3
-            }
+            'CONNECTION_KWARGS': {'socket_connect_timeout': 0.3},
         }
         get_redis_connection(config)
         sentinel_init_kwargs = sentinel_class_mock.call_args[1]
         self.assertDictEqual(
-            sentinel_init_kwargs,
-            {'socket_connect_timeout': 0.3, 'db': 0,
-             'socket_timeout': 0.2, 'password': None})
+            sentinel_init_kwargs, {'socket_connect_timeout': 0.3, 'db': 0, 'socket_timeout': 0.2, 'password': None}
+        )
 
     def test_get_queue_default(self):
         """
@@ -268,10 +267,12 @@ class QueuesTest(TestCase):
         jobs = []
         for queue_name in queue_names:
             queue = get_queue(queue_name)
-            jobs.append({
-                'job': queue.enqueue(divide, 42, 1),
-                'finished_job_registry': FinishedJobRegistry(queue.name, queue.connection),
-            })
+            jobs.append(
+                {
+                    'job': queue.enqueue(divide, 42, 1),
+                    'finished_job_registry': FinishedJobRegistry(queue.name, queue.connection),
+                }
+            )
 
         call_command('rqworker', *queue_names, burst=True)
 
@@ -289,7 +290,7 @@ class QueuesTest(TestCase):
                 self.mock_sdk.integrations.redis.RedisIntegration(),
                 self.mock_sdk.integrations.rq.RqIntegration(),
                 self.mock_sdk.integrations.django.DjangoIntegration(),
-            ]
+            ],
         )
 
     def test_configure_sentry__options(self):
@@ -303,14 +304,20 @@ class QueuesTest(TestCase):
                 self.mock_sdk.integrations.redis.RedisIntegration(),
                 self.mock_sdk.integrations.rq.RqIntegration(),
                 self.mock_sdk.integrations.django.DjangoIntegration(),
-            ]
+            ],
         )
 
     def test_sentry_dsn(self):
         """Check that options are passed to configure_sentry as expected."""
         queue_names = ['django_rq_test']
-        call_command('rqworker', *queue_names, burst=True,
-                     sentry_dsn='https://1@sentry.io/1', sentry_debug=True, sentry_ca_certs='/certs')
+        call_command(
+            'rqworker',
+            *queue_names,
+            burst=True,
+            sentry_dsn='https://1@sentry.io/1',
+            sentry_debug=True,
+            sentry_ca_certs='/certs'
+        )
 
         self.mock_sdk.init.assert_called_once_with(
             'https://1@sentry.io/1',
@@ -320,15 +327,14 @@ class QueuesTest(TestCase):
                 self.mock_sdk.integrations.redis.RedisIntegration(),
                 self.mock_sdk.integrations.rq.RqIntegration(),
                 self.mock_sdk.integrations.django.DjangoIntegration(),
-            ]
+            ],
         )
 
     @mock.patch('django_rq.management.commands.rqworker.configure_sentry')
     def test_sentry_dsn__noop(self, mocked):
         """Check that sentry is ignored if sentry_dsn is not passed in."""
         queue_names = ['django_rq_test']
-        call_command('rqworker', *queue_names, burst=True,
-                     sentry_debug=True, sentry_ca_certs='/certs')
+        call_command('rqworker', *queue_names, burst=True, sentry_debug=True, sentry_ca_certs='/certs')
 
         self.assertEqual(mocked.call_count, 0)
 
@@ -338,8 +344,7 @@ class QueuesTest(TestCase):
         mocked.side_effect = ImportError
         queue_names = ['django_rq_test']
         with self.assertRaises(SystemExit):
-            call_command('rqworker', *queue_names, burst=True,
-                         sentry_dsn='https://1@sentry.io/1')
+            call_command('rqworker', *queue_names, burst=True, sentry_dsn='https://1@sentry.io/1')
 
     @mock.patch('django_rq.management.commands.rqworker.use_connection')
     def test_connection_error(self, mocked):
@@ -360,10 +365,7 @@ class QueuesTest(TestCase):
             'PORT': 6379,
             'DB': 1,
         }
-        config = {
-            'default': connection_params_1,
-            'test': connection_params_2
-        }
+        config = {'default': connection_params_1, 'test': connection_params_2}
         unique_configs = get_unique_connection_configs(config)
         self.assertEqual(len(unique_configs), 2)
         self.assertIn(connection_params_1, unique_configs)
@@ -371,13 +373,9 @@ class QueuesTest(TestCase):
 
         # self.assertEqual(get_unique_connection_configs(config),
         #                  [connection_params_1, connection_params_2])
-        config = {
-            'default': connection_params_1,
-            'test': connection_params_1
-        }
+        config = {'default': connection_params_1, 'test': connection_params_1}
         # Should return one connection config since it filters out duplicates
-        self.assertEqual(get_unique_connection_configs(config),
-                         [connection_params_1])
+        self.assertEqual(get_unique_connection_configs(config), [connection_params_1])
 
     def test_get_unique_connection_configs_with_different_timeout(self):
         connection_params_1 = {
@@ -465,6 +463,7 @@ class DecoratorTest(TestCase):
         @job(queue_name)
         def test():
             pass
+
         result = test.delay()
         queue = get_queue(queue_name)
         self.assertEqual(result.origin, queue_name)
@@ -475,6 +474,7 @@ class DecoratorTest(TestCase):
         @job
         def test():
             pass
+
         result = test.delay()
         self.assertEqual(result.origin, 'default')
         result.delete()
@@ -485,6 +485,7 @@ class DecoratorTest(TestCase):
         @job
         def test():
             pass
+
         result = test.delay()
         self.assertEqual(result.result_ttl, DEFAULT_RESULT_TTL)
         result.delete()
@@ -494,6 +495,7 @@ class DecoratorTest(TestCase):
         @job
         def test():
             pass
+
         result = test.delay()
         self.assertEqual(result.result_ttl, 5432)
         result.delete()
@@ -503,9 +505,11 @@ class DecoratorTest(TestCase):
         @job
         def test():
             pass
+
         result = test.delay()
         self.assertEqual(result.result_ttl, 0)
         result.delete()
+
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class WorkersTest(TestCase):
@@ -528,9 +532,11 @@ class WorkersTest(TestCase):
         self.assertEqual(queue.name, 'test3')
 
     def test_get_worker_custom_classes(self):
-        w = get_worker(job_class='django_rq.tests.fixtures.DummyJob',
-                       queue_class='django_rq.tests.fixtures.DummyQueue',
-                       worker_class='django_rq.tests.fixtures.DummyWorker')
+        w = get_worker(
+            job_class='django_rq.tests.fixtures.DummyJob',
+            queue_class='django_rq.tests.fixtures.DummyQueue',
+            worker_class='django_rq.tests.fixtures.DummyWorker',
+        )
         self.assertIs(w.job_class, DummyJob)
         self.assertIsInstance(w.queues[0], DummyQueue)
         self.assertIsInstance(w, DummyWorker)
@@ -562,7 +568,6 @@ class WorkersTest(TestCase):
 
 
 class ThreadQueueTest(TestCase):
-
     @override_settings(RQ={'AUTOCOMMIT': True})
     def test_enqueue_autocommit_on(self):
         """
@@ -635,7 +640,6 @@ class ThreadQueueTest(TestCase):
 
 
 class SchedulerTest(TestCase):
-
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     def test_get_scheduler(self):
         """
@@ -701,9 +705,7 @@ class SchedulerTest(TestCase):
 
 
 class RedisCacheTest(TestCase):
-
-    @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis',
-            'django-redis not installed')
+    @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis', 'django-redis not installed')
     @patch('django_redis.get_redis_connection')
     def test_get_queue_django_redis(self, mocked):
         """
@@ -714,8 +716,7 @@ class RedisCacheTest(TestCase):
         self.assertEqual(len(queue), 1)
         self.assertEqual(mocked.call_count, 1)
 
-    @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis-cache',
-            'django-redis-cache not installed')
+    @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis-cache', 'django-redis-cache not installed')
     def test_get_queue_django_redis_cache(self):
         """
         Test that the USE_REDIS_CACHE option for configuration works.
@@ -736,7 +737,6 @@ class RedisCacheTest(TestCase):
 
 
 class JobClassTest(TestCase):
-
     def test_default_job_class(self):
         job_class = get_job_class()
         self.assertIs(job_class, Job)
@@ -747,14 +747,10 @@ class JobClassTest(TestCase):
         self.assertIs(job_class, DummyJob)
 
     def test_local_override(self):
-        self.assertIs(
-            get_job_class('django_rq.tests.fixtures.DummyJob'),
-            DummyJob
-        )
+        self.assertIs(get_job_class('django_rq.tests.fixtures.DummyJob'), DummyJob)
 
 
 class QueueClassTest(TestCase):
-
     def test_default_queue_class(self):
         queue = get_queue('test')
         self.assertIsInstance(queue, DjangoRQ)
@@ -769,7 +765,6 @@ class QueueClassTest(TestCase):
 
 
 class WorkerClassTest(TestCase):
-
     def test_default_worker_class(self):
         worker = get_worker()
         self.assertIsInstance(worker, Worker)
@@ -780,15 +775,11 @@ class WorkerClassTest(TestCase):
         self.assertIsInstance(worker, DummyWorker)
 
     def test_local_override(self):
-        self.assertIs(
-            get_worker_class('django_rq.tests.fixtures.DummyWorker'),
-            DummyWorker
-        )
+        self.assertIs(get_worker_class('django_rq.tests.fixtures.DummyWorker'), DummyWorker)
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class TemplateTagTest(TestCase):
-
     def test_to_localtime(self):
         with self.settings(TIME_ZONE='Asia/Jakarta'):
             queue = get_queue()
@@ -817,22 +808,21 @@ class TemplateTagTest(TestCase):
         self.assertEqual(escaped_string, expected)
 
 
-
 class UtilsTest(TestCase):
-
     def test_get_statistics(self):
         """get_statistics() returns the right number of workers"""
-        queues = [{
-            'connection_config': {
-                'DB': 0,
-                'HOST': 'localhost',
-                'PORT': 6379,
-            },
-            'name': 'async'
-        }]
+        queues = [
+            {
+                'connection_config': {
+                    'DB': 0,
+                    'HOST': 'localhost',
+                    'PORT': 6379,
+                },
+                'name': 'async',
+            }
+        ]
 
-        with patch('django_rq.utils.QUEUES_LIST',
-                   new_callable=PropertyMock(return_value=queues)):
+        with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
             worker = get_worker('async', name=uuid4().hex)
             worker.register_birth()
             statistics = get_statistics()
@@ -851,25 +841,16 @@ class UtilsTest(TestCase):
         now = datetime.datetime.now()
         job = queue.enqueue_at(now, access_self)
         job2 = queue.enqueue_at(now, access_self)
-        self.assertEqual(
-            get_jobs(queue, [job.id, job2.id]),
-            [job, job2]
-        )
+        self.assertEqual(get_jobs(queue, [job.id, job2.id]), [job, job2])
         self.assertEqual(len(registry), 2)
 
         # job has been deleted, so the result will be filtered out
         queue.connection.delete(job.key)
-        self.assertEqual(
-            get_jobs(queue, [job.id, job2.id]),
-            [job2]
-        )
+        self.assertEqual(get_jobs(queue, [job.id, job2.id]), [job2])
         self.assertEqual(len(registry), 2)
 
         # If job has been deleted and `registry` is passed,
         # job will also be removed from registry
         queue.connection.delete(job2.key)
-        self.assertEqual(
-            get_jobs(queue, [job.id, job2.id], registry),
-            []
-        )
+        self.assertEqual(get_jobs(queue, [job.id, job2.id], registry), [])
         self.assertEqual(len(registry), 0)

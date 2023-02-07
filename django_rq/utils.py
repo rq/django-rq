@@ -1,11 +1,11 @@
 from rq.job import Job
 from rq.registry import (
-    DeferredJobRegistry, 
-    FailedJobRegistry, 
-    FinishedJobRegistry, 
+    DeferredJobRegistry,
+    FailedJobRegistry,
+    FinishedJobRegistry,
     ScheduledJobRegistry,
-    StartedJobRegistry, 
-    clean_registries
+    StartedJobRegistry,
+    clean_registries,
 )
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
@@ -18,7 +18,6 @@ from .templatetags.django_rq import to_localtime
 def get_statistics(run_maintenance_tasks=False):
     queues = []
     for index, config in enumerate(QUEUES_LIST):
-
         queue = get_queue_by_index(index)
         connection = queue.connection
         connection_kwargs = connection.connection_pool.connection_kwargs
@@ -34,8 +33,7 @@ def get_statistics(run_maintenance_tasks=False):
         last_job_id = connection.lindex(queue.key, 0)
         last_job = queue.fetch_job(last_job_id.decode('utf-8')) if last_job_id else None
         if last_job:
-            oldest_job_timestamp = to_localtime(last_job.enqueued_at)\
-                .strftime('%Y-%m-%d, %H:%M:%S')
+            oldest_job_timestamp = to_localtime(last_job.enqueued_at).strftime('%Y-%m-%d, %H:%M:%S')
         else:
             oldest_job_timestamp = "-"
 
@@ -48,7 +46,7 @@ def get_statistics(run_maintenance_tasks=False):
             'jobs': queue.count,
             'oldest_job_timestamp': oldest_job_timestamp,
             'index': index,
-            'connection_kwargs': connection_kwargs
+            'connection_kwargs': connection_kwargs,
         }
 
         connection = get_connection(queue.name)

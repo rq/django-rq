@@ -22,6 +22,7 @@ try:
 
     class DummyScheduler(Scheduler):
         pass
+
 except ImportError:
     pass
 

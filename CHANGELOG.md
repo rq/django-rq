@@ -1,3 +1,7 @@
+# Version 2.7.0 (2023-02-07)
+* Able to show multiple execution results for each job (requires RQ v1.12). Thanks @selwin!
+* Various admin interface improvements. Thanks @selwin!
+
 # Version 2.6.0 (2022-11-05)
 * Added `--max-jobs` argument to `rqworker` management command. Thanks @arpit-goel!
 * Remove job from `ScheduledJobRegistry` if a scheduled job is enqueued from admin. Thanks @robertaistleitner!

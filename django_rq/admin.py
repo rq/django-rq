@@ -4,7 +4,8 @@ from . import views, settings, models
 
 
 class QueueAdmin(admin.ModelAdmin):
-    """ Admin View for Django-RQ Queue """
+    """Admin View for Django-RQ Queue"""
+
     def has_add_permission(self, request):
         return False  # Hide the admin "+ Add" link for Queues
 
