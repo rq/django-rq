@@ -37,7 +37,7 @@ def scheduler_pid(queue):
         # When a scheduler acquires a lock it adds an expiring key: (e.g: rq:scheduler-lock:<queue.name>)
         # If the key exists
         if pid := queue.connection.get(RQScheduler.get_locking_key(queue.name)):
-            return pid
+            return pid.decode()
     except Exception as e:
         return str(e)  # Temporary
     return None
