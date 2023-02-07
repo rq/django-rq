@@ -39,7 +39,7 @@ def scheduler_pid(queue):
         if pid := queue.connection.get(RQScheduler.get_locking_key(queue.name)):
             return pid
     except Exception as e:
-        return str(e)
+        return str(e)  # Temporary
     return None
 
 
