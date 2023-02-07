@@ -16,7 +16,7 @@ from .settings import QUEUES_LIST
 from .templatetags.django_rq import to_localtime
 from django.core.exceptions import ImproperlyConfigured
 
-def scheduler_pid(queue):
+def get_scheduler_pid(queue):
     '''Checks whether there's a scheduler-lock on a particular queue, and returns the PID.
         If rq_scheduler is used, return True
     '''
@@ -33,13 +33,15 @@ def scheduler_pid(queue):
                     if not p.hexists(key, 'death'):
                         return scheduler.pid
     except ImproperlyConfigured:
+        if not queue:
+            raise ValueError("queue argument not defined for rq's Scheduler")
         from rq.scheduler import RQScheduler
         # When a scheduler acquires a lock it adds an expiring key: (e.g: rq:scheduler-lock:<queue.name>)
         # If the key exists
         if pid := queue.connection.get(RQScheduler.get_locking_key(queue.name)):
             return pid.decode()
     except Exception as e:
-        return str(e)  # Temporary
+        pass  # Return None
     return None
 
 
@@ -75,7 +77,7 @@ def get_statistics(run_maintenance_tasks=False):
             'oldest_job_timestamp': oldest_job_timestamp,
             'index': index,
             'connection_kwargs': connection_kwargs,
-            'scheduler_pid': scheduler_pid(queue),
+            'scheduler_pid': get_scheduler_pid(queue),
         }
 
         connection = get_connection(queue.name)
