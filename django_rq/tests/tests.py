@@ -811,7 +811,6 @@ class TemplateTagTest(TestCase):
 def mocked_relase_locks():
     print("Mock Release Locks")
 class SchedulerPIDTest(TestCase):
-
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     def test_scheduler_scheduler_pid_active(self):
         test_queue = 'scheduler_scheduler_active_test'
@@ -826,7 +825,9 @@ class SchedulerPIDTest(TestCase):
         with patch('django_rq.utils.QUEUES_LIST',
             new_callable=PropertyMock(return_value=queues)):
             scheduler = get_scheduler(test_queue)
-            self.assertIsNotNone(get_scheduler_pid(get_queue(scheduler.queue_name)))  # No queue object needed
+            scheduler.register_birth()
+            self.assertIsNotNone(get_scheduler_pid(get_queue(scheduler.queue_name)))
+            scheduler.register_death()
     
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     def test_scheduler_scheduler_pid_inactive(self):
@@ -841,10 +842,12 @@ class SchedulerPIDTest(TestCase):
         }]        
         with patch('django_rq.utils.QUEUES_LIST',
             new_callable=PropertyMock(return_value=queues)):
+            connection = get_connection(test_queue)
+            connection.flushall()  # flush is needed to isolate from other tests
             scheduler = get_scheduler(test_queue)
-            scheduler.register_death()  # will mark the scheduler as death so get_scheduler_pid will return None
             scheduler.remove_lock()
-            self.assertIsNone(get_scheduler_pid(queue=None))  # No queue object needed
+            scheduler.register_death()  # will mark the scheduler as death so get_scheduler_pid will return None
+            self.assertIsNone(get_scheduler_pid(get_queue(scheduler.queue_name)))
 
     @skipIf(RQ_SCHEDULER_INSTALLED is True, 'RQ Scheduler installed (no worker--with-scheduler)')
     def test_worker_scheduler_pid_active(self):
