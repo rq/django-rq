@@ -148,6 +148,30 @@ RQ_QUEUES = {
         'PORT': 6379,
         'DB': 0,
     },
+    'scheduler_scheduler_active_test': {
+        'HOST': REDIS_HOST,
+        'PORT': 6379,
+        'DB': 0,
+        'ASYNC': False,
+    },
+    'scheduler_scheduler_inactive_test': {
+        'HOST': REDIS_HOST,
+        'PORT': 6379,
+        'DB': 0,
+        'ASYNC': False,
+    },
+    'worker_scheduler_active_test': {
+        'HOST': REDIS_HOST,
+        'PORT': 6379,
+        'DB': 0,
+        'ASYNC': False,
+    },
+    'worker_scheduler_inactive_test': {
+        'HOST': REDIS_HOST,
+        'PORT': 6379,
+        'DB': 0,
+        'ASYNC': False,
+    },
     'django-redis': {
         'USE_REDIS_CACHE': 'default',
     },

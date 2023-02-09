@@ -13,6 +13,7 @@ if not get_commit_mode():
 class Queue(models.Model):
     """Placeholder model with no database table, but with django admin page
     and contenttype permission"""
+    id = models.AutoField(primary_key=True)
 
     class Meta:
         managed = False  # not in Django's database
