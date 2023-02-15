@@ -18,20 +18,15 @@ from django.core.exceptions import ImproperlyConfigured
 
 def get_scheduler_pid(queue):
     '''Checks whether there's a scheduler-lock on a particular queue, and returns the PID.
-        It works by first checking if there's an RQ-Scheduler active.
+        It Only works with RQ's Built-in RQScheduler.
+        When RQ-Scheduler is available returns False 
         If not, it checks the RQ's RQScheduler for a scheduler lock in the desired queue
         Note: result might have some delay (1-15 minutes) but it helps visualizing whether the setup is working correcly
     '''
     try:
-        # first try to use rq-scheduler
+        # first try get the rq-scheduler
         scheduler = get_scheduler(queue.name)  # should fail if rq_scheduler not present
-        # currently, scheduler_lock_key is not used but, just in case, try
-        lock_key = scheduler.scheduler_lock_key
-        conn = scheduler.connection
-        if conn.get(lock_key):
-            return scheduler.pid
-        else:
-            return -1  # -1 Would be rendered as "Unknown"
+        return False  # Not possible to give useful information without creating a performance issue (redis.keys())
     except ImproperlyConfigured:
         from rq.scheduler import RQScheduler
         # When a scheduler acquires a lock it adds an expiring key: (e.g: rq:scheduler-lock:<queue.name>)
