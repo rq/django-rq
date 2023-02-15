@@ -826,7 +826,7 @@ class SchedulerPIDTest(TestCase):
             new_callable=PropertyMock(return_value=queues)):
             scheduler = get_scheduler(test_queue)
             scheduler.register_birth()
-            self.assertIsNotNone(get_scheduler_pid(get_queue(scheduler.queue_name)))
+            self.assertIs(get_scheduler_pid(get_queue(scheduler.queue_name)), False)
             scheduler.register_death()
     
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
@@ -847,7 +847,7 @@ class SchedulerPIDTest(TestCase):
             scheduler = get_scheduler(test_queue)
             scheduler.remove_lock()
             scheduler.register_death()  # will mark the scheduler as death so get_scheduler_pid will return None
-            self.assertIsNone(get_scheduler_pid(get_queue(scheduler.queue_name)))
+            self.assertIs(get_scheduler_pid(get_queue(scheduler.queue_name)), False)
 
     @skipIf(RQ_SCHEDULER_INSTALLED is True, 'RQ Scheduler installed (no worker--with-scheduler)')
     def test_worker_scheduler_pid_active(self):
@@ -867,7 +867,10 @@ class SchedulerPIDTest(TestCase):
                 queue = get_queue(test_queue)
                 worker = get_worker(test_queue, name=uuid4().hex)
                 worker.work(with_scheduler=True, burst=True)  # force the worker to acquire a scheduler lock
-                self.assertIsNotNone(get_scheduler_pid(queue))
+                pid = get_scheduler_pid(queue)
+                self.assertIsNotNone(pid)
+                self.assertIsNot(pid, False)
+                self.assertIsInstance(pid, int)
 
     @skipIf(RQ_SCHEDULER_INSTALLED is True, 'RQ Scheduler installed (no worker--with-scheduler)')
     def test_worker_scheduler_pid_inactive(self):
