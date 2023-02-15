@@ -808,8 +808,6 @@ class TemplateTagTest(TestCase):
         self.assertEqual(escaped_string, expected)
 
 
-def mocked_relase_locks():
-    print("Mock Release Locks")
 class SchedulerPIDTest(TestCase):
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     def test_scheduler_scheduler_pid_active(self):
