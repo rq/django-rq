@@ -23,26 +23,21 @@ def get_scheduler_pid(queue):
         Note: result might have some delay (1-15 minutes) but it helps visualizing whether the setup is working correcly
     '''
     try:
-        if not queue:
-            raise ValueError("queue argument not defined")
-
         # first try to use rq-scheduler
         scheduler = get_scheduler(queue.name)  # should fail if rq_scheduler not present
         # currently, scheduler_lock_key is not used but, just in case, try
         lock_key = scheduler.scheduler_lock_key
         conn = scheduler.connection
-        if _ := conn.get(lock_key):
+        if conn.get(lock_key):
             return scheduler.pid
         else:
-            for key in conn.keys(f"{scheduler.redis_scheduler_namespace_prefix}*"):
-                if not conn.hexists(key, b'death'):
-                    return scheduler.pid
+            return -1  # -1 Would be rendered as "Unknown"
     except ImproperlyConfigured:
         from rq.scheduler import RQScheduler
         # When a scheduler acquires a lock it adds an expiring key: (e.g: rq:scheduler-lock:<queue.name>)
-        # If the key exists
-        if pid := queue.connection.get(RQScheduler.get_locking_key(queue.name)):
-            return pid.decode()
+        #TODO: (RQ>= 1.13) return queue.scheduler_pid 
+        pid = queue.connection.get(RQScheduler.get_locking_key(queue.name))
+        return int(pid.decode()) if pid is not None else None
     except Exception as e:
         pass  # Return None
     return None
