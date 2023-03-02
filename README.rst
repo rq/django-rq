@@ -53,6 +53,9 @@ Installation
             'USERNAME': 'some-user',
             'PASSWORD': 'some-password',
             'DEFAULT_TIMEOUT': 360,
+            'REDIS_CLIENT_KWARGS': {    # Eventual additional Redis connection arguments
+                'ssl_cert_reqs': None,
+            },
         },
         'with-sentinel': {
             'SENTINELS': [('localhost', 26736), ('localhost', 26737)],
@@ -65,8 +68,8 @@ Installation
             'CONNECTION_KWARGS': {  # Eventual additional Redis connection arguments
                 'ssl': True
             }
-            'SENTINEL_KWARGS': {    # Sentinel connection arguments
-                # If Sentinel is also protected, username/password can be passed here
+            'SENTINEL_KWARGS': {    # Eventual Sentinel connection arguments
+                # If Sentinel also has auth, username/password can be passed here
                 'username': 'sentinel-user',
                 'password': 'secret',
             },
