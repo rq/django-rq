@@ -50,6 +50,7 @@ Installation
             'HOST': 'localhost',
             'PORT': 6379,
             'DB': 0,
+            'USERNAME': 'some-user',
             'PASSWORD': 'some-password',
             'DEFAULT_TIMEOUT': 360,
         },
@@ -57,10 +58,14 @@ Installation
             'SENTINELS': [('localhost', 26736), ('localhost', 26737)],
             'MASTER_NAME': 'redismaster',
             'DB': 0,
+            # Redis username/password
+            'USERNAME': 'redis-user',
             'PASSWORD': 'secret',
-            'SOCKET_TIMEOUT': None,
-            'CONNECTION_KWARGS': {
-                'socket_connect_timeout': 0.3
+            'SOCKET_TIMEOUT': 0.3,
+            'SENTINEL_KWARGS': {    # Sentinel connection arguments
+                # If Sentinel is also protected, username/password can be passed here
+                'USERNAME': 'sentinel-user',
+                'PASSWORD': 'secret',
             },
         },
         'high': {
