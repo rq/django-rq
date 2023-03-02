@@ -168,12 +168,10 @@ class QueuesTest(TestCase):
         }
         get_redis_connection(config)
         sentinel_init_sentinel_kwargs = sentinel_class_mock.call_args[1]
-        sentinel_init_connection_kwargs = sentinel_class_mock.call_args[2]
+        print(sentinel_init_sentinel_kwargs)
         self.assertDictEqual(
-            sentinel_init_sentinel_kwargs, {'username': 'sentinel-user', 'password': 'sentinel-pass', 'socket_timeout': 0.3}
-        )
-        self.assertDictEqual(
-            sentinel_init_connection_kwargs, {'db': 0, 'username': 'redis-user', 'password': 'redis-pass', 'socket_timeout': 0.2}
+            sentinel_init_sentinel_kwargs, 
+            {'db': 0, 'username': 'redis-user', 'password': 'redis-pass', 'socket_timeout': 0.2, 'sentinel_kwargs': {'username': 'sentinel-user', 'password': 'sentinel-pass', 'socket_timeout': 0.3}}
         )
 
     def test_get_queue_default(self):
