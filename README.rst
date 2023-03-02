@@ -62,10 +62,13 @@ Installation
             'USERNAME': 'redis-user',
             'PASSWORD': 'secret',
             'SOCKET_TIMEOUT': 0.3,
+            'CONNECTION_KWARGS': {  # Eventual additional Redis connection arguments
+                'ssl': True
+            }
             'SENTINEL_KWARGS': {    # Sentinel connection arguments
                 # If Sentinel is also protected, username/password can be passed here
-                'USERNAME': 'sentinel-user',
-                'PASSWORD': 'secret',
+                'username': 'sentinel-user',
+                'password': 'secret',
             },
         },
         'high': {

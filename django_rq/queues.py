@@ -118,6 +118,7 @@ def get_redis_connection(config, use_strict_redis=False):
             'username': config.get('USERNAME'),
             'socket_timeout': config.get('SOCKET_TIMEOUT'),
         }
+        connection_kwargs.update(config.get('CONNECTION_KWARGS', {}))
         sentinel_kwargs = config.get('SENTINEL_KWARGS', {})
         sentinel = Sentinel(config['SENTINELS'], sentinel_kwargs=sentinel_kwargs, **connection_kwargs)
         return sentinel.master_for(
