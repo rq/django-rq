@@ -10,9 +10,32 @@ from rq.registry import (
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
-from .queues import get_connection, get_queue_by_index
+
+from .queues import get_connection, get_queue_by_index, get_scheduler
 from .settings import QUEUES_LIST
 from .templatetags.django_rq import to_localtime
+from django.core.exceptions import ImproperlyConfigured
+
+def get_scheduler_pid(queue):
+    '''Checks whether there's a scheduler-lock on a particular queue, and returns the PID.
+        It Only works with RQ's Built-in RQScheduler.
+        When RQ-Scheduler is available returns False 
+        If not, it checks the RQ's RQScheduler for a scheduler lock in the desired queue
+        Note: result might have some delay (1-15 minutes) but it helps visualizing whether the setup is working correcly
+    '''
+    try:
+        # first try get the rq-scheduler
+        scheduler = get_scheduler(queue.name)  # should fail if rq_scheduler not present
+        return False  # Not possible to give useful information without creating a performance issue (redis.keys())
+    except ImproperlyConfigured:
+        from rq.scheduler import RQScheduler
+        # When a scheduler acquires a lock it adds an expiring key: (e.g: rq:scheduler-lock:<queue.name>)
+        #TODO: (RQ>= 1.13) return queue.scheduler_pid 
+        pid = queue.connection.get(RQScheduler.get_locking_key(queue.name))
+        return int(pid.decode()) if pid is not None else None
+    except Exception as e:
+        pass  # Return None
+    return None
 
 
 def get_statistics(run_maintenance_tasks=False):
@@ -47,6 +70,7 @@ def get_statistics(run_maintenance_tasks=False):
             'oldest_job_timestamp': oldest_job_timestamp,
             'index': index,
             'connection_kwargs': connection_kwargs,
+            'scheduler_pid': get_scheduler_pid(queue),
         }
 
         connection = get_connection(queue.name)

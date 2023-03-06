@@ -32,7 +32,7 @@ from django_rq.queues import (
 from django_rq import thread_queue
 from django_rq.templatetags.django_rq import force_escape, to_localtime
 from django_rq.tests.fixtures import DummyJob, DummyQueue, DummyWorker
-from django_rq.utils import get_jobs, get_statistics
+from django_rq.utils import get_jobs, get_statistics, get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
 
 try:
@@ -807,6 +807,86 @@ class TemplateTagTest(TestCase):
 
         self.assertEqual(escaped_string, expected)
 
+
+class SchedulerPIDTest(TestCase):
+    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    def test_scheduler_scheduler_pid_active(self):
+        test_queue = 'scheduler_scheduler_active_test'
+        queues = [{
+            'connection_config': {
+                'DB': 0,
+                'HOST': 'localhost',
+                'PORT': 6379,
+            },
+            'name': test_queue,
+        }]        
+        with patch('django_rq.utils.QUEUES_LIST',
+            new_callable=PropertyMock(return_value=queues)):
+            scheduler = get_scheduler(test_queue)
+            scheduler.register_birth()
+            self.assertIs(get_scheduler_pid(get_queue(scheduler.queue_name)), False)
+            scheduler.register_death()
+    
+    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    def test_scheduler_scheduler_pid_inactive(self):
+        test_queue = 'scheduler_scheduler_inactive_test'
+        queues = [{
+            'connection_config': {
+                'DB': 0,
+                'HOST': 'localhost',
+                'PORT': 6379,
+            },
+            'name': test_queue,
+        }]        
+        with patch('django_rq.utils.QUEUES_LIST',
+            new_callable=PropertyMock(return_value=queues)):
+            connection = get_connection(test_queue)
+            connection.flushall()  # flush is needed to isolate from other tests
+            scheduler = get_scheduler(test_queue)
+            scheduler.remove_lock()
+            scheduler.register_death()  # will mark the scheduler as death so get_scheduler_pid will return None
+            self.assertIs(get_scheduler_pid(get_queue(scheduler.queue_name)), False)
+
+    @skipIf(RQ_SCHEDULER_INSTALLED is True, 'RQ Scheduler installed (no worker--with-scheduler)')
+    def test_worker_scheduler_pid_active(self):
+        '''The worker works as scheduler too if RQ Scheduler not installed, and the pid scheduler_pid is correct'''
+        test_queue = 'worker_scheduler_active_test'
+        queues = [{
+            'connection_config': {
+                'DB': 0,
+                'HOST': 'localhost',
+                'PORT': 6379,
+            },
+            'name': test_queue,
+        }]
+        with patch('rq.scheduler.RQScheduler.release_locks') as mock_release_locks:
+            with patch('django_rq.utils.QUEUES_LIST',
+                new_callable=PropertyMock(return_value=queues)):
+                queue = get_queue(test_queue)
+                worker = get_worker(test_queue, name=uuid4().hex)
+                worker.work(with_scheduler=True, burst=True)  # force the worker to acquire a scheduler lock
+                pid = get_scheduler_pid(queue)
+                self.assertIsNotNone(pid)
+                self.assertIsNot(pid, False)
+                self.assertIsInstance(pid, int)
+
+    @skipIf(RQ_SCHEDULER_INSTALLED is True, 'RQ Scheduler installed (no worker--with-scheduler)')
+    def test_worker_scheduler_pid_inactive(self):
+        '''The worker works as scheduler too if RQ Scheduler not installed, and the pid scheduler_pid is correct'''
+        test_queue = 'worker_scheduler_inactive_test'
+        queues = [{
+            'connection_config': {
+                'DB': 0,
+                'HOST': 'localhost',
+                'PORT': 6379,
+            },
+            'name': test_queue,
+        }]        
+        with patch('django_rq.utils.QUEUES_LIST',
+            new_callable=PropertyMock(return_value=queues)):
+            worker = get_worker(test_queue, name=uuid4().hex)
+            worker.work(with_scheduler=False, burst=True)  # worker will not acquire lock, scheduler_pid should return None
+            self.assertIsNone(get_scheduler_pid(worker.queues[0]))
 
 class UtilsTest(TestCase):
     def test_get_statistics(self):
