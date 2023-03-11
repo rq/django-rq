@@ -106,9 +106,10 @@ RQ_QUEUES = {
         'SENTINELS': [(REDIS_HOST, 26736), (REDIS_HOST, 26737)],
         'MASTER_NAME': 'testmaster',
         'DB': 1,
+        'USERNAME': 'redis-user',
         'PASSWORD': 'secret',
         'SOCKET_TIMEOUT': 10,
-        'CONNECTION_KWARGS': {},
+        'SENTINEL_KWARGS': {},
     },
     'test1': {
         'HOST': REDIS_HOST,

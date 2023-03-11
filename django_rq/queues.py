@@ -112,13 +112,15 @@ def get_redis_connection(config, use_strict_redis=False):
         return redis_cls(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
 
     if 'SENTINELS' in config:
-        sentinel_kwargs = {
+        connection_kwargs = {
             'db': config.get('DB'),
             'password': config.get('PASSWORD'),
+            'username': config.get('USERNAME'),
             'socket_timeout': config.get('SOCKET_TIMEOUT'),
         }
-        sentinel_kwargs.update(config.get('CONNECTION_KWARGS', {}))
-        sentinel = Sentinel(config['SENTINELS'], **sentinel_kwargs)
+        connection_kwargs.update(config.get('CONNECTION_KWARGS', {}))
+        sentinel_kwargs = config.get('SENTINEL_KWARGS', {})
+        sentinel = Sentinel(config['SENTINELS'], sentinel_kwargs=sentinel_kwargs, **connection_kwargs)
         return sentinel.master_for(
             service_name=config['MASTER_NAME'],
             redis_class=redis_cls,
