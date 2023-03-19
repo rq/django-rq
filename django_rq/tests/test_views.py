@@ -365,15 +365,16 @@ class ViewTest(TestCase):
 
         # Enqueue some jobs
         job_ids = []
-        for _ in range(0, 3):
+        for _ in range(3):
             job = queue.enqueue(access_self)
             job_ids.append(job.id)
 
         # Start the jobs using a worker
         worker = get_worker('django_rq_test')
-        with patch('rq.worker.SimpleWorker.execute_job') as mock_execute_job:
+        with patch('rq.worker.SimpleWorker.handle_job_success') as mock_handle_job_success:
             worker.work(burst=True)
 
+        self.assertEqual(mock_handle_job_success.call_count, len(job_ids))
         # Check if the jobs are started
         for job_id in job_ids:
             job = Job.fetch(job_id, connection=queue.connection)
