@@ -493,6 +493,11 @@ def actions(request, queue_index):
                 for job_id in job_ids:
                     requeue_job(job_id, connection=queue.connection)
                 messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
+            elif request.POST['action'] == 'stop':
+                for job_id in job_ids:
+                    job = Job.fetch(job_id, connection=queue.connection)
+                    job.cancel()
+                messages.info(request, 'You have successfully stopped %d  jobs!' % len(job_ids))
 
     return redirect(next_url)
 

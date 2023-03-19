@@ -9,6 +9,7 @@ from django.urls import reverse
 
 from rq.job import Job, JobStatus
 from rq.registry import (
+    CanceledJobRegistry,
     DeferredJobRegistry,
     FailedJobRegistry,
     FinishedJobRegistry,
@@ -357,3 +358,35 @@ class ViewTest(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertNotIn("name", response.content.decode('utf-8'))
                 self.assertIn('"error": true', response.content.decode('utf-8'))
+
+    def test_action_stop_jobs(self):
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        # Enqueue some jobs
+        job_ids = []
+        for _ in range(0, 3):
+            job = queue.enqueue(access_self)
+            job_ids.append(job.id)
+
+        # Start the jobs using a worker
+        worker = get_worker('django_rq_test')
+        with patch('rq.worker.SimpleWorker.execute_job') as mock_execute_job:
+            worker.work(burst=True)
+
+        # Check if the jobs are started
+        for job_id in job_ids:
+            job = Job.fetch(job_id, connection=queue.connection)
+            self.assertEqual(job.get_status(), JobStatus.STARTED)
+
+        # Stop those jobs using the view
+        with patch('rq.job.Job.cancel') as mock_cancel:
+            self.client.post(reverse('rq_actions', args=[queue_index]), {'action': 'stop', 'job_ids': job_ids})
+
+        # Check if the cancel method was called for each job
+        self.assertEqual(mock_cancel.call_count, len(job_ids))
+
+        # Check if the jobs are in the CanceledJobRegistry
+        canceled_job_registry = CanceledJobRegistry(queue.name, connection=queue.connection)
+        for job_id in job_ids:
+            self.assertIn(job_id, canceled_job_registry)
