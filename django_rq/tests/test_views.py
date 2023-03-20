@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from unittest.mock import patch, PropertyMock
 
+
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.test.client import Client
@@ -365,29 +366,25 @@ class ViewTest(TestCase):
 
         # Enqueue some jobs
         job_ids = []
+        worker = get_worker('django_rq_test')
         for _ in range(3):
             job = queue.enqueue(access_self)
             job_ids.append(job.id)
+            worker.prepare_job_execution(job)
 
-        # Start the jobs using a worker
-        worker = get_worker('django_rq_test')
-        with patch('rq.worker.SimpleWorker.handle_job_success') as mock_handle_job_success:
-            worker.work(burst=True)
-
-        self.assertEqual(mock_handle_job_success.call_count, len(job_ids))
         # Check if the jobs are started
         for job_id in job_ids:
             job = Job.fetch(job_id, connection=queue.connection)
             self.assertEqual(job.get_status(), JobStatus.STARTED)
 
         # Stop those jobs using the view
-        with patch('rq.job.Job.cancel') as mock_cancel:
-            self.client.post(reverse('rq_actions', args=[queue_index]), {'action': 'stop', 'job_ids': job_ids})
+        started_job_registry = StartedJobRegistry(queue.name, connection=queue.connection)
+        self.assertEqual(len(started_job_registry), len(job_ids))
+        self.client.post(reverse('rq_actions', args=[queue_index]), {'action': 'stop', 'job_ids': job_ids})
+        self.assertEqual(len(started_job_registry), 0)
 
-        # Check if the cancel method was called for each job
-        self.assertEqual(mock_cancel.call_count, len(job_ids))
-
-        # Check if the jobs are in the CanceledJobRegistry
         canceled_job_registry = CanceledJobRegistry(queue.name, connection=queue.connection)
+        self.assertEqual(len(canceled_job_registry), len(job_ids))
+
         for job_id in job_ids:
             self.assertIn(job_id, canceled_job_registry)

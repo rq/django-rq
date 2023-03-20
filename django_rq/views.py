@@ -22,6 +22,7 @@ from rq.registry import (
 )
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
+from rq.command import send_stop_job_command
 
 from .queues import get_queue_by_index
 from .settings import API_TOKEN
@@ -494,10 +495,16 @@ def actions(request, queue_index):
                     requeue_job(job_id, connection=queue.connection)
                 messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
             elif request.POST['action'] == 'stop':
+                cancelled_jobs = 0
                 for job_id in job_ids:
-                    job = Job.fetch(job_id, connection=queue.connection)
-                    job.cancel()
-                messages.info(request, 'You have successfully stopped %d  jobs!' % len(job_ids))
+                    try:
+                        send_stop_job_command(queue.connection, job_id)
+                        job = Job.fetch(job_id, connection=queue.connection)
+                        job.cancel()
+                        cancelled_jobs += 1
+                    except Exception:
+                        pass
+                messages.info(request, 'You have successfully stopped %d  jobs!' % cancelled_jobs)
 
     return redirect(next_url)
 
