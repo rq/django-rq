@@ -2,7 +2,7 @@ import os
 import sys
 
 from redis.exceptions import ConnectionError
-from rq import use_connection
+from rq import Connection
 from rq.logutils import setup_loghandlers
 
 from django.core.management.base import BaseCommand
@@ -119,16 +119,16 @@ class Command(BaseCommand):
             }
             w = get_worker(*args, **worker_kwargs)
 
-            # Call use_connection to push the redis connection into LocalStack
+            # Call Connection context manager to push the redis connection into LocalStack
             # without this, jobs using RQ's get_current_job() will fail
-            use_connection(w.connection)
-            # Close any opened DB connection before any fork
-            reset_db_connections()
+            with Connection(w.connection):
+                # Close any opened DB connection before any fork
+                reset_db_connections()
 
-            w.work(
-                burst=options.get('burst', False), with_scheduler=options.get('with_scheduler', False),
-                logging_level=level, max_jobs=options['max_jobs']
-            )
+                w.work(
+                    burst=options.get('burst', False), with_scheduler=options.get('with_scheduler', False),
+                    logging_level=level, max_jobs=options['max_jobs']
+                )
         except ConnectionError as e:
             self.stderr.write(str(e))
             sys.exit(1)
