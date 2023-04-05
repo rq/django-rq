@@ -17,6 +17,7 @@ from rq.exceptions import NoSuchJobError
 from rq.job import Job
 from rq.registry import FinishedJobRegistry, ScheduledJobRegistry
 from rq.worker import Worker
+from rq.serializers import DefaultSerializer, JSONSerializer
 
 from django_rq.decorators import job
 from django_rq.jobs import get_job_class
@@ -544,6 +545,16 @@ class WorkersTest(TestCase):
         self.assertIs(w.job_class, DummyJob)
         self.assertIsInstance(w.queues[0], DummyQueue)
         self.assertIsInstance(w, DummyWorker)
+
+    def test_get_worker_custom_serializer(self):
+        w = get_worker(
+            serializer='rq.serializers.JSONSerializer',
+        )
+        self.assertEqual(w.serializer, JSONSerializer)
+
+    def test_get_worker_default_serializer(self):
+        w = get_worker()
+        self.assertEqual(w.serializer, DefaultSerializer)
 
     def test_get_current_job(self):
         """

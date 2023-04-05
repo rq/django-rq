@@ -81,6 +81,8 @@ class Command(BaseCommand):
                             help='Turns debug mode on or off.')
         parser.add_argument('--max-jobs', action='store', default=None, dest='max_jobs', type=int,
                             help='Maximum number of jobs to execute')
+        parser.add_argument('--serializer', action='store', default='rq.serializers.DefaultSerializer', dest='serializer',
+                            help='Specify a custom Serializer.')
         parser.add_argument('args', nargs='*', type=str,
                             help='The queues to work on, separated by space')
 
@@ -116,6 +118,7 @@ class Command(BaseCommand):
                 'job_class': options['job_class'],
                 'name': options['name'],
                 'default_worker_ttl': options['worker_ttl'],
+                'serializer': options['serializer']
             }
             w = get_worker(*args, **worker_kwargs)
 
