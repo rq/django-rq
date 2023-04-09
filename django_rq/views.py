@@ -26,7 +26,7 @@ from rq.command import send_stop_job_command
 
 from .queues import get_queue_by_index
 from .settings import API_TOKEN
-from .utils import get_statistics, get_jobs
+from .utils import get_statistics, get_jobs, stop_jobs
 
 
 @never_cache
@@ -495,16 +495,11 @@ def actions(request, queue_index):
                     requeue_job(job_id, connection=queue.connection)
                 messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
             elif request.POST['action'] == 'stop':
-                cancelled_jobs = 0
-                for job_id in job_ids:
-                    try:
-                        send_stop_job_command(queue.connection, job_id)
-                        job = Job.fetch(job_id, connection=queue.connection)
-                        job.cancel()
-                        cancelled_jobs += 1
-                    except Exception:
-                        pass
-                messages.info(request, 'You have successfully stopped %d  jobs!' % cancelled_jobs)
+                stopped, failed_to_stop = stop_jobs(queue, job_ids)
+                if len(stopped) >0 :
+                    messages.info(request, 'You have successfully stopped %d jobs!' % len(stopped))
+                if len(failed_to_stop) >0 :
+                    messages.error(request, '%d jobs failed to stop!' % len(failed_to_stop))
 
     return redirect(next_url)
 
@@ -541,3 +536,20 @@ def enqueue_job(request, queue_index, job_id):
         'queue': queue,
     }
     return render(request, 'django_rq/delete_job.html', context_data)
+
+
+@never_cache
+@staff_member_required
+def stop_job(request, queue_index, job_id):
+    """Stop started job"""
+    if request.method == 'POST':
+        queue_index = int(queue_index)
+        queue = get_queue_by_index(queue_index)
+        stopped, _ = stop_jobs(queue, job_id)
+        if len(stopped) == 1:
+            messages.info(request, 'You have successfully stopped %s' % job_id)
+            return redirect('rq_job_detail', queue_index, job_id)
+        else:
+            messages.error(request, 'Failed to stop %s' % job_id)
+            return redirect('rq_job_detail', queue_index, job_id)
+    return redirect('rq_job_detail', queue_index, job_id)
