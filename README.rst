@@ -361,8 +361,7 @@ setting the following Sentry options:
 Configuring Logging
 -------------------
 
-Starting from version 0.3.3, RQ uses Python's ``logging``, this means
-you can easily configure ``rqworker``'s logging mechanism in django's
+RQ uses Python's ``logging``, this means you can easily configure ``rqworker``'s logging mechanism in django's
 ``settings.py``. For example:
 
 .. code-block:: python
