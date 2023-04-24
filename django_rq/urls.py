@@ -15,19 +15,19 @@ urlpatterns = [
     re_path(r'^queues/(?P<queue_index>[\d]+)/deferred/$', views.deferred_jobs, name='rq_deferred_jobs'),
     re_path(r'^queues/(?P<queue_index>[\d]+)/empty/$', views.clear_queue, name='rq_clear'),
     re_path(r'^queues/(?P<queue_index>[\d]+)/requeue-all/$', views.requeue_all, name='rq_requeue_all'),
-    re_path(r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[-\w\.\:\$]+)/$', views.job_detail, name='rq_job_detail'),
+    re_path(r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[^/]+)/$', views.job_detail, name='rq_job_detail'),
     re_path(
-        r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[-\w\.\:\$]+)/delete/$', views.delete_job, name='rq_delete_job'
+        r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[^/]+)/delete/$', views.delete_job, name='rq_delete_job'
     ),
     re_path(r'^queues/confirm-action/(?P<queue_index>[\d]+)/$', views.confirm_action, name='rq_confirm_action'),
     re_path(r'^queues/actions/(?P<queue_index>[\d]+)/$', views.actions, name='rq_actions'),
     re_path(
-        r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[-\w\.\:\$]+)/requeue/$',
+        r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[^/]+)/requeue/$',
         views.requeue_job_view,
         name='rq_requeue_job',
     ),
     re_path(
-        r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[-\w\.\:\$]+)/enqueue/$', views.enqueue_job, name='rq_enqueue_job'
+        r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[^/]+)/enqueue/$', views.enqueue_job, name='rq_enqueue_job'
     ),
     re_path(r'^scheduler/(?P<scheduler_name>[^/]+)/$', views.scheduler_jobs, name='rq_scheduler_jobs'),
 ]
