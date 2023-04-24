@@ -8,7 +8,6 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
-
 from redis.exceptions import ResponseError
 from rq import requeue_job
 from rq.exceptions import NoSuchJobError
@@ -23,9 +22,9 @@ from rq.registry import (
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
-from .queues import get_queue_by_index
+from .queues import get_queue_by_index, get_scheduler
 from .settings import API_TOKEN
-from .utils import get_statistics, get_jobs
+from .utils import get_jobs, get_statistics
 
 
 @never_cache
@@ -529,3 +528,33 @@ def enqueue_job(request, queue_index, job_id):
         'queue': queue,
     }
     return render(request, 'django_rq/delete_job.html', context_data)
+
+
+@never_cache
+@staff_member_required
+def scheduler_jobs(request, scheduler_name):
+    scheduler = get_scheduler(scheduler_name)
+
+    items_per_page = 100
+    num_jobs = scheduler.count()
+    page = int(request.GET.get('page', 1))
+    jobs = []
+
+    if num_jobs > 0:
+        last_page = int(ceil(num_jobs / items_per_page))
+        page_range = range(1, last_page + 1)
+        offset = items_per_page * (page - 1)
+        jobs = scheduler.get_jobs(offset=offset, length=items_per_page)
+
+    else:
+        page_range = []
+
+    context_data = {
+        **admin.site.each_context(request),
+        'jobs': jobs,
+        'num_jobs': num_jobs,
+        'page': page,
+        'page_range': page_range,
+        'job_status': 'Failed',
+    }
+    return render(request, 'django_rq/jobs.html', context_data)

@@ -2,7 +2,6 @@ from django.urls import re_path
 
 from . import views
 
-
 urlpatterns = [
     re_path(r'^$', views.stats, name='rq_home'),
     re_path(r'^stats.json/(?P<token>[\w]+)?/?$', views.stats_json, name='rq_home_json'),
@@ -30,4 +29,5 @@ urlpatterns = [
     re_path(
         r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[-\w\.\:\$]+)/enqueue/$', views.enqueue_job, name='rq_enqueue_job'
     ),
+    re_path(r'^scheduler/(?P<scheduler_name>[^/]+)/$', views.scheduler_jobs, name='rq_scheduler_jobs'),
 ]
