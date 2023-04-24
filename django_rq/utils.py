@@ -1,3 +1,4 @@
+from django.core.exceptions import ImproperlyConfigured
 from rq.job import Job
 from rq.registry import (
     DeferredJobRegistry,
@@ -10,11 +11,10 @@ from rq.registry import (
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
-
 from .queues import get_connection, get_queue_by_index, get_scheduler
 from .settings import QUEUES_LIST
 from .templatetags.django_rq import to_localtime
-from django.core.exceptions import ImproperlyConfigured
+
 
 def get_scheduler_pid(queue):
     '''Checks whether there's a scheduler-lock on a particular queue, and returns the PID.
@@ -29,6 +29,7 @@ def get_scheduler_pid(queue):
         return False  # Not possible to give useful information without creating a performance issue (redis.keys())
     except ImproperlyConfigured:
         from rq.scheduler import RQScheduler
+
         # When a scheduler acquires a lock it adds an expiring key: (e.g: rq:scheduler-lock:<queue.name>)
         #TODO: (RQ>= 1.13) return queue.scheduler_pid 
         pid = queue.connection.get(RQScheduler.get_locking_key(queue.name))
@@ -90,6 +91,16 @@ def get_statistics(run_maintenance_tasks=False):
         queues.append(queue_data)
     return {'queues': queues}
 
+def get_scheduler_statistics():
+    schedulers = []
+    for index, config in QUEUES_LIST:
+        scheduler = get_scheduler(config['name'])
+        schedulers.append({
+            'name': config['name'],
+            'count': scheduler.count(),
+            'index': index,
+        })
+    return {'schedulers': schedulers}
 
 def get_jobs(queue, job_ids, registry=None):
     """Fetch jobs in bulk from Redis.

@@ -1,12 +1,11 @@
 import warnings
 
 import redis
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from redis.sentinel import Sentinel
 from rq.queue import Queue
 from rq.utils import import_attribute
-
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 
 from . import thread_queue
 from .jobs import get_job_class
@@ -198,6 +197,15 @@ def get_queue_by_index(index):
     return get_queue_class(config)(
         config['name'], connection=get_redis_connection(config['connection_config']), is_async=config.get('ASYNC', True)
     )
+
+def get_scheduler_by_index(index):
+    """
+    Returns an rq-scheduler Scheduler using parameters defined in ``QUEUES_LIST``
+    """
+    from .settings import QUEUES_LIST
+
+    config = QUEUES_LIST[int(index)]
+    return get_scheduler(config['name'])
 
 
 def filter_connection_params(queue_params):

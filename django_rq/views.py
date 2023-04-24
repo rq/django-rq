@@ -23,8 +23,8 @@ from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
 from .queues import get_queue_by_index, get_scheduler
-from .settings import API_TOKEN
-from .utils import get_jobs, get_statistics
+from .settings import API_TOKEN, QUEUES_LIST
+from .utils import get_jobs, get_scheduler_statistics, get_statistics
 
 
 @never_cache
@@ -42,6 +42,11 @@ def stats_json(request, token=None):
         {"error": True, "description": "Please configure API_TOKEN in settings.py before accessing this view."}
     )
 
+@never_cache
+@staff_member_required
+def scheduler_stats(request):
+    context_data = {**admin.site.each_context(request), **get_scheduler_statistics()}
+    return render(request, 'django_rq/scheduler_stats.html', context_data)
 
 @never_cache
 @staff_member_required
@@ -532,8 +537,8 @@ def enqueue_job(request, queue_index, job_id):
 
 @never_cache
 @staff_member_required
-def scheduler_jobs(request, scheduler_name):
-    scheduler = get_scheduler(scheduler_name)
+def scheduler_jobs(request):
+    scheduler = get_scheduler("default")
 
     items_per_page = 100
     num_jobs = scheduler.count()
@@ -544,8 +549,10 @@ def scheduler_jobs(request, scheduler_name):
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
-        jobs = scheduler.get_jobs(offset=offset, length=items_per_page)
-
+        jobs_times = scheduler.get_jobs(with_times=True, offset=offset, length=items_per_page)
+        for job, time in jobs_times:
+            job.next_run = time
+            jobs.append(job)
     else:
         page_range = []
 
@@ -557,4 +564,4 @@ def scheduler_jobs(request, scheduler_name):
         'page_range': page_range,
         'job_status': 'Failed',
     }
-    return render(request, 'django_rq/jobs.html', context_data)
+    return render(request, 'django_rq/scheduler.html', context_data)
