@@ -1,12 +1,11 @@
 import uuid
 from datetime import datetime
-from unittest.mock import patch, PropertyMock
+from unittest.mock import PropertyMock, patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.test.client import Client
 from django.urls import reverse
-
 from rq.job import Job, JobStatus
 from rq.registry import (
     DeferredJobRegistry,
@@ -18,6 +17,7 @@ from rq.registry import (
 
 from django_rq import get_queue
 from django_rq.workers import get_worker
+
 from .fixtures import access_self, failing_job
 from .utils import get_queue_index
 
@@ -248,6 +248,11 @@ class ViewTest(TestCase):
         job = queue.enqueue_at(datetime.now(), access_self)
         response = self.client.get(reverse('rq_scheduled_jobs', args=[queue_index]))
         self.assertEqual(response.context['jobs'], [job])
+
+        # Test that page doesn't fail when job_id has special characters
+        job2 = queue.enqueue_at(datetime.now(), access_self, job_id="job-!@#$%^&*()_=+[]{};':,.<>?|`~")
+        response = self.client.get(reverse('rq_scheduled_jobs', args=[queue_index]))
+        self.assertEqual(response.context['jobs'], [job, job2])
 
     def test_scheduled_jobs_registry_removal(self):
         """Ensure that non existing job is being deleted from registry by view"""
