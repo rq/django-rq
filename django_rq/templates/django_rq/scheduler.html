@@ -2,7 +2,7 @@
 
 {% load static jquery_path django_rq %}
 
-{% block title %}{{ job_status }} Jobs in {{ queue.name }} {{ block.super }}{% endblock %}
+{% block title %}Scheduler Jobs in {{ scheduler.name }} {{ block.super }}{% endblock %}
 
 {% block extrastyle %}
     {{ block.super }}

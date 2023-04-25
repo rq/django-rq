@@ -567,6 +567,7 @@ def scheduler_jobs(request, scheduler_index):
 
     context_data = {
         **admin.site.each_context(request),
+        'scheduler': scheduler,
         'jobs': jobs,
         'num_jobs': num_jobs,
         'page': page,
