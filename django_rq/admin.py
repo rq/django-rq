@@ -55,7 +55,7 @@ class SchedulerAdmin(admin.ModelAdmin):
     def changelist_view(self, request):
         """The 'change list' admin view for this model."""
         # proxy request to stats view
-        return views.scheduler_jobs(request)
+        return views.scheduler_stats(request)
 
 if settings.SHOW_ADMIN_LINK:
     admin.site.register(models.Queue, QueueAdmin)

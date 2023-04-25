@@ -93,7 +93,7 @@ def get_statistics(run_maintenance_tasks=False):
 
 def get_scheduler_statistics():
     schedulers = []
-    for index, config in QUEUES_LIST:
+    for index, config in enumerate(QUEUES_LIST):
         scheduler = get_scheduler(config['name'])
         schedulers.append({
             'name': config['name'],

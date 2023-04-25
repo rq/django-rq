@@ -64,12 +64,11 @@
                                 <div class="clear"></div>
                             </th>
                             <th><div class = 'text'><span>ID</span></div></th>
-                            <th><div class = 'text'><span>Created</span></div></th>
+                            <th><div class = 'text'><span>Schedule</span></div></th>
                             <th><div class = 'text'><span>Next Run</span></div></th>
                             <th><div class = 'text'><span>Last Ended</span></div></th>
                             <th><div class = 'text'><span>Last Status</span></div></th>
                             <th><div class = 'text'><span>Callable</span></div></th>
-                            <th><div class = 'text'><span>Meta</span></div></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -78,16 +77,12 @@
                                 <td class="action-checkbox">
                                     <input class="action-select" name="_selected_action" type="checkbox" value="{{ job.id }}">
                                 </td>
-                                <th>
-                                    <a href = "{% url 'rq_job_detail' 0 job.id %}">
+                                <td>
+                                    <a href = "{% url 'rq_job_detail' job.queue_index job.id %}">
                                         {{ job.id }}
                                     </a>
-                                </th>
-                                <td>
-                                    {% if job.created_at %}
-                                        {{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}
-                                    {% endif %}
                                 </td>
+                                <td>{{ job.schedule }}</td>
                                 <td>
                                     {% if job.next_run %}
                                         {{ job.next_run|to_localtime|date:"Y-m-d, H:i:s" }}
@@ -100,7 +95,6 @@
                                 </td>
                                 <td>{{ job.get_status }}</td>
                                 <td>{{ job|show_func_name }}</td>
-                                <td>{{ job.meta }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>

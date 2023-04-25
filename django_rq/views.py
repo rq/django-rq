@@ -22,8 +22,8 @@ from rq.registry import (
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
-from .queues import get_queue_by_index, get_scheduler
-from .settings import API_TOKEN, QUEUES_LIST
+from .queues import get_queue_by_index, get_scheduler, get_scheduler_by_index
+from .settings import API_TOKEN, QUEUES_LIST, QUEUES_MAP
 from .utils import get_jobs, get_scheduler_statistics, get_statistics
 
 
@@ -537,8 +537,8 @@ def enqueue_job(request, queue_index, job_id):
 
 @never_cache
 @staff_member_required
-def scheduler_jobs(request):
-    scheduler = get_scheduler("default")
+def scheduler_jobs(request, scheduler_index):
+    scheduler = get_scheduler_by_index(scheduler_index)
 
     items_per_page = 100
     num_jobs = scheduler.count()
@@ -552,6 +552,15 @@ def scheduler_jobs(request):
         jobs_times = scheduler.get_jobs(with_times=True, offset=offset, length=items_per_page)
         for job, time in jobs_times:
             job.next_run = time
+            job.queue_index = QUEUES_MAP.get(job.origin, 0)
+            if 'cron_string' in job.meta:
+                job.schedule = f"cron: '{job.meta['cron_string']}'"
+            elif 'interval' in job.meta:
+                job.schedule = f"interval: {job.meta['interval']}"
+            elif 'repeat' in job.meta:
+                job.schedule = f"repeat: {job.meta['repeat']}"
+            else:
+                job.schedule = 'unknown'
             jobs.append(job)
     else:
         page_range = []
@@ -562,6 +571,5 @@ def scheduler_jobs(request):
         'num_jobs': num_jobs,
         'page': page,
         'page_range': page_range,
-        'job_status': 'Failed',
     }
     return render(request, 'django_rq/scheduler.html', context_data)
