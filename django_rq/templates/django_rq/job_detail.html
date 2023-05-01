@@ -167,7 +167,7 @@
             <div class="form-row">
                 <div>
                     <label>Exception:</label>
-                    <div><pre>{% if job.exc_info %}{{ job.exc_info|linebreaks }}{% endif %}</pre></div>
+                    <div><pre>{{ job.exc_info|linebreaks }}</pre></div>
                 </div>
             </div>
         {% endif %}
