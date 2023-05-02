@@ -2,7 +2,7 @@ import os
 import sys
 
 from redis.exceptions import ConnectionError
-from rq import use_connection
+from rq import Connection
 from rq.logutils import setup_loghandlers
 
 from django.core.management.base import BaseCommand
@@ -81,6 +81,8 @@ class Command(BaseCommand):
                             help='Turns debug mode on or off.')
         parser.add_argument('--max-jobs', action='store', default=None, dest='max_jobs', type=int,
                             help='Maximum number of jobs to execute')
+        parser.add_argument('--serializer', action='store', default='rq.serializers.DefaultSerializer', dest='serializer',
+                            help='Specify a custom Serializer.')
         parser.add_argument('args', nargs='*', type=str,
                             help='The queues to work on, separated by space')
 
@@ -116,19 +118,20 @@ class Command(BaseCommand):
                 'job_class': options['job_class'],
                 'name': options['name'],
                 'default_worker_ttl': options['worker_ttl'],
+                'serializer': options['serializer']
             }
             w = get_worker(*args, **worker_kwargs)
 
-            # Call use_connection to push the redis connection into LocalStack
+            # Call Connection context manager to push the redis connection into LocalStack
             # without this, jobs using RQ's get_current_job() will fail
-            use_connection(w.connection)
-            # Close any opened DB connection before any fork
-            reset_db_connections()
+            with Connection(w.connection):
+                # Close any opened DB connection before any fork
+                reset_db_connections()
 
-            w.work(
-                burst=options.get('burst', False), with_scheduler=options.get('with_scheduler', False),
-                logging_level=level, max_jobs=options['max_jobs']
-            )
+                w.work(
+                    burst=options.get('burst', False), with_scheduler=options.get('with_scheduler', False),
+                    logging_level=level, max_jobs=options['max_jobs']
+                )
         except ConnectionError as e:
             self.stderr.write(str(e))
             sys.exit(1)

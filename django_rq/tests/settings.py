@@ -10,16 +10,19 @@ SECRET_KEY = 'a'
 # In actually usage, no such check is necessary.
 try:
     from django_redis import get_redis_connection
+
     REDIS_CACHE_TYPE = 'django-redis'
 except ImportError:
     try:
         import redis_cache
+
         REDIS_CACHE_TYPE = 'django-redis-cache'
     except ImportError:
         REDIS_CACHE_TYPE = 'none'
 
 try:
     from django.utils.log import NullHandler
+
     nullhandler = 'django.utils.log.NullHandler'
 except:
     nullhandler = 'logging.NullHandler'
@@ -76,7 +79,7 @@ LOGGING = {
     "handlers": {
         "rq_console": {
             "level": "DEBUG",
-            #"class": "logging.StreamHandler",
+            # "class": "logging.StreamHandler",
             "class": "rq.utils.ColorizingStreamHandler",
             "formatter": "rq_console",
             "exclude": ["%(asctime)s"],
@@ -87,21 +90,13 @@ LOGGING = {
         },
     },
     'loggers': {
-        "rq.worker": {
-            "handlers": ['null'],
-            "level": "ERROR"
-        },
-    }
+        "rq.worker": {"handlers": ['null'], "level": "ERROR"},
+    },
 }
 
 
 RQ_QUEUES = {
-    'default': {
-        'HOST': REDIS_HOST,
-        'PORT': 6379,
-        'DB': 0,
-        'DEFAULT_TIMEOUT': 500
-    },
+    'default': {'HOST': REDIS_HOST, 'PORT': 6379, 'DB': 0, 'DEFAULT_TIMEOUT': 500},
     'test': {
         'HOST': REDIS_HOST,
         'PORT': 1,
@@ -111,16 +106,17 @@ RQ_QUEUES = {
         'SENTINELS': [(REDIS_HOST, 26736), (REDIS_HOST, 26737)],
         'MASTER_NAME': 'testmaster',
         'DB': 1,
+        'USERNAME': 'redis-user',
         'PASSWORD': 'secret',
         'SOCKET_TIMEOUT': 10,
-        'CONNECTION_KWARGS': {},
+        'SENTINEL_KWARGS': {},
     },
     'test1': {
         'HOST': REDIS_HOST,
         'PORT': 1,
         'DB': 1,
         'DEFAULT_TIMEOUT': 400,
-        'QUEUE_CLASS': 'django_rq.tests.fixtures.DummyQueue'
+        'QUEUE_CLASS': 'django_rq.tests.fixtures.DummyQueue',
     },
     'test2': {
         'HOST': REDIS_HOST,
@@ -152,6 +148,30 @@ RQ_QUEUES = {
         'HOST': REDIS_HOST,
         'PORT': 6379,
         'DB': 0,
+    },
+    'scheduler_scheduler_active_test': {
+        'HOST': REDIS_HOST,
+        'PORT': 6379,
+        'DB': 0,
+        'ASYNC': False,
+    },
+    'scheduler_scheduler_inactive_test': {
+        'HOST': REDIS_HOST,
+        'PORT': 6379,
+        'DB': 0,
+        'ASYNC': False,
+    },
+    'worker_scheduler_active_test': {
+        'HOST': REDIS_HOST,
+        'PORT': 6379,
+        'DB': 0,
+        'ASYNC': False,
+    },
+    'worker_scheduler_inactive_test': {
+        'HOST': REDIS_HOST,
+        'PORT': 6379,
+        'DB': 0,
+        'ASYNC': False,
     },
     'django-redis': {
         'USE_REDIS_CACHE': 'default',
@@ -209,6 +229,4 @@ MIDDLEWARE = (
 
 MIDDLEWARE_CLASSES = MIDDLEWARE
 
-AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend',
-)
+AUTHENTICATION_BACKENDS = ('django.contrib.auth.backends.ModelBackend',)

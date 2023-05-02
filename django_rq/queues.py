@@ -90,15 +90,16 @@ def get_redis_connection(config, use_strict_redis=False):
             )
 
     if 'USE_REDIS_CACHE' in config.keys():
-
         try:
             # Assume that we're using django-redis
             from django_redis import get_redis_connection as get_redis
+
             return get_redis(config['USE_REDIS_CACHE'])
         except ImportError:
             pass
 
         from django.core.cache import caches
+
         cache = caches[config['USE_REDIS_CACHE']]
         # We're using django-redis-cache
         try:
@@ -111,15 +112,18 @@ def get_redis_connection(config, use_strict_redis=False):
         return redis_cls(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
 
     if 'SENTINELS' in config:
-        sentinel_kwargs = {
+        connection_kwargs = {
             'db': config.get('DB'),
             'password': config.get('PASSWORD'),
+            'username': config.get('USERNAME'),
             'socket_timeout': config.get('SOCKET_TIMEOUT'),
         }
-        sentinel_kwargs.update(config.get('CONNECTION_KWARGS', {}))
-        sentinel = Sentinel(config['SENTINELS'], **sentinel_kwargs)
+        connection_kwargs.update(config.get('CONNECTION_KWARGS', {}))
+        sentinel_kwargs = config.get('SENTINEL_KWARGS', {})
+        sentinel = Sentinel(config['SENTINELS'], sentinel_kwargs=sentinel_kwargs, **connection_kwargs)
         return sentinel.master_for(
-            service_name=config['MASTER_NAME'], redis_class=redis_cls,
+            service_name=config['MASTER_NAME'],
+            redis_class=redis_cls,
         )
 
     return redis_cls(
@@ -139,11 +143,20 @@ def get_connection(name='default', use_strict_redis=False):
     Returns a Redis connection to use based on parameters in settings.RQ_QUEUES
     """
     from .settings import QUEUES
+
     return get_redis_connection(QUEUES[name], use_strict_redis)
 
 
-def get_queue(name='default', default_timeout=None, is_async=None,
-              autocommit=None, connection=None, queue_class=None, job_class=None, **kwargs):
+def get_queue(
+    name='default',
+    default_timeout=None,
+    is_async=None,
+    autocommit=None,
+    connection=None,
+    queue_class=None,
+    job_class=None,
+    **kwargs
+):
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
@@ -164,9 +177,15 @@ def get_queue(name='default', default_timeout=None, is_async=None,
     if connection is None:
         connection = get_connection(name)
     queue_class = get_queue_class(QUEUES[name], queue_class)
-    return queue_class(name, default_timeout=default_timeout,
-                       connection=connection, is_async=is_async,
-                       job_class=job_class, autocommit=autocommit, **kwargs)
+    return queue_class(
+        name,
+        default_timeout=default_timeout,
+        connection=connection,
+        is_async=is_async,
+        job_class=job_class,
+        autocommit=autocommit,
+        **kwargs
+    )
 
 
 def get_queue_by_index(index):
@@ -174,25 +193,35 @@ def get_queue_by_index(index):
     Returns an rq Queue using parameters defined in ``QUEUES_LIST``
     """
     from .settings import QUEUES_LIST
+
     config = QUEUES_LIST[int(index)]
     return get_queue_class(config)(
-        config['name'],
-        connection=get_redis_connection(config['connection_config']),
-        is_async=config.get('ASYNC', True))
+        config['name'], connection=get_redis_connection(config['connection_config']), is_async=config.get('ASYNC', True)
+    )
 
 
 def filter_connection_params(queue_params):
     """
     Filters the queue params to keep only the connection related params.
     """
-    CONNECTION_PARAMS = ('URL', 'DB', 'USE_REDIS_CACHE',
-                         'UNIX_SOCKET_PATH', 'HOST', 'PORT', 'PASSWORD',
-                         'SENTINELS', 'MASTER_NAME', 'SOCKET_TIMEOUT',
-                         'SSL', 'CONNECTION_KWARGS',)
+    CONNECTION_PARAMS = (
+        'URL',
+        'DB',
+        'USE_REDIS_CACHE',
+        'UNIX_SOCKET_PATH',
+        'HOST',
+        'PORT',
+        'PASSWORD',
+        'SENTINELS',
+        'MASTER_NAME',
+        'SOCKET_TIMEOUT',
+        'SSL',
+        'CONNECTION_KWARGS',
+    )
 
-    #return {p:v for p,v in queue_params.items() if p in CONNECTION_PARAMS}
+    # return {p:v for p,v in queue_params.items() if p in CONNECTION_PARAMS}
     # Dict comprehension compatible with python 2.6
-    return dict((p,v) for (p,v) in queue_params.items() if p in CONNECTION_PARAMS)
+    return dict((p, v) for (p, v) in queue_params.items() if p in CONNECTION_PARAMS)
 
 
 def get_queues(*queue_names, **kwargs):
@@ -222,12 +251,14 @@ def get_queues(*queue_names, **kwargs):
             raise ValueError(
                 'Queues must have the same class.'
                 '"{0}" and "{1}" have '
-                'different classes'.format(name, queue_names[0]))
+                'different classes'.format(name, queue_names[0])
+            )
         if connection_params != filter_connection_params(QUEUES[name]):
             raise ValueError(
                 'Queues must have the same redis connection.'
                 '"{0}" and "{1}" have '
-                'different connections'.format(name, queue_names[0]))
+                'different connections'.format(name, queue_names[0])
+            )
         queues.append(queue)
 
     return queues
@@ -249,6 +280,7 @@ def get_unique_connection_configs(config=None):
     """
     if config is None:
         from .settings import QUEUES
+
         config = QUEUES
 
     connection_configs = []
@@ -272,6 +304,7 @@ try:
         Use settings ``DEFAULT_RESULT_TTL`` from ``RQ``
         and ``DEFAULT_TIMEOUT`` from ``RQ_QUEUES`` if configured.
         """
+
         def _create_job(self, *args, **kwargs):
             from .settings import QUEUES
 
@@ -283,7 +316,6 @@ try:
                 kwargs['result_ttl'] = getattr(settings, 'RQ', {}).get('DEFAULT_RESULT_TTL')
 
             return super(DjangoScheduler, self)._create_job(*args, **kwargs)
-
 
     def get_scheduler(name='default', queue=None, interval=60):
         """
@@ -299,9 +331,11 @@ try:
         if queue is None:
             queue = get_queue(name)
 
-        return scheduler_class(queue_name=name, interval=interval,
-                               queue=queue, job_class=queue.job_class,
-                               connection=get_connection(name))
+        return scheduler_class(
+            queue_name=name, interval=interval, queue=queue, job_class=queue.job_class, connection=get_connection(name)
+        )
+
 except ImportError:
+
     def get_scheduler(*args, **kwargs):
         raise ImproperlyConfigured('rq_scheduler not installed')

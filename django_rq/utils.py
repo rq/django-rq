@@ -1,24 +1,46 @@
 from rq.job import Job
 from rq.registry import (
-    DeferredJobRegistry, 
-    FailedJobRegistry, 
-    FinishedJobRegistry, 
+    DeferredJobRegistry,
+    FailedJobRegistry,
+    FinishedJobRegistry,
     ScheduledJobRegistry,
-    StartedJobRegistry, 
-    clean_registries
+    StartedJobRegistry,
+    clean_registries,
 )
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
-from .queues import get_connection, get_queue_by_index
+
+from .queues import get_connection, get_queue_by_index, get_scheduler
 from .settings import QUEUES_LIST
 from .templatetags.django_rq import to_localtime
+from django.core.exceptions import ImproperlyConfigured
+
+def get_scheduler_pid(queue):
+    '''Checks whether there's a scheduler-lock on a particular queue, and returns the PID.
+        It Only works with RQ's Built-in RQScheduler.
+        When RQ-Scheduler is available returns False 
+        If not, it checks the RQ's RQScheduler for a scheduler lock in the desired queue
+        Note: result might have some delay (1-15 minutes) but it helps visualizing whether the setup is working correcly
+    '''
+    try:
+        # first try get the rq-scheduler
+        scheduler = get_scheduler(queue.name)  # should fail if rq_scheduler not present
+        return False  # Not possible to give useful information without creating a performance issue (redis.keys())
+    except ImproperlyConfigured:
+        from rq.scheduler import RQScheduler
+        # When a scheduler acquires a lock it adds an expiring key: (e.g: rq:scheduler-lock:<queue.name>)
+        #TODO: (RQ>= 1.13) return queue.scheduler_pid 
+        pid = queue.connection.get(RQScheduler.get_locking_key(queue.name))
+        return int(pid.decode()) if pid is not None else None
+    except Exception as e:
+        pass  # Return None
+    return None
 
 
 def get_statistics(run_maintenance_tasks=False):
     queues = []
     for index, config in enumerate(QUEUES_LIST):
-
         queue = get_queue_by_index(index)
         connection = queue.connection
         connection_kwargs = connection.connection_pool.connection_kwargs
@@ -34,8 +56,7 @@ def get_statistics(run_maintenance_tasks=False):
         last_job_id = connection.lindex(queue.key, 0)
         last_job = queue.fetch_job(last_job_id.decode('utf-8')) if last_job_id else None
         if last_job:
-            oldest_job_timestamp = to_localtime(last_job.enqueued_at)\
-                .strftime('%Y-%m-%d, %H:%M:%S')
+            oldest_job_timestamp = to_localtime(last_job.enqueued_at).strftime('%Y-%m-%d, %H:%M:%S')
         else:
             oldest_job_timestamp = "-"
 
@@ -48,7 +69,8 @@ def get_statistics(run_maintenance_tasks=False):
             'jobs': queue.count,
             'oldest_job_timestamp': oldest_job_timestamp,
             'index': index,
-            'connection_kwargs': connection_kwargs
+            'connection_kwargs': connection_kwargs,
+            'scheduler_pid': get_scheduler_pid(queue),
         }
 
         connection = get_connection(queue.name)

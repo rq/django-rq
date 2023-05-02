@@ -40,6 +40,6 @@ def commit(*args, **kwargs):
 
 def clear(*args, **kwargs):
     try:
-        del(_thread_data.job_queue)
+        del _thread_data.job_queue
     except AttributeError:
         pass
