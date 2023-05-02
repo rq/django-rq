@@ -1,3 +1,9 @@
+# Version 2.8.0 (2023-05-02)
+* Support for RQ 1.14. Thanks @Cerebro92 and @selwin!
+* Show scheduler PID information in admin interface. Thanks @gabriels1234!
+* Added `serializer` argument to `rqworker` command. Thanks @gabriels1234!
+* Added `USERNAME` and `SENTINEL_KWARGS` support. Thanks @joachimBurket!
+
 # Version 2.7.0 (2023-02-07)
 * Able to show multiple execution results for each job (requires RQ v1.12). Thanks @selwin!
 * Various admin interface improvements. Thanks @selwin!
