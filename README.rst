@@ -378,7 +378,7 @@ RQ uses Python's ``logging``, this means you can easily configure ``rqworker``'s
         "handlers": {
             "rq_console": {
                 "level": "DEBUG",
-                "class": "rq.utils.ColorizingStreamHandler",
+                "class": "rq.logutils.ColorizingStreamHandler",
                 "formatter": "rq_console",
                 "exclude": ["%(asctime)s"],
             },
@@ -503,7 +503,7 @@ Running Tests
 
 To run ``django_rq``'s test suite::
 
-    `which django-admin.py` test django_rq --settings=django_rq.tests.settings --pythonpath=.
+    `which django-admin` test django_rq --settings=django_rq.tests.settings --pythonpath=.
 
 ===================
 Deploying on Ubuntu

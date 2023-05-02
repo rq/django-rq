@@ -506,7 +506,12 @@ def enqueue_job(request, queue_index, job_id):
     job = Job.fetch(job_id, connection=queue.connection)
 
     if request.method == 'POST':
-        queue.enqueue_job(job)
+        try:
+            # _enqueue_job is new in RQ 1.14, this is used to enqueue
+            # job regardless of its dependencies
+            queue._enqueue_job(job)
+        except AttributeError:
+            queue.enqueue_job(job)
 
         # Remove job from correct registry if needed
         if job.get_status() == JobStatus.DEFERRED:
