@@ -80,7 +80,7 @@ LOGGING = {
         "rq_console": {
             "level": "DEBUG",
             # "class": "logging.StreamHandler",
-            "class": "rq.utils.ColorizingStreamHandler",
+            "class": "rq.logutils.ColorizingStreamHandler",
             "formatter": "rq_console",
             "exclude": ["%(asctime)s"],
         },
