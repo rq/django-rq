@@ -167,11 +167,11 @@ class ViewTest(TestCase):
         self.assertIsNone(last_job.enqueued_at)
 
         # We want to force-enqueue this job
-        self.client.post(reverse('rq_enqueue_job', args=[queue_index, last_job.id]))
+        response = self.client.post(reverse('rq_enqueue_job', args=[queue_index, last_job.id]))
 
         # Check that job is updated correctly
         last_job = queue.fetch_job(last_job.id)
-        self.assertEqual(last_job.get_status(refresh=True), JobStatus.QUEUED)
+        self.assertEqual(last_job.get_status(), JobStatus.QUEUED)
         self.assertIsNotNone(last_job.enqueued_at)
 
     def test_action_requeue_jobs(self):
