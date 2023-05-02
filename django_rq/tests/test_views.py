@@ -171,7 +171,7 @@ class ViewTest(TestCase):
 
         # Check that job is updated correctly
         last_job = queue.fetch_job(last_job.id)
-        self.assertEqual(last_job.get_status(), JobStatus.QUEUED)
+        self.assertEqual(last_job.get_status(refresh=True), JobStatus.QUEUED)
         self.assertIsNotNone(last_job.enqueued_at)
 
     def test_action_requeue_jobs(self):
