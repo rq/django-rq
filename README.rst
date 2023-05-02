@@ -378,7 +378,7 @@ RQ uses Python's ``logging``, this means you can easily configure ``rqworker``'s
         "handlers": {
             "rq_console": {
                 "level": "DEBUG",
-                "class": "rq.utils.ColorizingStreamHandler",
+                "class": "rq.logutils.ColorizingStreamHandler",
                 "formatter": "rq_console",
                 "exclude": ["%(asctime)s"],
             },
