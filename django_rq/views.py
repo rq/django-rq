@@ -8,6 +8,7 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
 
 from redis.exceptions import ResponseError
 from rq import requeue_job
@@ -540,16 +541,15 @@ def enqueue_job(request, queue_index, job_id):
 
 @never_cache
 @staff_member_required
+@require_POST
 def stop_job(request, queue_index, job_id):
     """Stop started job"""
-    if request.method == 'POST':
-        queue_index = int(queue_index)
-        queue = get_queue_by_index(queue_index)
-        stopped, _ = stop_jobs(queue, job_id)
-        if len(stopped) == 1:
-            messages.info(request, 'You have successfully stopped %s' % job_id)
-            return redirect('rq_job_detail', queue_index, job_id)
-        else:
-            messages.error(request, 'Failed to stop %s' % job_id)
-            return redirect('rq_job_detail', queue_index, job_id)
-    return redirect('rq_job_detail', queue_index, job_id)
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    stopped, _ = stop_jobs(queue, job_id)
+    if len(stopped) == 1:
+        messages.info(request, 'You have successfully stopped %s' % job_id)
+        return redirect('rq_job_detail', queue_index, job_id)
+    else:
+        messages.error(request, 'Failed to stop %s' % job_id)
+        return redirect('rq_job_detail', queue_index, job_id)

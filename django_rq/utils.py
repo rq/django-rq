@@ -119,6 +119,4 @@ def stop_jobs(queue, job_ids):
             failed_to_stop_job_ids.append(job_id)
             continue
         stopped_job_ids.append(job_id)
-        job = Job.fetch(job_id, connection=queue.connection)
-        job.cancel()
     return stopped_job_ids, failed_to_stop_job_ids
