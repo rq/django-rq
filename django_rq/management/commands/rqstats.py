@@ -53,8 +53,8 @@ class Command(BaseCommand):
 
         # Header
         click.echo(
-            """| %-15s|%10s |%10s |%10s |%10s |%10s |""" %
-            ("Name", "Queued", "Active", "Deferred", "Finished", "Workers")
+            """| %-15s|%10s |%10s |%10s |%10s |%10s |%10s |""" %
+            ("Name", "Queued", "Active", "Deferred", "Finished", "Failed", "Workers")
         )
 
         self._print_separator()
@@ -62,10 +62,11 @@ class Command(BaseCommand):
         # Print every queues in a row
         for queue in statistics["queues"]:
             click.echo(
-                """| %-15s|%10s |%10s |%10s |%10s |%10s |""" %
+                """| %-15s|%10s |%10s |%10s |%10s |%10s |%10s |""" %
                 (queue["name"], queue["jobs"],
                  queue["started_jobs"], queue["deferred_jobs"],
-                 queue["finished_jobs"], queue["workers"])
+                 queue["finished_jobs"],queue["failed_jobs"],
+                 queue["workers"])
             )
 
         self._print_separator()
@@ -95,7 +96,7 @@ class Command(BaseCommand):
         self.interval = options.get("interval")
 
         # Arbitrary
-        self.table_width = 78
+        self.table_width = 90
 
         # Do not continuously poll
         if not self.interval:
