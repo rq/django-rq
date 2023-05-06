@@ -7,6 +7,7 @@ from rq.registry import (
     StartedJobRegistry,
     clean_registries,
 )
+from rq.command import send_stop_job_command
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
@@ -106,3 +107,16 @@ def get_jobs(queue, job_ids, registry=None):
             valid_jobs.append(job)
 
     return valid_jobs
+
+def stop_jobs(queue, job_ids):
+    job_ids = job_ids if isinstance(job_ids, (list, tuple)) else [job_ids]
+    stopped_job_ids = []
+    failed_to_stop_job_ids = []
+    for job_id in job_ids:
+        try:
+            send_stop_job_command(queue.connection, job_id)
+        except Exception:
+            failed_to_stop_job_ids.append(job_id)
+            continue
+        stopped_job_ids.append(job_id)
+    return stopped_job_ids, failed_to_stop_job_ids

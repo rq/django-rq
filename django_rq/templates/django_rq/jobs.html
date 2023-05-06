@@ -54,6 +54,9 @@
                         {% if job_status == 'Failed' %}
                             <option value="requeue">Requeue</option>
                         {% endif %}
+                        {% if job_status == 'Started' %}
+                            <option value="stop">Stop</option>
+                        {% endif %}
                     </select>
                 </label>
                 <button type="submit" class="button" title="Execute selected action" name="index" value="0">Go</button>
