@@ -1,3 +1,5 @@
+from django.core.exceptions import ImproperlyConfigured
+from rq.command import send_stop_job_command
 from rq.job import Job
 from rq.registry import (
     DeferredJobRegistry,
@@ -7,14 +9,12 @@ from rq.registry import (
     StartedJobRegistry,
     clean_registries,
 )
-from rq.command import send_stop_job_command
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
 from .queues import get_connection, get_queue_by_index, get_scheduler
 from .settings import QUEUES_LIST
 from .templatetags.django_rq import to_localtime
-from django.core.exceptions import ImproperlyConfigured
 
 
 def get_scheduler_pid(queue):
@@ -30,6 +30,7 @@ def get_scheduler_pid(queue):
         return False  # Not possible to give useful information without creating a performance issue (redis.keys())
     except ImproperlyConfigured:
         from rq.scheduler import RQScheduler
+
         # When a scheduler acquires a lock it adds an expiring key: (e.g: rq:scheduler-lock:<queue.name>)
         #TODO: (RQ>= 1.13) return queue.scheduler_pid 
         pid = queue.connection.get(RQScheduler.get_locking_key(queue.name))
@@ -91,6 +92,9 @@ def get_statistics(run_maintenance_tasks=False):
 
         queues.append(queue_data)
 
+        # there is only one scheduler per redis connection, so we use the connection as key
+        # to handle the possibility of a configuration with multiple redis connections and scheduled
+        # jobs in more than one of them
         conn_key = f"{connection_kwargs['host']}:{connection_kwargs['port']}/{connection_kwargs['db']}"
         if conn_key not in schedulers:
             try:
