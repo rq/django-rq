@@ -105,16 +105,6 @@ def get_statistics(run_maintenance_tasks=False):
 
     return {'queues': queues, 'schedulers': schedulers}
 
-def get_scheduler_statistics():
-    schedulers = []
-    for index, config in enumerate(QUEUES_LIST):
-        scheduler = get_scheduler(config['name'])
-        schedulers.append({
-            'name': config['name'],
-            'count': scheduler.count(),
-            'index': index,
-        })
-    return {'schedulers': schedulers}
 
 def get_jobs(queue, job_ids, registry=None):
     """Fetch jobs in bulk from Redis.
@@ -131,6 +121,7 @@ def get_jobs(queue, job_ids, registry=None):
             valid_jobs.append(job)
 
     return valid_jobs
+
 
 def stop_jobs(queue, job_ids):
     job_ids = job_ids if isinstance(job_ids, (list, tuple)) else [job_ids]

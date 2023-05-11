@@ -11,7 +11,6 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from redis.exceptions import ResponseError
 from rq import requeue_job
-from rq.command import send_stop_job_command
 from rq.exceptions import NoSuchJobError
 from rq.job import Job, JobStatus
 from rq.registry import (
@@ -24,9 +23,9 @@ from rq.registry import (
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
-from .queues import get_queue_by_index, get_scheduler, get_scheduler_by_index
-from .settings import API_TOKEN, QUEUES_LIST, QUEUES_MAP
-from .utils import get_jobs, get_scheduler_statistics, get_statistics, stop_jobs
+from .queues import get_queue_by_index, get_scheduler_by_index
+from .settings import API_TOKEN, QUEUES_MAP
+from .utils import get_jobs, get_statistics, stop_jobs
 
 
 @never_cache
