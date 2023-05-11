@@ -1,4 +1,5 @@
 from django.core.exceptions import ImproperlyConfigured
+from rq.command import send_stop_job_command
 from rq.job import Job
 from rq.registry import (
     DeferredJobRegistry,
@@ -8,7 +9,6 @@ from rq.registry import (
     StartedJobRegistry,
     clean_registries,
 )
-from rq.command import send_stop_job_command
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
@@ -42,6 +42,7 @@ def get_scheduler_pid(queue):
 
 def get_statistics(run_maintenance_tasks=False):
     queues = []
+    schedulers = {}
     for index, config in enumerate(QUEUES_LIST):
         queue = get_queue_by_index(index)
         connection = queue.connection
@@ -90,7 +91,19 @@ def get_statistics(run_maintenance_tasks=False):
         queue_data['scheduled_jobs'] = len(scheduled_job_registry)
 
         queues.append(queue_data)
-    return {'queues': queues}
+
+        conn_key = f"{connection_kwargs['host']}:{connection_kwargs['port']}/{connection_kwargs['db']}"
+        if conn_key not in schedulers:
+            try:
+                scheduler = get_scheduler(config['name'])
+                schedulers[conn_key] ={
+                    'count': scheduler.count(),
+                    'index': index,
+                }
+            except ImproperlyConfigured:
+                pass
+
+    return {'queues': queues, 'schedulers': schedulers}
 
 def get_scheduler_statistics():
     schedulers = []

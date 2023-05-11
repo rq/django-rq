@@ -97,6 +97,26 @@
         <br />
         <a href="{% url 'rq_home_json' %}">View as JSON</a>
     </div>
+
+    {% if schedulers %}
+        <h2>rq-scheduler</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Redis Connection</th>
+                    <th>Recurring Jobs</th>
+                </tr>
+            </thead>
+            {% for connection, scheduler in schedulers.items %}
+                <tr class = "{% cycle 'row1' 'row2' %}">
+                    <td><a href = "{% url 'rq_scheduler_jobs' scheduler.index %}">{{ connection }}</a></td>
+                    <td><a href = "{% url 'rq_scheduler_jobs' scheduler.index %}">{{ scheduler.count }}</a></td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+
 </div>
+
 
 {% endblock %}

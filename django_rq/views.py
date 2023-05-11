@@ -44,11 +44,6 @@ def stats_json(request, token=None):
         {"error": True, "description": "Please configure API_TOKEN in settings.py before accessing this view."}
     )
 
-@never_cache
-@staff_member_required
-def scheduler_stats(request):
-    context_data = {**admin.site.each_context(request), **get_scheduler_statistics()}
-    return render(request, 'django_rq/scheduler_stats.html', context_data)
 
 @never_cache
 @staff_member_required
@@ -550,6 +545,22 @@ def enqueue_job(request, queue_index, job_id):
 
 @never_cache
 @staff_member_required
+@require_POST
+def stop_job(request, queue_index, job_id):
+    """Stop started job"""
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    stopped, _ = stop_jobs(queue, job_id)
+    if len(stopped) == 1:
+        messages.info(request, 'You have successfully stopped %s' % job_id)
+        return redirect('rq_job_detail', queue_index, job_id)
+    else:
+        messages.error(request, 'Failed to stop %s' % job_id)
+        return redirect('rq_job_detail', queue_index, job_id)
+
+
+@never_cache
+@staff_member_required
 def scheduler_jobs(request, scheduler_index):
     scheduler = get_scheduler_by_index(scheduler_index)
 
@@ -587,19 +598,3 @@ def scheduler_jobs(request, scheduler_index):
         'page_range': page_range,
     }
     return render(request, 'django_rq/scheduler.html', context_data)
-
-
-@never_cache
-@staff_member_required
-@require_POST
-def stop_job(request, queue_index, job_id):
-    """Stop started job"""
-    queue_index = int(queue_index)
-    queue = get_queue_by_index(queue_index)
-    stopped, _ = stop_jobs(queue, job_id)
-    if len(stopped) == 1:
-        messages.info(request, 'You have successfully stopped %s' % job_id)
-        return redirect('rq_job_detail', queue_index, job_id)
-    else:
-        messages.error(request, 'Failed to stop %s' % job_id)
-        return redirect('rq_job_detail', queue_index, job_id)
