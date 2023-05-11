@@ -1,5 +1,3 @@
-from django.core.exceptions import ImproperlyConfigured
-from rq.command import send_stop_job_command
 from rq.job import Job
 from rq.registry import (
     DeferredJobRegistry,
@@ -9,12 +7,14 @@ from rq.registry import (
     StartedJobRegistry,
     clean_registries,
 )
+from rq.command import send_stop_job_command
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
 from .queues import get_connection, get_queue_by_index, get_scheduler
 from .settings import QUEUES_LIST
 from .templatetags.django_rq import to_localtime
+from django.core.exceptions import ImproperlyConfigured
 
 
 def get_scheduler_pid(queue):
@@ -30,7 +30,6 @@ def get_scheduler_pid(queue):
         return False  # Not possible to give useful information without creating a performance issue (redis.keys())
     except ImproperlyConfigured:
         from rq.scheduler import RQScheduler
-
         # When a scheduler acquires a lock it adds an expiring key: (e.g: rq:scheduler-lock:<queue.name>)
         #TODO: (RQ>= 1.13) return queue.scheduler_pid 
         pid = queue.connection.get(RQScheduler.get_locking_key(queue.name))
