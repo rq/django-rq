@@ -8,8 +8,10 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
 from redis.exceptions import ResponseError
 from rq import requeue_job
+from rq.command import send_stop_job_command
 from rq.exceptions import NoSuchJobError
 from rq.job import Job, JobStatus
 from rq.registry import (
@@ -24,7 +26,7 @@ from rq.worker_registration import clean_worker_registry
 
 from .queues import get_queue_by_index, get_scheduler, get_scheduler_by_index
 from .settings import API_TOKEN, QUEUES_LIST, QUEUES_MAP
-from .utils import get_jobs, get_scheduler_statistics, get_statistics
+from .utils import get_jobs, get_scheduler_statistics, get_statistics, stop_jobs
 
 
 @never_cache
@@ -497,6 +499,12 @@ def actions(request, queue_index):
                 for job_id in job_ids:
                     requeue_job(job_id, connection=queue.connection)
                 messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
+            elif request.POST['action'] == 'stop':
+                stopped, failed_to_stop = stop_jobs(queue, job_ids)
+                if len(stopped) >0 :
+                    messages.info(request, 'You have successfully stopped %d jobs!' % len(stopped))
+                if len(failed_to_stop) >0 :
+                    messages.error(request, '%d jobs failed to stop!' % len(failed_to_stop))
 
     return redirect(next_url)
 
@@ -510,7 +518,12 @@ def enqueue_job(request, queue_index, job_id):
     job = Job.fetch(job_id, connection=queue.connection)
 
     if request.method == 'POST':
-        queue.enqueue_job(job)
+        try:
+            # _enqueue_job is new in RQ 1.14, this is used to enqueue
+            # job regardless of its dependencies
+            queue._enqueue_job(job)
+        except AttributeError:
+            queue.enqueue_job(job)
 
         # Remove job from correct registry if needed
         if job.get_status() == JobStatus.DEFERRED:
@@ -574,3 +587,19 @@ def scheduler_jobs(request, scheduler_index):
         'page_range': page_range,
     }
     return render(request, 'django_rq/scheduler.html', context_data)
+
+
+@never_cache
+@staff_member_required
+@require_POST
+def stop_job(request, queue_index, job_id):
+    """Stop started job"""
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    stopped, _ = stop_jobs(queue, job_id)
+    if len(stopped) == 1:
+        messages.info(request, 'You have successfully stopped %s' % job_id)
+        return redirect('rq_job_detail', queue_index, job_id)
+    else:
+        messages.error(request, 'Failed to stop %s' % job_id)
+        return redirect('rq_job_detail', queue_index, job_id)
