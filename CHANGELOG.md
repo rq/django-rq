@@ -1,3 +1,8 @@
+# Version 2.8.1 (2023-05-14)
+* Added a button to stop currently running jobs. Thanks @gabriels1234!
+* Added a failed jobs column to rqstats command. Thanks @dangquangdon!
+* Explicitly requires RQ >= 1.14 in `setup.py`. Thanks @selwin!
+
 # Version 2.8.0 (2023-05-02)
 * Support for RQ 1.14. Thanks @Cerebro92 and @selwin!
 * Show scheduler PID information in admin interface. Thanks @gabriels1234!
