@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from unittest.mock import PropertyMock, patch
 
 
@@ -17,6 +17,7 @@ from rq.registry import (
 )
 
 from django_rq import get_queue
+from django_rq.queues import get_scheduler
 from django_rq.workers import get_worker
 
 from .fixtures import access_self, failing_job
