@@ -580,8 +580,8 @@ def scheduler_jobs(request, scheduler_index):
                 job.schedule = f"cron: '{job.meta['cron_string']}'"
             elif 'interval' in job.meta:
                 job.schedule = f"interval: {job.meta['interval']}"
-            elif 'repeat' in job.meta:
-                job.schedule = f"repeat: {job.meta['repeat']}"
+                if 'repeat' in job.meta:
+                    job.schedule += f" repeat: {job.meta['repeat']}"
             else:
                 job.schedule = 'unknown'
             jobs.append(job)
