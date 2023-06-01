@@ -25,13 +25,17 @@ from rq.worker_registration import clean_worker_registry
 
 from .queues import get_queue_by_index, get_scheduler_by_index
 from .settings import API_TOKEN, QUEUES_MAP
-from .utils import get_jobs, get_statistics, stop_jobs
+from .utils import get_jobs, get_scheduler_statistics, get_statistics, stop_jobs
 
 
 @never_cache
 @staff_member_required
 def stats(request):
-    context_data = {**admin.site.each_context(request), **get_statistics(run_maintenance_tasks=True)}
+    context_data = {
+        **admin.site.each_context(request),
+        **get_statistics(run_maintenance_tasks=True),
+        **get_scheduler_statistics(),
+    }
     return render(request, 'django_rq/stats.html', context_data)
 
 

@@ -42,7 +42,6 @@ def get_scheduler_pid(queue):
 
 def get_statistics(run_maintenance_tasks=False):
     queues = []
-    schedulers = {}
     for index, config in enumerate(QUEUES_LIST):
         queue = get_queue_by_index(index)
         connection = queue.connection
@@ -92,9 +91,17 @@ def get_statistics(run_maintenance_tasks=False):
 
         queues.append(queue_data)
 
+    return {'queues': queues}
+
+
+def get_scheduler_statistics():
+    schedulers = {}
+    for index, config in enumerate(QUEUES_LIST):
         # there is only one scheduler per redis connection, so we use the connection as key
         # to handle the possibility of a configuration with multiple redis connections and scheduled
         # jobs in more than one of them
+        queue = get_queue_by_index(index)
+        connection_kwargs = queue.connection.connection_pool.connection_kwargs
         conn_key = f"{connection_kwargs['host']}:{connection_kwargs['port']}/{connection_kwargs['db']}"
         if conn_key not in schedulers:
             try:
@@ -105,8 +112,7 @@ def get_statistics(run_maintenance_tasks=False):
                 }
             except ImproperlyConfigured:
                 pass
-
-    return {'queues': queues, 'schedulers': schedulers}
+    return {'schedulers': schedulers}
 
 
 def get_jobs(queue, job_ids, registry=None):
