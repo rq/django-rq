@@ -1,3 +1,5 @@
+from django.core.exceptions import ImproperlyConfigured
+from rq.command import send_stop_job_command
 from rq.job import Job
 from rq.registry import (
     DeferredJobRegistry,
@@ -7,15 +9,13 @@ from rq.registry import (
     StartedJobRegistry,
     clean_registries,
 )
-from rq.command import send_stop_job_command
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
-
 
 from .queues import get_connection, get_queue_by_index, get_scheduler
 from .settings import QUEUES_LIST
 from .templatetags.django_rq import to_localtime
-from django.core.exceptions import ImproperlyConfigured
+
 
 def get_scheduler_pid(queue):
     '''Checks whether there's a scheduler-lock on a particular queue, and returns the PID.
@@ -30,6 +30,7 @@ def get_scheduler_pid(queue):
         return False  # Not possible to give useful information without creating a performance issue (redis.keys())
     except ImproperlyConfigured:
         from rq.scheduler import RQScheduler
+
         # When a scheduler acquires a lock it adds an expiring key: (e.g: rq:scheduler-lock:<queue.name>)
         #TODO: (RQ>= 1.13) return queue.scheduler_pid 
         pid = queue.connection.get(RQScheduler.get_locking_key(queue.name))
@@ -89,7 +90,29 @@ def get_statistics(run_maintenance_tasks=False):
         queue_data['scheduled_jobs'] = len(scheduled_job_registry)
 
         queues.append(queue_data)
+
     return {'queues': queues}
+
+
+def get_scheduler_statistics():
+    schedulers = {}
+    for index, config in enumerate(QUEUES_LIST):
+        # there is only one scheduler per redis connection, so we use the connection as key
+        # to handle the possibility of a configuration with multiple redis connections and scheduled
+        # jobs in more than one of them
+        queue = get_queue_by_index(index)
+        connection_kwargs = queue.connection.connection_pool.connection_kwargs
+        conn_key = f"{connection_kwargs['host']}:{connection_kwargs['port']}/{connection_kwargs['db']}"
+        if conn_key not in schedulers:
+            try:
+                scheduler = get_scheduler(config['name'])
+                schedulers[conn_key] ={
+                    'count': scheduler.count(),
+                    'index': index,
+                }
+            except ImproperlyConfigured:
+                pass
+    return {'schedulers': schedulers}
 
 
 def get_jobs(queue, job_ids, registry=None):
@@ -107,6 +130,7 @@ def get_jobs(queue, job_ids, registry=None):
             valid_jobs.append(job)
 
     return valid_jobs
+
 
 def stop_jobs(queue, job_ids):
     job_ids = job_ids if isinstance(job_ids, (list, tuple)) else [job_ids]

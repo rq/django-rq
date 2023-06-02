@@ -32,4 +32,5 @@ urlpatterns = [
     re_path(
         r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[^/]+)/stop/$', views.stop_job, name='rq_stop_job'
     ),
+    re_path(r'^schedulers/(?P<scheduler_index>[\d]+)/$', views.scheduler_jobs, name='rq_scheduler_jobs'),
 ]

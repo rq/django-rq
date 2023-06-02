@@ -199,6 +199,15 @@ def get_queue_by_index(index):
         config['name'], connection=get_redis_connection(config['connection_config']), is_async=config.get('ASYNC', True)
     )
 
+def get_scheduler_by_index(index):
+    """
+    Returns an rq-scheduler Scheduler using parameters defined in ``QUEUES_LIST``
+    """
+    from .settings import QUEUES_LIST
+
+    config = QUEUES_LIST[int(index)]
+    return get_scheduler(config['name'])
+
 
 def filter_connection_params(queue_params):
     """
