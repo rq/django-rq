@@ -41,7 +41,9 @@
         {% if job_status == 'Failed' %}
             <li><a href="{% url 'rq_requeue_all' queue_index %}" class="requeuelink">Requeue All</a></li>
         {% endif %}
-        <li><a href="{% url 'rq_clear' queue_index %}" class="deletelink">Empty Queue</a></li>
+        {% if job_status == 'Queued' %}
+            <li><a href="{% url 'rq_clear' queue_index %}" class="deletelink">Empty Queue</a></li>
+        {% endif %}
     </ul>
     <div class="module" id="changelist">
         <form id="changelist-form" action="{% url 'rq_confirm_action' queue_index %}" method="post">
