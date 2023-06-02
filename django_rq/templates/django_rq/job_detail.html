@@ -139,7 +139,7 @@
                     {% if data_is_valid %}
                         {% if job.kwargs %}
                             <ul>
-                                {% for key, value in job.kwargs.items %}
+                                {% for key, value in job.kwargs|items %}
                                     <li>{{ key }}: {{ value|force_escape }}</li>
                                 {% endfor %}
                             </ul>
@@ -171,7 +171,7 @@
                 </div>
             </div>
         {% endif %}
-        
+
         {% if job.legacy_result %}
         <div class="form-row">
             <div>
@@ -182,7 +182,7 @@
         {% endif %}
 
     </fieldset>
-        
+
 
     <div class="submit-row">
         <div class="deletelink-box"><a href="delete/" class="deletelink">Delete</a></div>
@@ -212,37 +212,37 @@
         {% for result in job.results %}
         <h2>Result {{ result.id }}</h2>
         <div class="inline-related">
-          
-            <fieldset class="module aligned ">    
-                <div class="form-row field-choice_text">                      
+
+            <fieldset class="module aligned ">
+                <div class="form-row field-choice_text">
                     <div>
                         <label>Type:</label>
                         <div class="readonly">{{ result.type.name }}</div>
-                    </div>                    
+                    </div>
                 </div>
-            
+
                 <div class="form-row field-votes">
                     <div>
                         <label>Created at: {{ result.Type }}</label>
                         <div class="readonly">{{ result.created_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
-                    </div>            
+                    </div>
                 </div>
                 {% if result.type.value == 1 %}
                     <div class="form-row field-votes">
                         <div>
                             <label>Return value:</label>
                             <div><pre>{{ result.return_value }}</pre></div>
-                        </div>            
+                        </div>
                     </div>
                 {% elif result.type.value == 2 %}
                     <div class="form-row field-votes">
                         <div>
                             <label>Exception:</label>
                             <div><pre>{{ result.exc_string }}</pre></div>
-                        </div>            
+                        </div>
                     </div>
                 {% endif %}
-            
+
             </fieldset>
         </div>
         {% endfor %}
