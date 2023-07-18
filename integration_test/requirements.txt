@@ -1,5 +1,5 @@
 -e ..
 Django==3.2.19
-gunicorn==20.1.0
+gunicorn==21.0.1
 psycopg2==2.9.6
 requests==2.31.0
