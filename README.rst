@@ -67,7 +67,7 @@ Installation
             'SOCKET_TIMEOUT': 0.3,
             'CONNECTION_KWARGS': {  # Eventual additional Redis connection arguments
                 'ssl': True
-            }
+            },
             'SENTINEL_KWARGS': {    # Eventual Sentinel connection arguments
                 # If Sentinel also has auth, username/password can be passed here
                 'username': 'sentinel-user',
