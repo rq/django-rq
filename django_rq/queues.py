@@ -155,6 +155,7 @@ def get_queue(
     connection=None,
     queue_class=None,
     job_class=None,
+    serializer=None,
     **kwargs
 ):
     """
@@ -176,6 +177,8 @@ def get_queue(
         default_timeout = QUEUES[name].get('DEFAULT_TIMEOUT')
     if connection is None:
         connection = get_connection(name)
+    if serializer is None:
+        serializer = QUEUES[name].get('SERIALIZER')
     queue_class = get_queue_class(QUEUES[name], queue_class)
     return queue_class(
         name,
@@ -184,6 +187,7 @@ def get_queue(
         is_async=is_async,
         job_class=job_class,
         autocommit=autocommit,
+        serializer=serializer,
         **kwargs
     )
 
@@ -196,7 +200,10 @@ def get_queue_by_index(index):
 
     config = QUEUES_LIST[int(index)]
     return get_queue_class(config)(
-        config['name'], connection=get_redis_connection(config['connection_config']), is_async=config.get('ASYNC', True)
+        config['name'],
+        connection=get_redis_connection(config['connection_config']),
+        is_async=config.get('ASYNC', True),
+        serializer=config['connection_config'].get('SERIALIZER')
     )
 
 def get_scheduler_by_index(index):
