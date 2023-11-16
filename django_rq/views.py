@@ -9,7 +9,6 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
-
 from redis.exceptions import ResponseError
 from rq import requeue_job
 from rq.exceptions import NoSuchJobError
@@ -23,17 +22,20 @@ from rq.registry import (
 )
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
-from rq.command import send_stop_job_command
 
-from .queues import get_queue_by_index
-from .settings import API_TOKEN
-from .utils import get_statistics, get_jobs, stop_jobs
+from .queues import get_queue_by_index, get_scheduler_by_index
+from .settings import API_TOKEN, QUEUES_MAP
+from .utils import get_jobs, get_scheduler_statistics, get_statistics, stop_jobs
 
 
 @never_cache
 @staff_member_required
 def stats(request):
-    context_data = {**admin.site.each_context(request), **get_statistics(run_maintenance_tasks=True)}
+    context_data = {
+        **admin.site.each_context(request),
+        **get_statistics(run_maintenance_tasks=True),
+        **get_scheduler_statistics(),
+    }
     return render(request, 'django_rq/stats.html', context_data)
 
 
@@ -590,3 +592,44 @@ def stop_job(request, queue_index, job_id):
     else:
         messages.error(request, 'Failed to stop %s' % job_id)
         return redirect('rq_job_detail', queue_index, job_id)
+
+
+@never_cache
+@staff_member_required
+def scheduler_jobs(request, scheduler_index):
+    scheduler = get_scheduler_by_index(scheduler_index)
+
+    items_per_page = 100
+    num_jobs = scheduler.count()
+    page = int(request.GET.get('page', 1))
+    jobs = []
+
+    if num_jobs > 0:
+        last_page = int(ceil(num_jobs / items_per_page))
+        page_range = range(1, last_page + 1)
+        offset = items_per_page * (page - 1)
+        jobs_times = scheduler.get_jobs(with_times=True, offset=offset, length=items_per_page)
+        for job, time in jobs_times:
+            job.next_run = time
+            job.queue_index = QUEUES_MAP.get(job.origin, 0)
+            if 'cron_string' in job.meta:
+                job.schedule = f"cron: '{job.meta['cron_string']}'"
+            elif 'interval' in job.meta:
+                job.schedule = f"interval: {job.meta['interval']}"
+                if 'repeat' in job.meta:
+                    job.schedule += f" repeat: {job.meta['repeat']}"
+            else:
+                job.schedule = 'unknown'
+            jobs.append(job)
+    else:
+        page_range = []
+
+    context_data = {
+        **admin.site.each_context(request),
+        'scheduler': scheduler,
+        'jobs': jobs,
+        'num_jobs': num_jobs,
+        'page': page,
+        'page_range': page_range,
+    }
+    return render(request, 'django_rq/scheduler.html', context_data)

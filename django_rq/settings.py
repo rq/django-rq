@@ -15,8 +15,10 @@ BURST = getattr(settings, 'RQ_BURST', False)
 
 # All queues in list format so we can get them by index, includes failed queues
 QUEUES_LIST = []
+QUEUES_MAP = {}
 for key, value in sorted(QUEUES.items(), key=itemgetter(0)):
     QUEUES_LIST.append({'name': key, 'connection_config': value})
+    QUEUES_MAP[key] = len(QUEUES_LIST) - 1
 
 # Get exception handlers
 EXCEPTION_HANDLERS = getattr(settings, 'RQ_EXCEPTION_HANDLERS', [])
