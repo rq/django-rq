@@ -40,6 +40,7 @@
     <ul class="object-tools">
         {% if job_status == 'Failed' %}
             <li><a href="{% url 'rq_requeue_all' queue_index %}" class="requeuelink">Requeue All</a></li>
+            <li><a href="{% url 'rq_delete_failed_jobs' queue_index %}" class="requeuelink">Delete All</a></li>
         {% else %}
             <li><a href="{% url 'rq_clear' queue_index %}" class="deletelink">Empty Queue</a></li>
         {% endif %}

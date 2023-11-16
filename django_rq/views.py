@@ -451,6 +451,38 @@ def requeue_all(request, queue_index):
 
 @never_cache
 @staff_member_required
+def delete_failed_jobs(request, queue_index):
+    queue_index = int(queue_index)
+    queue = get_queue_by_index(queue_index)
+    registry = FailedJobRegistry(queue=queue)
+
+    if request.method == 'POST':
+        job_ids = registry.get_job_ids()
+        count = 0
+        # Confirmation received
+        for job_id in job_ids:
+            try:
+                job = Job.fetch(job_id, connection=queue.connection)
+                job.delete()
+                count += 1
+            except NoSuchJobError:
+                pass
+
+        messages.info(request, 'You have successfully deleted %d jobs!' % count)
+        return redirect('rq_home')
+
+    context_data = {
+        **admin.site.each_context(request),
+        'queue_index': queue_index,
+        'queue': queue,
+        'total_jobs': len(registry),
+    }
+
+    return render(request, 'django_rq/clear_failed_queue.html', context_data)
+
+
+@never_cache
+@staff_member_required
 def confirm_action(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
