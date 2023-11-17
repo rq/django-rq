@@ -460,15 +460,12 @@ def delete_failed_jobs(request, queue_index):
 
     if request.method == 'POST':
         job_ids = registry.get_job_ids()
+        jobs = Job.fetch_many(job_ids, connection=queue.connection)
         count = 0
-        # Confirmation received
-        for job_id in job_ids:
-            try:
-                job = Job.fetch(job_id, connection=queue.connection)
+        for job in jobs:
+            if job:
                 job.delete()
                 count += 1
-            except NoSuchJobError:
-                pass
 
         messages.info(request, 'You have successfully deleted %d jobs!' % count)
         return redirect('rq_home')
