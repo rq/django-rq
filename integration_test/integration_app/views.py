@@ -13,4 +13,3 @@ def home(request):
         return HttpResponse("Enqueued")
     names = [m.name for m in MyModel.objects.order_by("name")]
     return HttpResponse("Entries: {}".format(",".join(names)))
-        
