@@ -13,6 +13,7 @@ from django.utils.safestring import SafeString
 
 from redis.exceptions import ConnectionError
 from rq import get_current_job, Queue
+import rq
 from rq.exceptions import NoSuchJobError
 from rq.job import Job
 from rq.registry import FinishedJobRegistry, ScheduledJobRegistry
@@ -456,6 +457,14 @@ class QueuesTest(TestCase):
         self.assertEqual(queue._default_timeout, 500)
         queue = get_queue('test1')
         self.assertEqual(queue._default_timeout, 400)
+
+    def test_get_queue_serializer(self):
+        """
+        Test that the correct serializer is set on the queue.
+        """
+        queue = get_queue('test_serializer')
+        self.assertEqual(queue.name, 'test_serializer')
+        self.assertEqual(queue.serializer, rq.serializers.JSONSerializer)
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})

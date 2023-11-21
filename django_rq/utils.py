@@ -120,7 +120,7 @@ def get_jobs(queue, job_ids, registry=None):
     1. If job data is not present in Redis, discard the result
     2. If `registry` argument is supplied, delete empty jobs from registry
     """
-    jobs = Job.fetch_many(job_ids, connection=queue.connection)
+    jobs = Job.fetch_many(job_ids, connection=queue.connection, serializer=queue.serializer)
     valid_jobs = []
     for i, job in enumerate(jobs):
         if job is None:

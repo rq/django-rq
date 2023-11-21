@@ -289,7 +289,7 @@ def deferred_jobs(request, queue_index):
 
         for job_id in job_ids:
             try:
-                jobs.append(Job.fetch(job_id, connection=queue.connection))
+                jobs.append(Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer))
             except NoSuchJobError:
                 pass
 
@@ -316,7 +316,7 @@ def job_detail(request, queue_index, job_id):
     queue = get_queue_by_index(queue_index)
 
     try:
-        job = Job.fetch(job_id, connection=queue.connection)
+        job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
     except NoSuchJobError:
         raise Http404("Couldn't find job with this ID: %s" % job_id)
 
@@ -353,7 +353,7 @@ def job_detail(request, queue_index, job_id):
 def delete_job(request, queue_index, job_id):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
-    job = Job.fetch(job_id, connection=queue.connection)
+    job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
 
     if request.method == 'POST':
         # Remove job id from queue and delete the actual job
@@ -376,10 +376,10 @@ def delete_job(request, queue_index, job_id):
 def requeue_job_view(request, queue_index, job_id):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
-    job = Job.fetch(job_id, connection=queue.connection)
+    job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
 
     if request.method == 'POST':
-        requeue_job(job_id, connection=queue.connection)
+        requeue_job(job_id, connection=queue.connection, serializer=queue.serializer)
         messages.info(request, 'You have successfully requeued %s' % job.id)
         return redirect('rq_job_detail', queue_index, job_id)
 
@@ -433,7 +433,7 @@ def requeue_all(request, queue_index):
         # Confirmation received
         for job_id in job_ids:
             try:
-                requeue_job(job_id, connection=queue.connection)
+                requeue_job(job_id, connection=queue.connection, serializer=queue.serializer)
                 count += 1
             except NoSuchJobError:
                 pass
@@ -488,14 +488,14 @@ def actions(request, queue_index):
 
             if request.POST['action'] == 'delete':
                 for job_id in job_ids:
-                    job = Job.fetch(job_id, connection=queue.connection)
+                    job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
                     # Remove job id from queue and delete the actual job
                     queue.connection.lrem(queue.key, 0, job.id)
                     job.delete()
                 messages.info(request, 'You have successfully deleted %s jobs!' % len(job_ids))
             elif request.POST['action'] == 'requeue':
                 for job_id in job_ids:
-                    requeue_job(job_id, connection=queue.connection)
+                    requeue_job(job_id, connection=queue.connection, serializer=queue.serializer)
                 messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
             elif request.POST['action'] == 'stop':
                 stopped, failed_to_stop = stop_jobs(queue, job_ids)
@@ -513,7 +513,7 @@ def enqueue_job(request, queue_index, job_id):
     """Enqueue deferred jobs"""
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
-    job = Job.fetch(job_id, connection=queue.connection)
+    job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
 
     if request.method == 'POST':
         try:

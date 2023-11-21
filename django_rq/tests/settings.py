@@ -187,6 +187,12 @@ RQ_QUEUES = {
         'DB': 0,
         'DEFAULT_TIMEOUT': 400,
     },
+    'test_serializer': {
+        'HOST': REDIS_HOST,
+        'PORT': 6379,
+        'DB': 0,
+        'SERIALIZER': 'rq.serializers.JSONSerializer',
+    },
 }
 RQ = {
     'AUTOCOMMIT': False,
