@@ -1,4 +1,5 @@
 from django.core.exceptions import ImproperlyConfigured
+from django.db import connections
 from rq.command import send_stop_job_command
 from rq.job import Job
 from rq.registry import (
@@ -20,7 +21,7 @@ from .templatetags.django_rq import to_localtime
 def get_scheduler_pid(queue):
     '''Checks whether there's a scheduler-lock on a particular queue, and returns the PID.
         It Only works with RQ's Built-in RQScheduler.
-        When RQ-Scheduler is available returns False 
+        When RQ-Scheduler is available returns False
         If not, it checks the RQ's RQScheduler for a scheduler lock in the desired queue
         Note: result might have some delay (1-15 minutes) but it helps visualizing whether the setup is working correcly
     '''
@@ -32,7 +33,7 @@ def get_scheduler_pid(queue):
         from rq.scheduler import RQScheduler
 
         # When a scheduler acquires a lock it adds an expiring key: (e.g: rq:scheduler-lock:<queue.name>)
-        #TODO: (RQ>= 1.13) return queue.scheduler_pid 
+        #TODO: (RQ>= 1.13) return queue.scheduler_pid
         pid = queue.connection.get(RQScheduler.get_locking_key(queue.name))
         return int(pid.decode()) if pid is not None else None
     except Exception as e:
@@ -144,3 +145,36 @@ def stop_jobs(queue, job_ids):
             continue
         stopped_job_ids.append(job_id)
     return stopped_job_ids, failed_to_stop_job_ids
+
+
+def reset_db_connections():
+    for c in connections.all():
+        c.close()
+
+
+def configure_sentry(sentry_dsn, **options):
+    """
+    Configure the Sentry client.
+
+    The **options kwargs are passed straight from the command
+    invocation - options relevant to Sentry configuration are
+    extracted.
+
+    In addition to the 'debug' and 'ca_certs' options, which can
+    be passed in as command options, we add the RqIntegration and
+    DjangoIntegration to the config.
+
+    Raises ImportError if the sentry_sdk is not available.
+
+    """
+    import sentry_sdk
+    sentry_options = {
+        'debug': options.get('sentry_debug', False),
+        'ca_certs': options.get('sentry_ca_certs', None),
+        'integrations': [
+            sentry_sdk.integrations.redis.RedisIntegration(),
+            sentry_sdk.integrations.rq.RqIntegration(),
+            sentry_sdk.integrations.django.DjangoIntegration()
+        ]
+    }
+    sentry_sdk.init(sentry_dsn, **sentry_options)
