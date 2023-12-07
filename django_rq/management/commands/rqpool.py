@@ -84,8 +84,7 @@ class Command(BaseCommand):
                 sys.exit(1)
 
         job_class = get_job_class(options['job_class'])
-        queue_names = list(*args)
-        queues = get_queues(*queue_names, **{'job_class': job_class, 'queue_class': options['queue_class']})
+        queues = get_queues(*args, **{'job_class': job_class, 'queue_class': options['queue_class']})
         worker_class = get_worker_class(options.get('worker_class', None))
         serializer = resolve_serializer(options['serializer'])
 
