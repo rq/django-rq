@@ -171,7 +171,7 @@ class QueuesTest(TestCase):
         get_redis_connection(config)
         sentinel_init_sentinel_kwargs = sentinel_class_mock.call_args[1]
         self.assertDictEqual(
-            sentinel_init_sentinel_kwargs, 
+            sentinel_init_sentinel_kwargs,
             {'db': 0, 'username': 'redis-user', 'password': 'redis-pass', 'socket_timeout': 0.2, 'ssl': False, 'sentinel_kwargs': {'username': 'sentinel-user', 'password': 'sentinel-pass', 'socket_timeout': 0.3}}
         )
 
@@ -280,6 +280,23 @@ class QueuesTest(TestCase):
             )
 
         call_command('rqworker', *queue_names, burst=True)
+
+        for job in jobs:
+            self.assertTrue(job['job'].is_finished)
+            self.assertIn(job['job'].id, job['finished_job_registry'].get_job_ids())
+
+        # Test with rqpool command
+        jobs = []
+        for queue_name in queue_names:
+            queue = get_queue(queue_name)
+            jobs.append(
+                {
+                    'job': queue.enqueue(divide, 42, 1),
+                    'finished_job_registry': FinishedJobRegistry(queue.name, queue.connection),
+                }
+            )
+
+        call_command('rqpool', *queue_names, burst=True)
 
         for job in jobs:
             self.assertTrue(job['job'].is_finished)
@@ -834,14 +851,14 @@ class SchedulerPIDTest(TestCase):
                 'PORT': 6379,
             },
             'name': test_queue,
-        }]        
+        }]
         with patch('django_rq.utils.QUEUES_LIST',
             new_callable=PropertyMock(return_value=queues)):
             scheduler = get_scheduler(test_queue)
             scheduler.register_birth()
             self.assertIs(get_scheduler_pid(get_queue(scheduler.queue_name)), False)
             scheduler.register_death()
-    
+
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     def test_scheduler_scheduler_pid_inactive(self):
         test_queue = 'scheduler_scheduler_inactive_test'
@@ -852,7 +869,7 @@ class SchedulerPIDTest(TestCase):
                 'PORT': 6379,
             },
             'name': test_queue,
-        }]        
+        }]
         with patch('django_rq.utils.QUEUES_LIST',
             new_callable=PropertyMock(return_value=queues)):
             connection = get_connection(test_queue)
@@ -896,7 +913,7 @@ class SchedulerPIDTest(TestCase):
                 'PORT': 6379,
             },
             'name': test_queue,
-        }]        
+        }]
         with patch('django_rq.utils.QUEUES_LIST',
             new_callable=PropertyMock(return_value=queues)):
             worker = get_worker(test_queue, name=uuid4().hex)
