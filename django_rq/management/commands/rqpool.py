@@ -15,11 +15,12 @@ from ...workers import get_worker_class
 
 class Command(BaseCommand):
     """
-    Runs RQ workers on specified queues. Note that all queues passed into a
+    Runs RQ pool with x number of workers on specified queues.
+    Note that all queues passed into a
     single rqworker command must share the same connection.
 
     Example usage:
-    python manage.py rqworker high medium low
+    python manage.py rqpool high medium low --num-workers 4
     """
 
     args = '<queue queue ...>'
