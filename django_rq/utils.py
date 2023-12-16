@@ -102,7 +102,7 @@ def get_scheduler_statistics():
         # jobs in more than one of them
         queue = get_queue_by_index(index)
         connection_kwargs = queue.connection.connection_pool.connection_kwargs
-        conn_key = f"{connection_kwargs['host']}:{connection_kwargs['port']}/{connection_kwargs['db']}"
+        conn_key = f"{connection_kwargs['host']}:{connection_kwargs['port']}/{connection_kwargs.get('db', 0)}"
         if conn_key not in schedulers:
             try:
                 scheduler = get_scheduler(config['name'])
