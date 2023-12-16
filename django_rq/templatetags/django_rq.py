@@ -1,3 +1,5 @@
+import datetime
+
 from django import template
 from django.utils import timezone
 from django.utils.html import escape
@@ -10,7 +12,7 @@ register = template.Library()
 def to_localtime(time):
     """Converts naive datetime to localtime based on settings"""
 
-    utc_time = time.replace(tzinfo=timezone.utc)
+    utc_time = time.replace(tzinfo=datetime.timezone.utc)
     to_zone = timezone.get_default_timezone()
     return utc_time.astimezone(to_zone)
 
