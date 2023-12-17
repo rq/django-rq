@@ -17,10 +17,10 @@ class Command(BaseCommand):
     """
     Runs RQ pool with x number of workers on specified queues.
     Note that all queues passed into a
-    single rqworker command must share the same connection.
+    single rqworker-pool command must share the same connection.
 
     Example usage:
-    python manage.py rqpool high medium low --num-workers 4
+    python manage.py rqworker-pool high medium low --num-workers 4
     """
 
     args = '<queue queue ...>'

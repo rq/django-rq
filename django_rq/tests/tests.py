@@ -285,7 +285,7 @@ class QueuesTest(TestCase):
             self.assertTrue(job['job'].is_finished)
             self.assertIn(job['job'].id, job['finished_job_registry'].get_job_ids())
 
-        # Test with rqpool command
+        # Test with rqworker-pool command
         jobs = []
         for queue_name in queue_names:
             queue = get_queue(queue_name)
@@ -296,7 +296,7 @@ class QueuesTest(TestCase):
                 }
             )
 
-        call_command('rqpool', *queue_names, burst=True)
+        call_command('rqworker-pool', *queue_names, burst=True)
 
         for job in jobs:
             self.assertTrue(job['job'].is_finished)
