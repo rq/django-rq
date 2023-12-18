@@ -1,3 +1,8 @@
+### Version 2.10.0 (2023-12-18)
+* Added `rqworker-pool` management command. Thanks @chromium7!
+* Compatibility with Django 5.0. Thanks @perry!
+* The scheduler now defaults to db 0. Thanks @bennylope!
+
 ### Version 2.9.0 (2023-11-26)
 * Added an option to delete all failed jobs. Thanks @chromium7!
 * You can now specify `SERIALIZER` option while declaring queues in `settings.py` Thanks @sophcass!
