@@ -1,3 +1,6 @@
+### Version 2.10.1 (2023-12-18)
+* Fixed packaging issues with 2.10.0.
+
 ### Version 2.10.0 (2023-12-18)
 * Added `rqworker-pool` management command. Thanks @chromium7!
 * Compatibility with Django 5.0. Thanks @perry!
