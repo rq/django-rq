@@ -102,8 +102,8 @@ def get_scheduler_statistics():
         # to handle the possibility of a configuration with multiple redis connections and scheduled
         # jobs in more than one of them
         queue = get_queue_by_index(index)
-        connection_kwargs = queue.connection.connection_pool.connection_kwargs
-        conn_key = f"{connection_kwargs['host']}:{connection_kwargs['port']}/{connection_kwargs.get('db', 0)}"
+        connection = queue.connection.connection_pool.connection_kwargs
+        conn_key = f"{connection['host']}:{connection.get('port', 6379)}/{connection.get('db', 0)}"
         if conn_key not in schedulers:
             try:
                 scheduler = get_scheduler(config['name'])
