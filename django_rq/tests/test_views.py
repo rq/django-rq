@@ -58,6 +58,18 @@ class ViewTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertIn('DeserializationError', response.content.decode())
+    
+    def test_job_details_with_results(self):
+        """Job with results is displayed properly"""
+        queue = get_queue('default')
+        job = queue.enqueue(access_self)
+        queue_index = get_queue_index('default')        
+        worker = get_worker('default')
+        worker.work(burst=True)
+        result = job.results()[0]
+        url = reverse('rq_job_detail', args=[queue_index, job.id])
+        response = self.client.get(url)
+        self.assertContains(response, result.id)
 
     def test_job_details_on_deleted_dependency(self):
         """Page doesn't crash even if job.dependency has been deleted"""
