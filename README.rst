@@ -229,7 +229,11 @@ with the path to your queue class::
 
 To use a custom job class, provide ``--job-class`` flag.
 
-Support for scheduled jobs
+Starting from version 2.10, running RQ's worker-pool is also supported::
+
+    python manage.py rqworker-pool default low medium --num-workers 4
+
+Support for Scheduled Jobs
 --------------------------
 
 With RQ 1.2.0. you can use `built-in scheduler <https://python-rq.org/docs/scheduling/>`__
@@ -338,7 +342,7 @@ Additionally, these statistics are also accessible from  the command line.
 
 Configuring Sentry
 -------------------
-Django-RQ >= 2.0 uses ``sentry-sdk`` instead of the deprecated ``raven`` library. Sentry
+Sentry
 should be configured within the Django ``settings.py`` as described in the `Sentry docs <https://docs.sentry.io/platforms/python/django/>`__.
 
 You can override the default Django Sentry configuration when running the ``rqworker`` command
@@ -382,11 +386,6 @@ RQ uses Python's ``logging``, this means you can easily configure ``rqworker``'s
                 "formatter": "rq_console",
                 "exclude": ["%(asctime)s"],
             },
-            # If you use sentry for logging
-            'sentry': {
-                'level': 'ERROR',
-                'class': 'raven.contrib.django.handlers.SentryHandler',
-            },
         },
         'loggers': {
             "rq.worker": {
@@ -396,17 +395,6 @@ RQ uses Python's ``logging``, this means you can easily configure ``rqworker``'s
         }
     }
 
-Note: error logging to Sentry is known to be unreliable with RQ when using async
-transports (the default transport). Please configure ``Raven`` to use
-``sync+https://`` or ``requests+https://`` transport in ``settings.py``:
-
-.. code-block:: python
-
-    RAVEN_CONFIG = {
-        'dsn': 'sync+https://public:secret@example.com/1',
-    }
-
-For more info, refer to `Raven's documentation <http://raven.readthedocs.org/>`__.
 
 Custom Queue Classes
 --------------------
