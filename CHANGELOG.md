@@ -1,3 +1,8 @@
+### Version 2.10.2 (2024-03-23)
+* Added support for Django 5.0. Thanks @selwin!
+* Fixed an error in Python 3.12. Thanks @selwin!
+* Fixes an issue that may happen if Redis port is not specified. Thanks @terencehonles!
+
 ### Version 2.10.1 (2023-12-18)
 * Fixed packaging issues with 2.10.0.
 
