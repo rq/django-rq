@@ -1,5 +1,6 @@
-import sys
 import datetime
+import multiprocessing
+import sys
 import time
 from unittest import skipIf, mock
 from unittest.mock import patch, PropertyMock, MagicMock
@@ -36,6 +37,8 @@ from django_rq.templatetags.django_rq import force_escape, to_localtime
 from django_rq.tests.fixtures import DummyJob, DummyQueue, DummyWorker
 from django_rq.utils import get_jobs, get_statistics, get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
+
+from .utils import query_queue
 
 try:
     from rq_scheduler import Scheduler
@@ -302,6 +305,18 @@ class QueuesTest(TestCase):
         for job in jobs:
             self.assertTrue(job['job'].is_finished)
             self.assertIn(job['job'].id, job['finished_job_registry'].get_job_ids())
+
+    def test_rqworker_pool_process_start_method(self) -> None:
+        for start_method in ['spawn', 'fork']:
+            with mock.patch.object(multiprocessing, "get_start_method", return_value=start_method):
+                queue_name = 'django_rq_test'
+                queue = get_queue(queue_name)
+                job = queue.enqueue(query_queue)
+                finished_job_registry = FinishedJobRegistry(queue.name, queue.connection)
+                call_command('rqworker-pool', queue_name, burst=True)
+
+                self.assertTrue(job.is_finished)
+                self.assertIn(job.id, finished_job_registry.get_job_ids())
 
     def test_configure_sentry(self):
         rqworker.configure_sentry('https://1@sentry.io/1')
