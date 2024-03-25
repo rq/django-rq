@@ -1,9 +1,8 @@
 import os
 import sys
 
-from rq.serializers import resolve_serializer
-from rq.worker_pool import WorkerPool
 from rq.logutils import setup_loghandlers
+from rq.serializers import resolve_serializer
 
 from django.core.management.base import BaseCommand
 
@@ -11,6 +10,7 @@ from ...jobs import get_job_class
 from ...utils import configure_sentry
 from ...queues import get_queues
 from ...workers import get_worker_class
+from ...worker_pool import DjangoWorkerPool
 
 
 class Command(BaseCommand):
@@ -89,7 +89,7 @@ class Command(BaseCommand):
         worker_class = get_worker_class(options.get('worker_class', None))
         serializer = resolve_serializer(options['serializer'])
 
-        pool = WorkerPool(
+        pool = DjangoWorkerPool(
             queues=queues,
             connection=queues[0].connection,
             num_workers=options['num_workers'],

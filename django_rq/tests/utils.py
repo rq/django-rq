@@ -1,4 +1,5 @@
 from django_rq.queues import get_connection, get_queue_by_index
+from django_rq.models import Queue
 
 
 def get_queue_index(name='default'):
@@ -17,3 +18,7 @@ def get_queue_index(name='default'):
             queue_index = i
             break
     return queue_index
+
+
+def query_queue():
+    return Queue.objects.first()
