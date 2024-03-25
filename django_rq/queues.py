@@ -1,7 +1,9 @@
 import warnings
+from typing import Any, Callable, Optional, Type, Union
 
 import redis
 from redis.sentinel import Sentinel
+from rq.job import Job
 from rq.queue import Queue
 from rq.utils import import_attribute
 
@@ -138,7 +140,10 @@ def get_redis_connection(config, use_strict_redis=False):
     )
 
 
-def get_connection(name='default', use_strict_redis=False):
+def get_connection(
+    name: str = 'default',
+    use_strict_redis: bool = False,
+) -> redis.Redis:
     """
     Returns a Redis connection to use based on parameters in settings.RQ_QUEUES
     """
@@ -148,16 +153,16 @@ def get_connection(name='default', use_strict_redis=False):
 
 
 def get_queue(
-    name='default',
-    default_timeout=None,
-    is_async=None,
-    autocommit=None,
-    connection=None,
-    queue_class=None,
-    job_class=None,
-    serializer=None,
+    name: str = 'default',
+    default_timeout: Optional[int] = None,
+    is_async: Optional[bool] = None,
+    autocommit: Optional[bool] = None,
+    connection: Optional[redis.Redis] = None,
+    queue_class: Optional[Union[str, Type[DjangoRQ]]] = None,
+    job_class: Optional[Union[str, Type[Job]]] = None,
+    serializer: Any = None,
     **kwargs
-):
+) -> DjangoRQ:
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
@@ -280,7 +285,7 @@ def get_queues(*queue_names, **kwargs):
     return queues
 
 
-def enqueue(func, *args, **kwargs):
+def enqueue(func: Callable, *args, **kwargs) -> Job:
     """
     A convenience function to put a job in the default queue. Usage::
 
@@ -333,7 +338,11 @@ try:
 
             return super(DjangoScheduler, self)._create_job(*args, **kwargs)
 
-    def get_scheduler(name='default', queue=None, interval=60):
+    def get_scheduler(
+        name: str = 'default',
+        queue: Optional[DjangoRQ] = None,
+        interval: int = 60,
+    ) -> DjangoScheduler:
         """
         Returns an RQ Scheduler instance using parameters defined in
         ``RQ_QUEUES``
