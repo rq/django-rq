@@ -24,4 +24,8 @@ def get_queue_index(name: str = 'default') -> int:
 
 
 def query_user() -> Optional[User]:
-    return User.objects.first()
+    try:
+        return User.objects.first()
+    except Exception as e:
+        print('Exception caught when querying user: ', e)
+        raise e
