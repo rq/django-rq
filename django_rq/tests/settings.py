@@ -40,8 +40,11 @@ INSTALLED_APPS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ':memory:',
-    },
+        'NAME': 'test_db.sqlite3',
+        'TEST': {
+            'NAME': 'test_db.sqlite3',
+        }
+    }
 }
 
 if REDIS_CACHE_TYPE == 'django-redis':

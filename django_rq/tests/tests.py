@@ -38,7 +38,7 @@ from django_rq.tests.fixtures import DummyJob, DummyQueue, DummyWorker
 from django_rq.utils import get_jobs, get_statistics, get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
 
-from .utils import query_queue
+from .utils import query_user
 
 try:
     from rq_scheduler import Scheduler
@@ -311,7 +311,7 @@ class QueuesTest(TestCase):
             with mock.patch.object(multiprocessing, "get_start_method", return_value=start_method):
                 queue_name = 'django_rq_test'
                 queue = get_queue(queue_name)
-                job = queue.enqueue(query_queue)
+                job = queue.enqueue(query_user)
                 finished_job_registry = FinishedJobRegistry(queue.name, queue.connection)
                 call_command('rqworker-pool', queue_name, burst=True)
 

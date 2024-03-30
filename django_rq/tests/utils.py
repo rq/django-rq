@@ -1,8 +1,11 @@
+from typing import Optional
+
 from django_rq.queues import get_connection, get_queue_by_index
-from django_rq.models import Queue
+
+from django.contrib.auth.models import User
 
 
-def get_queue_index(name='default'):
+def get_queue_index(name: str = 'default') -> int:
     """
     Returns the position of Queue for the named queue in QUEUES_LIST
     """
@@ -20,5 +23,5 @@ def get_queue_index(name='default'):
     return queue_index
 
 
-def query_queue():
-    return Queue.objects.first()
+def query_user() -> Optional[User]:
+    return User.objects.first()
