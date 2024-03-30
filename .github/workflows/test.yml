@@ -14,6 +14,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Python${{ matrix.python-version }}/Django${{ matrix.django-version }}
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: django_rq_test_db
+        ports:
+          - 5432:5432
+
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]

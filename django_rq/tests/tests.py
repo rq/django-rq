@@ -308,7 +308,7 @@ class QueuesTest(TestCase):
 
     def test_rqworker_pool_process_start_method(self) -> None:
         for start_method in ['spawn', 'fork']:
-            with mock.patch.object(multiprocessing, "get_start_method", return_value=start_method):
+            with mock.patch.object(multiprocessing, 'get_start_method', return_value=start_method):
                 queue_name = 'django_rq_test'
                 queue = get_queue(queue_name)
                 job = queue.enqueue(query_user)
