@@ -110,7 +110,7 @@ class QueuesTest(TestCase):
     def test_get_connection_default(self):
         """
         Test that get_connection returns the right connection based for
-        `defaut` queue.
+        `default` queue.
         """
         config = QUEUES['default']
         connection = get_connection()
