@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from rq.suspension import resume
 
-from ..queues import get_connection
+from ...queues import get_connection
 
 
 class Command(BaseCommand):
