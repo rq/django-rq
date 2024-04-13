@@ -16,8 +16,8 @@ setup(
     package_data={'': ['README.rst']},
     install_requires=['django>=3.2', 'rq>=1.14', 'redis>=3'],
     extras_require={
-        'Sentry': ['raven>=6.1.0'],
-        'testing': ['mock>=2.0.0'],
+        'Sentry': ['sentry-sdk>=1.0.0'],
+        'testing': [],
     },
     classifiers=[
         'Development Status :: 4 - Beta',

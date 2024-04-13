@@ -23,7 +23,7 @@ def get_scheduler_pid(queue):
         It Only works with RQ's Built-in RQScheduler.
         When RQ-Scheduler is available returns False
         If not, it checks the RQ's RQScheduler for a scheduler lock in the desired queue
-        Note: result might have some delay (1-15 minutes) but it helps visualizing whether the setup is working correcly
+        Note: result might have some delay (1-15 minutes) but it helps visualizing whether the setup is working correctly
     '''
     try:
         # first try get the rq-scheduler

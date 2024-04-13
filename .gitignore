@@ -11,4 +11,5 @@ django_rq.egg-info/
 *.rdb
 # pycharm
 .idea
+.vscode
 Pipfile.lock
