@@ -37,7 +37,7 @@ def get_worker_class(worker_class=None):
     return worker_class
 
 
-def get_worker(*queue_names, **kwargs):
+def get_worker(*queue_names: str, **kwargs) -> Worker:
     """
     Returns a RQ worker for all queues or specified ones.
     """
