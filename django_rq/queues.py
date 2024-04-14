@@ -342,6 +342,7 @@ try:
         name: str = 'default',
         queue: Optional[DjangoRQ] = None,
         interval: int = 60,
+        connection: Optional[redis.Redis] = None,
     ) -> DjangoScheduler:
         """
         Returns an RQ Scheduler instance using parameters defined in
@@ -353,11 +354,14 @@ try:
         if isinstance(scheduler_class, str):
             scheduler_class = import_attribute(scheduler_class)
 
+        if connection is None:
+            connection = get_connection(name)
+
         if queue is None:
-            queue = get_queue(name)
+            queue = get_queue(name, connection=connection)
 
         return scheduler_class(
-            queue_name=name, interval=interval, queue=queue, job_class=queue.job_class, connection=get_connection(name)
+            queue_name=name, interval=interval, queue=queue, job_class=queue.job_class, connection=connection
         )
 
 except ImportError:
