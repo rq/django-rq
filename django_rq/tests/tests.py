@@ -681,8 +681,8 @@ class ThreadQueueTest(TestCase):
         self.assertEqual(queue.count, 0)
 
 
+@skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
 class SchedulerTest(TestCase):
-    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     def test_get_scheduler(self):
         """
         Ensure get_scheduler creates a scheduler instance with the right
@@ -696,7 +696,16 @@ class SchedulerTest(TestCase):
         self.assertEqual(connection_kwargs['port'], config['PORT'])
         self.assertEqual(connection_kwargs['db'], config['DB'])
 
-    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    def test_get_scheduler_custom_connection(self):
+        """
+        Ensure get_scheduler respects the `connection` argument.
+        """
+
+        with get_connection('test') as connection:
+            scheduler = get_scheduler('test', connection=connection)
+
+            self.assertIs(scheduler.connection, connection)
+
     @patch('django_rq.management.commands.rqscheduler.get_scheduler')
     @patch('django_rq.management.commands.rqscheduler.setup_loghandlers')
     def test_commandline_verbosity_affects_logging_level(self, setup_loghandlers_mock, get_scheduler_mock):
@@ -713,7 +722,6 @@ class SchedulerTest(TestCase):
             setup_loghandlers_mock.assert_called_once_with(expected_level[verbosity])
 
     @override_settings(RQ={'SCHEDULER_CLASS': 'django_rq.tests.fixtures.DummyScheduler'})
-    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     def test_scheduler_default_timeout(self):
         """
         Scheduler class customization.
@@ -722,7 +730,6 @@ class SchedulerTest(TestCase):
         self.assertIsInstance(scheduler, DummyScheduler)
 
     @override_settings(RQ={'AUTOCOMMIT': True})
-    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     def test_scheduler_default_timeout(self):
         """
         Ensure scheduler respects DEFAULT_RESULT_TTL value for `result_ttl` param.
@@ -734,7 +741,6 @@ class SchedulerTest(TestCase):
         job.delete()
 
     @override_settings(RQ={'AUTOCOMMIT': True, 'DEFAULT_RESULT_TTL': 5432})
-    @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     def test_scheduler_default_result_ttl(self):
         """
         Ensure scheduler respects DEFAULT_RESULT_TTL value for `result_ttl` param.
