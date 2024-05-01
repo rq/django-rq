@@ -1,7 +1,7 @@
 import click
 import time
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from ...utils import get_statistics
 
@@ -85,9 +85,9 @@ class Command(BaseCommand):
         if options.get("yaml"):
             try:
                 import yaml
-            except ImportError:
-                click.echo("Aborting. LibYAML is not installed.")
-                return
+            except ImportError as ex:
+                raise CommandError("PyYAML is not installed.") from ex
+
             # Disable YAML alias
             yaml.Dumper.ignore_aliases = lambda *args: True
             click.echo(yaml.dump(get_statistics(), default_flow_style=False))
