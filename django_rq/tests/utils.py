@@ -1,7 +1,11 @@
+from typing import Optional
+
 from django_rq.queues import get_connection, get_queue_by_index
 
+from django.contrib.auth.models import User
 
-def get_queue_index(name='default'):
+
+def get_queue_index(name: str = 'default') -> int:
     """
     Returns the position of Queue for the named queue in QUEUES_LIST
     """
@@ -17,3 +21,11 @@ def get_queue_index(name='default'):
             queue_index = i
             break
     return queue_index
+
+
+def query_user() -> Optional[User]:
+    try:
+        return User.objects.first()
+    except Exception as e:
+        print('Exception caught when querying user: ', e)
+        raise e
