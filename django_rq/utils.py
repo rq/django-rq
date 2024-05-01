@@ -1,5 +1,6 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connections
+from redis.sentinel import SentinelConnectionPool
 from rq.command import send_stop_job_command
 from rq.job import Job
 from rq.registry import (
@@ -102,7 +103,11 @@ def get_scheduler_statistics():
         # to handle the possibility of a configuration with multiple redis connections and scheduled
         # jobs in more than one of them
         queue = get_queue_by_index(index)
-        connection = queue.connection.connection_pool.connection_kwargs
+        if isinstance(queue.connection.connection_pool, SentinelConnectionPool):
+            first_sentinel = queue.connection.connection_pool.sentinel_manager.sentinels[0]
+            connection = first_sentinel.connection_pool.connection_kwargs
+        else:
+            connection = queue.connection.connection_pool.connection_kwargs
         conn_key = f"{connection['host']}:{connection.get('port', 6379)}/{connection.get('db', 0)}"
         if conn_key not in schedulers:
             try:
