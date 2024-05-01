@@ -17,6 +17,7 @@ import rq
 from rq.exceptions import NoSuchJobError
 from rq.job import Job
 from rq.registry import FinishedJobRegistry, ScheduledJobRegistry
+from rq.suspension import is_suspended
 from rq.worker import Worker
 from rq.serializers import DefaultSerializer, JSONSerializer
 
@@ -789,6 +790,15 @@ class JobClassTest(TestCase):
 
     def test_local_override(self):
         self.assertIs(get_job_class('django_rq.tests.fixtures.DummyJob'), DummyJob)
+
+class SuspendResumeTest(TestCase):
+    def test_suspend_and_resume_commands(self):
+        connection = get_connection()
+        self.assertEqual(is_suspended(connection), 0)
+        call_command('rqsuspend')
+        self.assertEqual(is_suspended(connection), 1)
+        call_command('rqresume')
+        self.assertEqual(is_suspended(connection), 0)
 
 
 class QueueClassTest(TestCase):

@@ -244,7 +244,7 @@ for your jobs. For example:
     from django_rq.queues import get_queue
     queue = get_queue('default')
     job = queue.enqueue_at(datetime(2020, 10, 10), func)
-    
+
 If you are using built-in scheduler you have to start workers with scheduler support::
 
     python manage.py rqworker --with-scheduler
@@ -306,6 +306,33 @@ Here is an example settings fragment for `django-redis`:
             'USE_REDIS_CACHE': 'redis-cache',
         },
     }
+
+
+Suspending and Resuming Workers
+----------------
+
+Sometimes you may want to suspend RQ to prevent it from processing new jobs.
+A classic example is during the initial phase of a deployment script or in advance
+of putting your site into maintenance mode. This is particularly helpful when
+you have jobs that are relatively long-running and might otherwise be forcibly
+killed during the deploy.
+
+The `suspend` command stops workers on _all_ queues (in a single Redis database)
+from picking up new jobs. However currently running jobs will continue until
+completion.
+
+.. code-block:: bash
+
+   # Suspend indefinitely
+   python manage.py rqsuspend
+
+   # Suspend for a specific duration (in seconds) then automatically
+   # resume work again.
+   python manage.py rqsuspend -d 600
+
+   # Resume work again.
+   python manage.py rqresume
+
 
 Queue Statistics
 ----------------
