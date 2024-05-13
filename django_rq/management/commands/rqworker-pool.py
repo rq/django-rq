@@ -1,3 +1,4 @@
+import multiprocessing as mp
 import os
 import sys
 
@@ -7,7 +8,7 @@ from rq.serializers import resolve_serializer
 from django.core.management.base import BaseCommand
 
 from ...jobs import get_job_class
-from ...utils import configure_sentry
+from ...utils import configure_sentry, reset_db_connections
 from ...queues import get_queues
 from ...workers import get_worker_class
 from ...worker_pool import DjangoWorkerPool
@@ -97,4 +98,7 @@ class Command(BaseCommand):
             worker_class=worker_class,
             job_class=job_class,
         )
+        # Close any opened DB connection before any fork
+        reset_db_connections()
+        mp.set_start_method('fork', force=True)
         pool.start(burst=options.get('burst', False), logging_level=logging_level)
