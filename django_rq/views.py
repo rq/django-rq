@@ -539,31 +539,40 @@ def actions(request, queue_index):
 @never_cache
 @staff_member_required
 def enqueue_job(request, queue_index, job_id):
-    """Enqueue deferred jobs"""
+    """Enqueue deferred/scheduled/finished jobs"""
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
 
     if request.method == 'POST':
-        try:
-            # _enqueue_job is new in RQ 1.14, this is used to enqueue
-            # job regardless of its dependencies
-            queue._enqueue_job(job)
-        except AttributeError:
-            queue.enqueue_job(job)
+        job_status = job.get_status()
 
-        # Remove job from correct registry if needed
-        if job.get_status() == JobStatus.DEFERRED:
-            registry = DeferredJobRegistry(queue.name, queue.connection)
-            registry.remove(job)
-        elif job.get_status() == JobStatus.FINISHED:
-            registry = FinishedJobRegistry(queue.name, queue.connection)
-            registry.remove(job)
-        elif job.get_status() == JobStatus.SCHEDULED:
-            registry = ScheduledJobRegistry(queue.name, queue.connection)
+        if job_status in {
+            JobStatus.DEFERRED,
+            JobStatus.SCHEDULED,
+            JobStatus.FINISHED,
+        }:
+            try:
+                # _enqueue_job is new in RQ 1.14, this is used to enqueue
+                # job regardless of its dependencies
+                queue._enqueue_job(job)
+            except AttributeError:
+                queue.enqueue_job(job)
+
+            # Remove job from correct registry
+            RegistryClass = {
+                JobStatus.DEFERRED: DeferredJobRegistry,
+                JobStatus.SCHEDULED: ScheduledJobRegistry,
+                JobStatus.FINISHED: FinishedJobRegistry,
+            }[job_status]
+
+            registry = RegistryClass(queue.name, queue.connection)
             registry.remove(job)
 
-        messages.info(request, 'You have successfully enqueued %s' % job.id)
+            messages.info(request, 'You have successfully enqueued %s' % job.id)
+        else:
+            messages.error(request, 'Failed to enqueue %s. Only deferred/scheduled/finished jobs can be enqueued.' % job_id)
+
         return redirect('rq_job_detail', queue_index, job_id)
 
     context_data = {
