@@ -20,13 +20,6 @@ except ImportError:
     except ImportError:
         REDIS_CACHE_TYPE = 'none'
 
-try:
-    from django.utils.log import NullHandler
-
-    nullhandler = 'django.utils.log.NullHandler'
-except:
-    nullhandler = 'logging.NullHandler'
-
 INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.admin',
@@ -86,7 +79,7 @@ LOGGING = {
         },
         'null': {
             'level': 'DEBUG',
-            'class': nullhandler,
+            'class': 'logging.NullHandler',
         },
     },
     'loggers': {

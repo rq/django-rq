@@ -69,6 +69,7 @@ class ViewTest(TestCase):
         result = job.results()[0]
         url = reverse('rq_job_detail', args=[queue_index, job.id])
         response = self.client.get(url)
+        assert result.id
         self.assertContains(response, result.id)
 
     def test_job_details_on_deleted_dependency(self):
@@ -185,6 +186,7 @@ class ViewTest(TestCase):
 
         # Check that job is updated correctly
         last_job = queue.fetch_job(last_job.id)
+        assert last_job
         self.assertEqual(last_job.get_status(), JobStatus.QUEUED)
         self.assertIsNotNone(last_job.enqueued_at)
 
@@ -407,7 +409,7 @@ class ViewTest(TestCase):
         self.assertEqual(len(canceled_job_registry), len(job_ids))
 
         for job_id in job_ids:
-            self.assertIn(job_id, canceled_job_registry)
+            self.assertIn(job_id, canceled_job_registry)  # type: ignore[arg-type]
 
     def test_scheduler_jobs(self):
         # Override testing RQ_QUEUES
