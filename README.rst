@@ -581,5 +581,5 @@ Changelog
 See `CHANGELOG.md <https://github.com/rq/django-rq/blob/master/CHANGELOG.md>`__.
 
 
-.. |Build Status| image:: https://secure.travis-ci.org/rq/django-rq.svg?branch=master
-   :target: https://travis-ci.org/rq/django-rq
+.. |Build Status| image:: https://github.com/rq/django-rq/actions/workflows/test.yml/badge.svg
+   :target: https://github.com/rq/django-rq/actions/workflows/test.yml
