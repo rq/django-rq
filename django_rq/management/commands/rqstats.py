@@ -11,6 +11,7 @@ class Command(BaseCommand):
     Print RQ statistics
     """
     help = __doc__
+    _separator: str
 
     def add_arguments(self, parser):
         # TODO: convert this to @click.command like rq does
@@ -89,7 +90,7 @@ class Command(BaseCommand):
                 raise CommandError("PyYAML is not installed.") from ex
 
             # Disable YAML alias
-            yaml.Dumper.ignore_aliases = lambda *args: True
+            yaml.Dumper.ignore_aliases = lambda *args: True  # type: ignore[method-assign]
             click.echo(yaml.dump(get_statistics(), default_flow_style=False))
             return
 

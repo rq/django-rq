@@ -4,6 +4,7 @@ import sys
 from rq.serializers import resolve_serializer
 from rq.worker_pool import WorkerPool
 from rq.logutils import setup_loghandlers
+from typing import cast
 
 from django.core.management.base import BaseCommand
 
@@ -67,7 +68,7 @@ class Command(BaseCommand):
                 fp.write(str(os.getpid()))
 
         # Verbosity is defined by default in BaseCommand for all commands
-        verbosity = options.get('verbosity')
+        verbosity: int = options['verbosity']
         if verbosity >= 2:
             logging_level = 'DEBUG'
         elif verbosity == 0:

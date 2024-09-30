@@ -1,3 +1,5 @@
+from typing import cast, Optional, List, Union
+
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connections
 from redis.sentinel import SentinelConnectionPool
@@ -121,12 +123,26 @@ def get_scheduler_statistics():
     return {'schedulers': schedulers}
 
 
-def get_jobs(queue, job_ids, registry=None):
+def get_jobs(
+    queue,
+    job_ids,
+    registry: Optional[
+        Union[
+            DeferredJobRegistry,
+            FailedJobRegistry,
+            FinishedJobRegistry,
+            ScheduledJobRegistry,
+            StartedJobRegistry,
+        ]
+    ] = None,
+) -> List[Job]:
     """Fetch jobs in bulk from Redis.
     1. If job data is not present in Redis, discard the result
     2. If `registry` argument is supplied, delete empty jobs from registry
     """
-    jobs = Job.fetch_many(job_ids, connection=queue.connection, serializer=queue.serializer)
+    jobs = cast(
+        List[Optional[Job]], Job.fetch_many(job_ids, connection=queue.connection, serializer=queue.serializer)
+    )
     valid_jobs = []
     for i, job in enumerate(jobs):
         if job is None:

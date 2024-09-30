@@ -39,3 +39,24 @@ jobs:
     - name: Run Test
       run: |
         `which django-admin` test django_rq --settings=django_rq.tests.settings --pythonpath=.
+
+  mypy:
+    runs-on: ubuntu-latest
+    name: Type check
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v4.2.0
+      with:
+        python-version: "3.8"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install django-stubs[compatible-mypy] rq types-redis
+
+    - name: Run Test
+      run: |
+        mypy django_rq

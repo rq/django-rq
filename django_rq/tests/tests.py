@@ -1,6 +1,7 @@
 import sys
 import datetime
 import time
+from typing import Any, cast, Dict, List
 from unittest import skipIf, mock
 from unittest.mock import patch, PropertyMock, MagicMock
 from uuid import uuid4
@@ -34,7 +35,7 @@ from django_rq.queues import (
 )
 from django_rq import thread_queue
 from django_rq.templatetags.django_rq import force_escape, to_localtime
-from django_rq.tests.fixtures import DummyJob, DummyQueue, DummyWorker
+from django_rq.tests.fixtures import access_self, DummyJob, DummyQueue, DummyWorker
 from django_rq.utils import get_jobs, get_statistics, get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
 
@@ -48,10 +49,6 @@ except ImportError:
     RQ_SCHEDULER_INSTALLED = False
 
 QUEUES = settings.RQ_QUEUES
-
-
-def access_self():
-    return get_current_job().id
 
 
 def divide(a, b):
@@ -271,7 +268,7 @@ class QueuesTest(TestCase):
         Checks that passing queues via commandline arguments works
         """
         queue_names = ['django_rq_test', 'django_rq_test2']
-        jobs = []
+        jobs: List[Any] = []
         for queue_name in queue_names:
             queue = get_queue(queue_name)
             jobs.append(
@@ -288,7 +285,7 @@ class QueuesTest(TestCase):
             self.assertIn(job['job'].id, job['finished_job_registry'].get_job_ids())
 
         # Test with rqworker-pool command
-        jobs = []
+        jobs: List[Any] = []
         for queue_name in queue_names:
             queue = get_queue(queue_name)
             jobs.append(
@@ -441,8 +438,7 @@ class QueuesTest(TestCase):
         # Make sure old keyword argument 'async' works for backwards
         # compatibility with code expecting older versions of rq or django-rq.
         # Note 'async' is a reserved keyword in Python >= 3.7.
-        kwargs = {'async': False}
-        default_queue_async = get_queue('default', **kwargs)
+        default_queue_async = get_queue('default', **cast(Dict[str, Any], {'async': False}))
         self.assertFalse(default_queue_async._is_async)
 
         # Make sure is_async setting works
@@ -722,7 +718,7 @@ class SchedulerTest(TestCase):
             setup_loghandlers_mock.assert_called_once_with(expected_level[verbosity])
 
     @override_settings(RQ={'SCHEDULER_CLASS': 'django_rq.tests.fixtures.DummyScheduler'})
-    def test_scheduler_default_timeout(self):
+    def test_scheduler_default(self):
         """
         Scheduler class customization.
         """
