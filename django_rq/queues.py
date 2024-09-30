@@ -105,10 +105,10 @@ def get_redis_connection(config, use_strict_redis=False):
         cache = caches[config['USE_REDIS_CACHE']]
         # We're using django-redis-cache
         try:
-            return cache._client
+            return cache._client  # type: ignore[attr-defined]
         except AttributeError:
             # For django-redis-cache > 0.13.1
-            return cache.get_master_client()
+            return cache.get_master_client()  # type: ignore[attr-defined]
 
     if 'UNIX_SOCKET_PATH' in config:
         return redis_cls(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
@@ -161,7 +161,7 @@ def get_queue(
     queue_class: Optional[Union[str, Type[DjangoRQ]]] = None,
     job_class: Optional[Union[str, Type[Job]]] = None,
     serializer: Any = None,
-    **kwargs
+    **kwargs: Any,
 ) -> DjangoRQ:
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
@@ -366,5 +366,5 @@ try:
 
 except ImportError:
 
-    def get_scheduler(*args, **kwargs):
+    def get_scheduler(*args, **kwargs):  # type: ignore[misc]
         raise ImproperlyConfigured('rq_scheduler not installed')

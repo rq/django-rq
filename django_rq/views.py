@@ -1,6 +1,7 @@
 from __future__ import division
 
 from math import ceil
+from typing import Any
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
@@ -60,7 +61,7 @@ def jobs(request, queue_index):
 
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
-        page_range = range(1, last_page + 1)
+        page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
         jobs = queue.get_jobs(offset, items_per_page)
     else:
@@ -95,7 +96,7 @@ def finished_jobs(request, queue_index):
 
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
-        page_range = range(1, last_page + 1)
+        page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
         jobs = get_jobs(queue, job_ids, registry)
@@ -131,7 +132,7 @@ def failed_jobs(request, queue_index):
 
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
-        page_range = range(1, last_page + 1)
+        page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
         jobs = get_jobs(queue, job_ids, registry)
@@ -167,13 +168,13 @@ def scheduled_jobs(request, queue_index):
 
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
-        page_range = range(1, last_page + 1)
+        page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
 
         jobs = get_jobs(queue, job_ids, registry)
         for job in jobs:
-            job.scheduled_at = registry.get_scheduled_time(job)
+            job.scheduled_at = registry.get_scheduled_time(job)  # type: ignore[attr-defined]
 
     else:
         page_range = []
@@ -206,7 +207,7 @@ def started_jobs(request, queue_index):
 
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
-        page_range = range(1, last_page + 1)
+        page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
         jobs = get_jobs(queue, job_ids, registry)
@@ -252,7 +253,7 @@ def worker_details(request, queue_index, key):
     queue = get_queue_by_index(queue_index)
     worker = Worker.find_by_key(key, connection=queue.connection)
     # Convert microseconds to milliseconds
-    worker.total_working_time = worker.total_working_time / 1000
+    worker.total_working_time = worker.total_working_time / 1000  # type: ignore[assignment]
 
     queue_names = ', '.join(worker.queue_names())
 
@@ -283,7 +284,7 @@ def deferred_jobs(request, queue_index):
 
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
-        page_range = range(1, last_page + 1)
+        page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
 
@@ -330,7 +331,7 @@ def job_detail(request, queue_index, job_id):
     rv = job.connection.hget(job.key, 'result')
     if rv is not None:
         # cache the result
-        job.legacy_result = job.serializer.loads(rv)
+        job.legacy_result = job.serializer.loads(rv)  # type: ignore[attr-defined]
     try:
         exc_info = job._exc_info
     except AttributeError:
@@ -403,7 +404,12 @@ def clear_queue(request, queue_index):
             queue.empty()
             messages.info(request, 'You have successfully cleared the queue %s' % queue.name)
         except ResponseError as e:
-            if 'EVALSHA' in e.message:
+            try:
+                suppress = 'EVALSHA' in e.message  # type: ignore[attr-defined]
+            except AttributeError:
+                suppress = 'EVALSHA' in str(e)
+
+            if suppress:
                 messages.error(
                     request,
                     'This action is not supported on Redis versions < 2.6.0, please use the bulk delete command instead',
@@ -553,6 +559,7 @@ def enqueue_job(request, queue_index, job_id):
             queue.enqueue_job(job)
 
         # Remove job from correct registry if needed
+        registry: Any
         if job.get_status() == JobStatus.DEFERRED:
             registry = DeferredJobRegistry(queue.name, queue.connection)
             registry.remove(job)
@@ -603,7 +610,7 @@ def scheduler_jobs(request, scheduler_index):
 
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
-        page_range = range(1, last_page + 1)
+        page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
         jobs_times = scheduler.get_jobs(with_times=True, offset=offset, length=items_per_page)
         for job, time in jobs_times:

@@ -59,7 +59,7 @@ class Command(BaseCommand):
                 fp.write(str(os.getpid()))
 
         # Verbosity is defined by default in BaseCommand for all commands
-        verbosity = options.get('verbosity')
+        verbosity = options['verbosity']
         if verbosity >= 2:
             level = 'DEBUG'
         elif verbosity == 0:

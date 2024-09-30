@@ -13,7 +13,10 @@ setup(
     long_description=open('README.rst').read(),
     zip_safe=False,
     include_package_data=True,
-    package_data={'': ['README.rst']},
+    package_data={
+        '': ['README.rst'],
+        'rq': ['py.typed'],
+    },
     install_requires=['django>=3.2', 'rq>=1.14', 'redis>=3'],
     extras_require={
         'Sentry': ['sentry-sdk>=1.0.0'],

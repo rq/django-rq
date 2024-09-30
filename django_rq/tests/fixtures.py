@@ -28,7 +28,9 @@ except ImportError:
 
 
 def access_self():
-    return get_current_job().id
+    job = get_current_job()
+    assert job
+    return job.id
 
 
 def failing_job():
