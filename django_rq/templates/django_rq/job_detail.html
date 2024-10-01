@@ -37,30 +37,38 @@
 
         <div class="form-row">
             <div>
-                <label>Queue:</label>
-                <div class="readonly">{{ job.origin }}</div>
+                <div class = "flex-container">
+                    <label>Queue:</label>
+                    <div class="readonly">{{ job.origin }}</div>
+                </div>
             </div>
         </div>
 
         <div class="form-row">
             <div>
-                <label>Timeout:</label>
-                <div class="readonly">{{ job.timeout }}</div>
+                <div class = "flex-container">
+                    <label>Timeout:</label>
+                    <div class="readonly">{{ job.timeout }}</div>
+                </div>
             </div>
         </div>
 
         <div class="form-row">
             <div>
-                <label>Result TTL:</label>
-                <div class="readonly">{{ job.result_ttl }}</div>
+                <div class = "flex-container">
+                    <label>Result TTL:</label>
+                    <div class="readonly">{{ job.result_ttl }}</div>
+                </div>
             </div>
         </div>
 
         {% if job.created_at %}
         <div class="form-row">
             <div>
-                <label>Created:</label>
-                <div class="readonly">{{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
+                <div class = "flex-container">
+                    <label>Created:</label>
+                    <div class="readonly">{{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
+                </div>
             </div>
         </div>
         {% endif %}
@@ -68,8 +76,10 @@
         {% if job.enqueued_at %}
         <div class="form-row">
             <div>
-                <label>Queued:</label>
-                <div class="readonly">{{ job.enqueued_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
+                <div class = "flex-container">
+                    <label>Queued:</label>
+                    <div class="readonly">{{ job.enqueued_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
+                </div>
             </div>
         </div>
         {% endif %}
@@ -77,8 +87,10 @@
         {% if job.started_at %}
         <div class="form-row">
             <div>
-                <label>Started:</label>
-                <div class="readonly">{{ job.started_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
+                <div class = "flex-container">
+                    <label>Started:</label>
+                    <div class="readonly">{{ job.started_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
+                </div>
             </div>
         </div>
         {% endif %}
@@ -86,30 +98,38 @@
         {% if job.ended_at %}
         <div class="form-row">
             <div>
-                <label>Ended:</label>
-                <div class="readonly">{{ job.ended_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
+                <div class = "flex-container">
+                    <label>Ended:</label>
+                    <div class="readonly">{{ job.ended_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
+                </div>
             </div>
         </div>
         {% endif %}
 
         <div class="form-row">
             <div>
-                <label>Status:</label>
-                <div class="readonly">{{ job.get_status }}</div>
+                <div class = "flex-container">
+                    <label>Status:</label>
+                    <div class="readonly">{{ job.get_status }}</div>
+                </div>
             </div>
         </div>
 
         <div class="form-row">
             <div>
-                <label>Callable:</label>
-                <div class="readonly">{{ job|show_func_name }}</div>
+                <div class = "flex-container">
+                    <label>Callable:</label>
+                    <div class="readonly">{{ job|show_func_name }}</div>
+                </div>
             </div>
         </div>
 
         <div class="form-row">
             <div>
-                <label>Meta:</label>
-                <div class="data">{{ job.meta }}</div>
+                <div class = "flex-container">
+                    <label>Meta:</label>
+                    <div class="data">{{ job.meta }}</div>
+                </div>
             </div>
         </div>
 
@@ -117,17 +137,19 @@
             <div>
                 <label>Args:</label>
                 <div>
-                    {% if data_is_valid %}
-                        {% if job.args %}
-                          <ul>
-                              {% for arg in job.args %}
-                                  <li>{{ arg|force_escape }}</li>
-                              {% endfor %}
-                          </ul>
+                    <div class = "flex-container">
+                        {% if data_is_valid %}
+                            {% if job.args %}
+                            <ul>
+                                {% for arg in job.args %}
+                                    <li>{{ arg|force_escape }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        {% else %}
+                            Unpickling Error
                         {% endif %}
-                    {% else %}
-                        Unpickling Error
-                    {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -136,17 +158,19 @@
             <div>
                 <label>Kwargs:</label>
                 <div>
-                    {% if data_is_valid %}
-                        {% if job.kwargs %}
-                            <ul>
-                                {% for key, value in job.kwargs|items %}
-                                    <li>{{ key }}: {{ value|force_escape }}</li>
-                                {% endfor %}
-                            </ul>
+                    <div class = "flex-container">
+                        {% if data_is_valid %}
+                            {% if job.kwargs %}
+                                <ul>
+                                    {% for key, value in job.kwargs|items %}
+                                        <li>{{ key }}: {{ value|force_escape }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        {% else %}
+                            Unpickling Error
                         {% endif %}
-                    {% else %}
-                        Unpickling Error
-                    {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -175,8 +199,10 @@
         {% if job.legacy_result %}
         <div class="form-row">
             <div>
-                <label>Result:</label>
-                <div>{{ job.result }}</div>
+                <div class = "flex-container">
+                    <label>Result:</label>
+                    <div class="readonly">{{ job.result }}</div>
+                </div>
             </div>
         </div>
         {% endif %}
@@ -193,13 +219,13 @@
             </form>
         {% endif %}
         {% if job.is_failed %}
-            <form method = 'POST' action = "{% url 'rq_requeue_job' queue_index job.id %}">
+            <form method = 'POST' action = "{% url 'rq_requeue_job' queue_index job.id %}"></form>
                 {% csrf_token %}
                 <input type="submit" value="Requeue" class="default" name="requeue">
             </form>
         {% endif %}
         {% if not job.is_queued and not job.is_failed %}
-            <form method = 'POST' action = "{% url 'rq_enqueue_job' queue_index job.id %}">
+            <form method = 'POST' action = "{% url 'rq_enqueue_job' queue_index job.id %}"></form>
                 {% csrf_token %}
                 <input type="submit" value="Enqueue" class="default" name="Enqueue">
             </form>
@@ -216,29 +242,39 @@
             <fieldset class="module aligned ">
                 <div class="form-row field-choice_text">
                     <div>
-                        <label>Type:</label>
-                        <div class="readonly">{{ result.type.name }}</div>
+                        <div class = "flex-container">
+                            <label>Type:</label>
+                            <div class="readonly">
+                                {{ result.type.name }}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="form-row field-votes">
                     <div>
-                        <label>Created at:</label>
-                        <div class="readonly">{{ result.created_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
+                        <div class = "flex-container">
+                            <label>Created at:</label>
+                            <div class="readonly">{{ result.created_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
+                        </div>
                     </div>
                 </div>
                 {% if result.type.value == 1 %}
                     <div class="form-row field-votes">
                         <div>
-                            <label>Return value:</label>
-                            <div><pre>{{ result.return_value }}</pre></div>
+                            <div class = "flex-container">
+                                <label>Return value:</label>
+                                <div><pre>{{ result.return_value }}</pre></div>
+                            </div>
                         </div>
                     </div>
                 {% elif result.type.value == 2 %}
                     <div class="form-row field-votes">
                         <div>
-                            <label>Exception:</label>
-                            <div><pre>{{ result.exc_string }}</pre></div>
+                            <div class = "flex-container">
+                                <label>Exception:</label>
+                                <div><pre>{{ result.exc_string }}</pre></div>
+                            </div>
                         </div>
                     </div>
                 {% endif %}
