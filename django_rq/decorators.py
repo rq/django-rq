@@ -1,15 +1,42 @@
 from rq.decorators import job as _rq_job
-from typing import TYPE_CHECKING, Union
+from typing import Any, Callable, Optional, overload, Protocol, TYPE_CHECKING, TypeVar, Union
 
 from django.conf import settings
 
 from .queues import get_queue
 
 if TYPE_CHECKING:
+    from redis import Redis
     from rq import Queue
+    from typing_extensions import ParamSpec
+
+    P = ParamSpec('P')
+    R = TypeVar('R', covariant=True)
+
+    class _JobFn(Protocol[P, R]):
+        def delay(self, *args: P.args, **kwargs: P.kwargs) -> R: ...
+        def enqueue(self, *args: P.args, **kwargs: P.kwargs) -> R: ...
+        def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...
 
 
-def job(func_or_queue, connection=None, *args, **kwargs):
+@overload
+def job(func_or_queue: 'Callable[P, R]') -> '_JobFn[P, R]': ...
+
+@overload
+def job(
+    func_or_queue: Union['Queue', str],
+    connection: Optional['Redis'] = None,
+    *args: Any,
+    **kwargs: Any,
+) -> Callable[['Callable[P, R]'], '_JobFn[P, R]']: ...
+
+
+def job(
+    func_or_queue: Union['Callable[P, R]', 'Queue', str],
+    connection: Optional['Redis'] = None,
+    *args: Any,
+    **kwargs: Any,
+) -> Union['_JobFn[P, R]', Callable[['Callable[P, R]'], '_JobFn[P, R]']]:
     """
     The same as RQ's job decorator, but it automatically works out
     the ``connection`` argument from RQ_QUEUES.
