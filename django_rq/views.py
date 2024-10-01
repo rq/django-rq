@@ -26,7 +26,7 @@ from rq.worker_registration import clean_worker_registry
 
 from .queues import get_queue_by_index, get_scheduler_by_index
 from .settings import API_TOKEN, QUEUES_MAP
-from .utils import get_jobs, get_scheduler_statistics, get_statistics, stop_jobs
+from .utils import get_executions, get_jobs, get_scheduler_statistics, get_statistics, stop_jobs
 
 
 @never_cache
@@ -204,6 +204,7 @@ def started_jobs(request, queue_index):
     num_jobs = len(registry)
     page = int(request.GET.get('page', 1))
     jobs = []
+    executions = []
 
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
@@ -211,6 +212,7 @@ def started_jobs(request, queue_index):
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
         jobs = get_jobs(queue, job_ids, registry)
+        executions = get_executions(queue, job_ids)
 
     else:
         page_range = []
@@ -224,8 +226,9 @@ def started_jobs(request, queue_index):
         'page': page,
         'page_range': page_range,
         'job_status': 'Started',
+        'executions': executions,
     }
-    return render(request, 'django_rq/jobs.html', context_data)
+    return render(request, 'django_rq/started_job_registry.html', context_data)
 
 
 @never_cache
