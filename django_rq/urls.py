@@ -1,10 +1,16 @@
 from django.urls import re_path
 
 from . import views
+from .metrics_collector import RQCollector
+
+metrics_view = [
+    re_path(r'^metrics/?$', views.prometheus_metrics, name='rq_metrics'),
+] if RQCollector else []
 
 urlpatterns = [
     re_path(r'^$', views.stats, name='rq_home'),
     re_path(r'^stats.json/(?P<token>[\w]+)?/?$', views.stats_json, name='rq_home_json'),
+    *metrics_view,
     re_path(r'^queues/(?P<queue_index>[\d]+)/$', views.jobs, name='rq_jobs'),
     re_path(r'^workers/(?P<queue_index>[\d]+)/$', views.workers, name='rq_workers'),
     re_path(r'^workers/(?P<queue_index>[\d]+)/(?P<key>[-\w\.\:\$]+)/$', views.worker_details, name='rq_worker_details'),
