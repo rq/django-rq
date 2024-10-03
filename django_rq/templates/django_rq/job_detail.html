@@ -135,9 +135,10 @@
 
         <div class="form-row">
             <div>
-                <label>Args:</label>
-                <div>
-                    <div class = "flex-container">
+                <div class = "flex-container">
+                    <label>Args:</label>
+                    <div>
+                    
                         {% if data_is_valid %}
                             {% if job.args %}
                             <ul>
@@ -156,9 +157,9 @@
 
         <div class="form-row">
             <div>
-                <label>Kwargs:</label>
-                <div>
-                    <div class = "flex-container">
+                <div class = "flex-container">
+                    <label>Kwargs:</label>
+                    <div>                    
                         {% if data_is_valid %}
                             {% if job.kwargs %}
                                 <ul>
@@ -219,13 +220,13 @@
             </form>
         {% endif %}
         {% if job.is_failed %}
-            <form method = 'POST' action = "{% url 'rq_requeue_job' queue_index job.id %}"></form>
+            <form method = 'POST' action = "{% url 'rq_requeue_job' queue_index job.id %}">
                 {% csrf_token %}
                 <input type="submit" value="Requeue" class="default" name="requeue">
             </form>
         {% endif %}
         {% if not job.is_queued and not job.is_failed %}
-            <form method = 'POST' action = "{% url 'rq_enqueue_job' queue_index job.id %}"></form>
+            <form method = 'POST' action = "{% url 'rq_enqueue_job' queue_index job.id %}">
                 {% csrf_token %}
                 <input type="submit" value="Enqueue" class="default" name="Enqueue">
             </form>

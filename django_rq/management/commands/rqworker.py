@@ -88,8 +88,6 @@ class Command(BaseCommand):
             }
             w = get_worker(*args, **worker_kwargs)
 
-            # Call Connection context manager to push the redis connection into LocalStack
-            # without this, jobs using RQ's get_current_job() will fail
             # Close any opened DB connection before any fork
             reset_db_connections()
 
