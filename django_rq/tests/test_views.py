@@ -391,6 +391,7 @@ class ViewTest(TestCase):
             job_ids.append(job.id)
             jobs.append(job)
             worker.prepare_job_execution(job)
+            worker.prepare_execution(job)
 
         # Check if the jobs are started
         for job_id in job_ids:

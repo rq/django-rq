@@ -90,7 +90,7 @@
                             {% for execution in executions %}
                                 <tr>
                                     <td class="action-checkbox">
-                                        <input class="action-select" name="_selected_action" type="checkbox" value="{{ job.id }}">
+                                        <input class="action-select" name="_selected_action" type="checkbox" value="{{ execution.id }}">
                                     </td>
                                     <th>
                                         <a href="{% url 'rq_job_detail' queue_index execution.job_id %}">
