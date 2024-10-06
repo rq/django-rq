@@ -536,10 +536,11 @@ def actions(request, queue_index):
                     requeue_job(job_id, connection=queue.connection, serializer=queue.serializer)
                 messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
             elif request.POST['action'] == 'stop':
+                print('stop')
                 stopped, failed_to_stop = stop_jobs(queue, job_ids)
-                if len(stopped) >0 :
+                if len(stopped) > 0:
                     messages.info(request, 'You have successfully stopped %d jobs!' % len(stopped))
-                if len(failed_to_stop) >0 :
+                if len(failed_to_stop) > 0:
                     messages.error(request, '%d jobs failed to stop!' % len(failed_to_stop))
 
     return redirect(next_url)
