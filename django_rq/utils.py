@@ -110,7 +110,7 @@ def get_scheduler_statistics():
             connection = first_sentinel.connection_pool.connection_kwargs
         else:
             connection = queue.connection.connection_pool.connection_kwargs
-        conn_key = f"{connection['host']}:{connection.get('port', 6379)}/{connection.get('db', 0)}"
+        conn_key = f"{connection.get('host', 'NOHOST')}:{connection.get('port', 6379)}/{connection.get('db', 0)}"
         if conn_key not in schedulers:
             try:
                 scheduler = get_scheduler(config['name'])
