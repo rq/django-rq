@@ -134,7 +134,7 @@ def failed_jobs(request, queue_index):
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=True)
         jobs = get_jobs(queue, job_ids, registry)
 
     else:
@@ -536,7 +536,6 @@ def actions(request, queue_index):
                     requeue_job(job_id, connection=queue.connection, serializer=queue.serializer)
                 messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
             elif request.POST['action'] == 'stop':
-                print('stop')
                 stopped, failed_to_stop = stop_jobs(queue, job_ids)
                 if len(stopped) > 0:
                     messages.info(request, 'You have successfully stopped %d jobs!' % len(stopped))
