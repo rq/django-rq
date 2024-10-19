@@ -2,7 +2,7 @@
 
 {% load static jquery_path django_rq %}
 
-{% block title %}Failed Jobs in {{ queue.name }} {{ block.super }}{% endblock %}
+{% block title %}Finished Jobs in {{ queue.name }} {{ block.super }}{% endblock %}
 
 {% block extrastyle %}
     {{ block.super }}
