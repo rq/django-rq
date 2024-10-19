@@ -128,13 +128,19 @@ def failed_jobs(request, queue_index):
     items_per_page = 100
     num_jobs = len(registry)
     page = int(request.GET.get('page', 1))
+
+    if request.GET.get('desc', '1') == '1':
+        sort_direction = 'descending'
+    else:
+        sort_direction = 'ascending'
+
     jobs = []
 
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=True)
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=sort_direction == 'descending')
         jobs = get_jobs(queue, job_ids, registry)
 
     else:
@@ -149,8 +155,9 @@ def failed_jobs(request, queue_index):
         'page': page,
         'page_range': page_range,
         'job_status': 'Failed',
+        'sort_direction': sort_direction,
     }
-    return render(request, 'django_rq/jobs.html', context_data)
+    return render(request, 'django_rq/failed_jobs.html', context_data)
 
 
 @never_cache
