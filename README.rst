@@ -309,7 +309,7 @@ Here is an example settings fragment for `django-redis`:
 
 
 Suspending and Resuming Workers
-----------------
+-------------------------------
 
 Sometimes you may want to suspend RQ to prevent it from processing new jobs.
 A classic example is during the initial phase of a deployment script or in advance
