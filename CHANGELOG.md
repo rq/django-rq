@@ -1,3 +1,9 @@
+### Version 3.0 (2024-10-28)
+* Added support for RQ 2.0. Thanks @selwin!
+* Many typing improvements. Thanks @SpecLad and @terencehonles!
+* Added management command to suspend and resume workers. Thanks @jackkinsella!
+* Better support for Redis Sentinel. Thanks @alaouimehdi1995!
+
 ### Version 2.10.2 (2024-03-23)
 * Added support for Django 5.0. Thanks @selwin!
 * Fixed an error in Python 3.12. Thanks @selwin!

@@ -2,7 +2,7 @@
 
 {% load static jquery_path django_rq %}
 
-{% block title %}{{ job_status }} Jobs in {{ queue.name }} {{ block.super }}{% endblock %}
+{% block title %}Finished Jobs in {{ queue.name }} {{ block.super }}{% endblock %}
 
 {% block extrastyle %}
     {{ block.super }}
@@ -38,12 +38,8 @@
 
 <div id="content-main">
     <ul class="object-tools">
-        {% if job_status == 'Failed' %}
-            <li><a href="{% url 'rq_requeue_all' queue_index %}" class="requeuelink">Requeue All</a></li>
-            <li><a href="{% url 'rq_delete_failed_jobs' queue_index %}" class="requeuelink">Delete All</a></li>
-        {% elif job_status == 'Queued' %}
-            <li><a href="{% url 'rq_clear' queue_index %}" class="deletelink">Empty Queue</a></li>
-        {% endif %}
+        <li><a href="{% url 'rq_requeue_all' queue_index %}" class="requeuelink">Requeue All</a></li>
+        <li><a href="{% url 'rq_delete_failed_jobs' queue_index %}" class="requeuelink">Delete All</a></li>
     </ul>
     <div class="module" id="changelist">
         <div class="changelist-form-container">
@@ -54,12 +50,7 @@
                         <select name="action" required>
                             <option value="" selected>---------</option>
                             <option value="delete">Delete</option>
-                            {% if job_status == 'Failed' %}
-                                <option value="requeue">Requeue</option>
-                            {% endif %}
-                            {% if job_status == 'Started' %}
-                                <option value="stop">Stop</option>
-                            {% endif %}
+                            <option value="requeue">Requeue</option>
                         </select>
                     </label>
                     <button type="submit" class="button" title="Execute selected action" name="index" value="0">Go</button>
@@ -82,18 +73,27 @@
                                     <div class='text'><span>Created</span></div>
                                     <div class="clear"></div>
                                 </th>
-                                {% if job_status == 'Scheduled' %}
-                                    <th scope="col" class="sortable">
-                                        <div class='text'><span>Scheduled</span></div>
-                                        <div class="clear"></div>
-                                    </th>
-                                {% endif %}
                                 <th scope="col" class="sortable">
                                     <div class='text'><span>Enqueued</span></div>
                                     <div class="clear"></div>
                                 </th>
-                                <th scope="col" class="sortable">
-                                    <div class='text'><span>Ended</span></div>
+                                <th scope="col" class="sortable sorted {{ sort_direction }}">
+                                    <div class="sortoptions">
+                                        {% if sort_direction == 'ascending' %}
+                                            <a href="?desc=1" class="toggle ascending" title="Toggle sorting"></a>
+                                        {% else %}
+                                            <a href="?desc=0" class="toggle descending" title="Toggle sorting"></a>
+                                        {% endif %}
+                                      </div>
+                                    <div class='text'>
+                                        {% if sort_direction == 'ascending' %}
+                                            <a href="?desc=1">
+                                        {% else %}
+                                            <a href="?desc=0">
+                                        {% endif %}
+                                            Ended
+                                        </a>
+                                    </div>
                                     <div class="clear"></div>
                                 </th>
                                 <th scope="col" class="sortable">

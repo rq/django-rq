@@ -26,7 +26,7 @@ from rq.worker_registration import clean_worker_registry
 
 from .queues import get_queue_by_index, get_scheduler_by_index
 from .settings import API_TOKEN, QUEUES_MAP
-from .utils import get_jobs, get_scheduler_statistics, get_statistics, stop_jobs
+from .utils import get_executions, get_jobs, get_scheduler_statistics, get_statistics, stop_jobs
 
 
 @never_cache
@@ -92,13 +92,19 @@ def finished_jobs(request, queue_index):
     items_per_page = 100
     num_jobs = len(registry)
     page = int(request.GET.get('page', 1))
+
+    if request.GET.get('desc', '1') == '1':
+        sort_direction = 'descending'
+    else:
+        sort_direction = 'ascending'
+
     jobs = []
 
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=sort_direction == 'descending')
         jobs = get_jobs(queue, job_ids, registry)
 
     else:
@@ -112,9 +118,9 @@ def finished_jobs(request, queue_index):
         'num_jobs': num_jobs,
         'page': page,
         'page_range': page_range,
-        'job_status': 'Finished',
+        'sort_direction': sort_direction,
     }
-    return render(request, 'django_rq/jobs.html', context_data)
+    return render(request, 'django_rq/finished_jobs.html', context_data)
 
 
 @never_cache
@@ -128,13 +134,19 @@ def failed_jobs(request, queue_index):
     items_per_page = 100
     num_jobs = len(registry)
     page = int(request.GET.get('page', 1))
+
+    if request.GET.get('desc', '1') == '1':
+        sort_direction = 'descending'
+    else:
+        sort_direction = 'ascending'
+
     jobs = []
 
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=sort_direction == 'descending')
         jobs = get_jobs(queue, job_ids, registry)
 
     else:
@@ -148,9 +160,9 @@ def failed_jobs(request, queue_index):
         'num_jobs': num_jobs,
         'page': page,
         'page_range': page_range,
-        'job_status': 'Failed',
+        'sort_direction': sort_direction,
     }
-    return render(request, 'django_rq/jobs.html', context_data)
+    return render(request, 'django_rq/failed_jobs.html', context_data)
 
 
 @never_cache
@@ -204,6 +216,7 @@ def started_jobs(request, queue_index):
     num_jobs = len(registry)
     page = int(request.GET.get('page', 1))
     jobs = []
+    executions = []
 
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
@@ -211,6 +224,7 @@ def started_jobs(request, queue_index):
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
         jobs = get_jobs(queue, job_ids, registry)
+        executions = get_executions(queue, job_ids)
 
     else:
         page_range = []
@@ -224,8 +238,9 @@ def started_jobs(request, queue_index):
         'page': page,
         'page_range': page_range,
         'job_status': 'Started',
+        'executions': executions,
     }
-    return render(request, 'django_rq/jobs.html', context_data)
+    return render(request, 'django_rq/started_job_registry.html', context_data)
 
 
 @never_cache
@@ -534,9 +549,9 @@ def actions(request, queue_index):
                 messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
             elif request.POST['action'] == 'stop':
                 stopped, failed_to_stop = stop_jobs(queue, job_ids)
-                if len(stopped) >0 :
+                if len(stopped) > 0:
                     messages.info(request, 'You have successfully stopped %d jobs!' % len(stopped))
-                if len(failed_to_stop) >0 :
+                if len(failed_to_stop) > 0:
                     messages.error(request, '%d jobs failed to stop!' % len(failed_to_stop))
 
     return redirect(next_url)

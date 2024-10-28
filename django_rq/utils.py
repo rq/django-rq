@@ -4,6 +4,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import connections
 from redis.sentinel import SentinelConnectionPool
 from rq.command import send_stop_job_command
+from rq.executions import Execution
 from rq.job import Job
 from rq.registry import (
     DeferredJobRegistry,
@@ -152,6 +153,20 @@ def get_jobs(
             valid_jobs.append(job)
 
     return valid_jobs
+
+
+def get_executions(queue, composite_keys: List[str]) -> List[Execution]:
+    """Fetch executions in bulk from Redis.
+    1. If execution data is not present in Redis, discard the result
+    """
+    executions = []
+    for key in composite_keys:
+        job_id, id = key.split(':')
+        try:
+            executions.append(Execution.fetch(id=id, job_id=job_id, connection=queue.connection))
+        except ValueError:
+            pass
+    return executions
 
 
 def stop_jobs(queue, job_ids):
