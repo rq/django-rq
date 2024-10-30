@@ -267,8 +267,9 @@ def worker_details(request, queue_index, key):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
     worker = Worker.find_by_key(key, connection=queue.connection)
+    assert worker
     # Convert microseconds to milliseconds
-    worker.total_working_time = worker.total_working_time / 1000  # type: ignore[assignment]
+    worker.total_working_time = worker.total_working_time / 1000
 
     queue_names = ', '.join(worker.queue_names())
 
