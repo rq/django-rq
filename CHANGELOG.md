@@ -1,3 +1,6 @@
+### Version 2.10.1 (2024-11-03)
+* Depends on RQ < 2. Thanks @selwin!
+
 ### Version 2.10.1 (2023-12-18)
 * Fixed packaging issues with 2.10.0.
 
