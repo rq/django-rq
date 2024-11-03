@@ -1,4 +1,4 @@
-### Version 2.10.1 (2024-11-03)
+### Version 2.10.3 (2024-11-03)
 * Depends on RQ < 2. Thanks @selwin!
 
 ### Version 2.10.1 (2023-12-18)
