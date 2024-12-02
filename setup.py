@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='django-rq',
-    version='2.10.2',
+    version='3.0.0',
     author='Selwin Ong',
     author_email='selwin.ong@gmail.com',
     packages=['django_rq'],
@@ -17,7 +17,7 @@ setup(
         '': ['README.rst'],
         'rq': ['py.typed'],
     },
-    install_requires=['django>=3.2', 'rq>=1.14', 'redis>=3'],
+    install_requires=['django>=3.2', 'rq>=2', 'redis>=3.5'],
     extras_require={
         'Sentry': ['sentry-sdk>=1.0.0'],
         'testing': [],

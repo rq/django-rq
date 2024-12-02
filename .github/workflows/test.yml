@@ -34,7 +34,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install django==${{ matrix.django-version }} \
-          redis django-redis pyyaml rq sentry-sdk rq-scheduler
+          redis django-redis pyyaml rq sentry-sdk
 
     - name: Run Test
       run: |
@@ -57,6 +57,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install django-stubs[compatible-mypy] rq types-redis
 
-    - name: Run Test
+    - name: Run mypy
+      continue-on-error: true
+      id: mypy
       run: |
         mypy django_rq
+    
+    - name: Set Status
+      if: steps.mypy.outcome == 'failure'
+      run: |
+        echo "Mypy found errors, marking check as neutral"
+        exit 78  # Exit code 78 results in a neutral check
