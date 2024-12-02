@@ -47,6 +47,8 @@ class Command(BaseCommand):
                             help='Turns debug mode on or off.')
         parser.add_argument('--max-jobs', action='store', default=None, dest='max_jobs', type=int,
                             help='Maximum number of jobs to execute')
+        parser.add_argument('--max-idle-time', action='store', default=None, dest='max_idle_time', type=int,
+                            help='Seconds to wait for job before shutting down')
         parser.add_argument('--serializer', action='store', default='rq.serializers.DefaultSerializer', dest='serializer',
                             help='Specify a custom Serializer.')
         parser.add_argument('args', nargs='*', type=str,
@@ -93,7 +95,7 @@ class Command(BaseCommand):
 
             w.work(
                 burst=options.get('burst', False), with_scheduler=options.get('with_scheduler', False),
-                logging_level=level, max_jobs=options['max_jobs']
+                logging_level=level, max_jobs=options['max_jobs'], max_idle_time=options['max_idle_time']
             )
         except ConnectionError as e:
             self.stderr.write(str(e))
