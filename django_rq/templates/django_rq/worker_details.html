@@ -35,46 +35,58 @@
 
         <div class="form-row">
             <div>
-                <label class="required">Name:</label>
-                <div class="data">{{ worker.name }}</div>
+                <div class = "flex-container">
+                    <label>Name:</label>
+                    <div class="readonly">{{ worker.name }}</div>
+                </div>
             </div>
         </div>
 
         <div class="form-row">
             <div>
-                <label class="required">State:</label>
-                <div class="data">{{ worker.get_state }}</div>
+                <div class = "flex-container">
+                    <label>State:</label>
+                    <div class="readonly">{{ worker.get_state }}</div>
+                </div>
             </div>
         </div>
 
         <div class="form-row">
             <div>
-                <label class="required">Birth:</label>
-                <div class="data">{{ worker.birth_date|to_localtime|date:"Y-m-d, H:i:s" }}</div>
+                <div class = "flex-container">
+                    <label>Birth:</label>
+                    <div class="readonly">{{ worker.birth_date|to_localtime|date:"Y-m-d, H:i:s" }}</div>
+                </div>
             </div>
         </div>
 
         <div class="form-row">
             <div>
-                <label class="required">Queues:</label>
-                <div class="data">{{ queue_names }}</div>
+                <div class = "flex-container">
+                    <label>Queues:</label>
+                    <div class="readonly">{{ queue_names }}</div>
+                </div>
             </div>
         </div>
 
         <div class="form-row">
             <div>
-                <label class="required">PID:</label>
-                <div class="data">{{ worker.pid }}</div>
+                <div class = "flex-container">
+                <label>PID:</label>
+                <div class="readonly">{{ worker.pid }}</div>
+                </div>
             </div>
         </div>
 
         {% if job %}
         <div class="form-row">
             <div>
-                <label class="required">Current Job:</label>
-                <div class="data">
+                <div class = "flex-container"></div>
+                <label>Current Job:</label>
+                <div class="readonly">
                     {{ job.func_name }}
                     (<a href = "{% url 'rq_job_detail' queue_index job.id %}">{{ job.id }}</a>)
+                </div>
                 </div>
             </div>
         </div>
@@ -84,8 +96,10 @@
         {% if worker.successful_job_count != None %}
             <div class="form-row">
                 <div>
-                    <label class="required">Successful job count:</label>
-                    <div class="data">{{ worker.successful_job_count }}</div>
+                    <div class = "flex-container">
+                        <label>Successful job count:</label>
+                        <div class="readonly">{{ worker.successful_job_count }}</div>
+                    </div>
                 </div>
             </div>
         {% endif %}
@@ -93,8 +107,10 @@
         {% if worker.failed_job_count != None %}
             <div class="form-row">
                 <div>
-                    <label class="required">Failed job count:</label>
-                    <div class="data">{{ worker.failed_job_count }}</div>
+                    <div class = "flex-container">
+                        <label>Failed job count:</label>
+                        <div class="readonly">{{ worker.failed_job_count }}</div>
+                    </div>
                 </div>
             </div>
         {% endif %}
@@ -102,8 +118,10 @@
         {% if worker.total_working_time != None %}
             <div class="form-row">
                 <div>
-                    <label class="required">Total working time (seconds):</label>
-                    <div class="data">{{ total_working_time }}</div>
+                    <div class = "flex-container">
+                        <label>Total working time (seconds):</label>
+                        <div class="readonly">{{ total_working_time }}</div>
+                    </div>
                 </div>
             </div>
         {% endif %}

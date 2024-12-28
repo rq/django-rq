@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 from django.contrib import admin
 from django.http.request import HttpRequest
 from django.http.response import HttpResponse
+from django.urls import reverse
 
 from . import views, settings, models
 
@@ -35,5 +36,46 @@ class QueueAdmin(admin.ModelAdmin):
         return views.stats(request)
 
 
-if settings.SHOW_ADMIN_LINK:
-    admin.site.register(models.Queue, QueueAdmin)
+class RQDashboardApp:
+    name = 'rq_dashboard'
+
+    def get_app_list(self, request, app_list):
+        """
+        Return a custom app list by adding RQ Dashboard link to the admin index.
+        """
+        rq_app = {
+            'name': 'Django RQ',
+            'app_label': 'django_rq',
+            'app_url': reverse('rq_home'),
+            'has_module_perms': True,
+            'models': [{
+                'name': 'Queues',
+                'object_name': 'Queue',
+                'admin_url': reverse('rq_home'),
+                'view_only': False,
+                'perms': {'add': False, 'change': False, 'delete': False}
+            }],
+        }
+
+        return app_list + [rq_app]
+
+def setup_admin_integration():
+    """
+    Add RQ Dashboard to admin site without template override.
+    Call this function in your AppConfig.ready()
+    """
+    # Get admin site instance
+    admin_site = admin.site
+
+    # Store original get_app_list method
+    if not hasattr(admin_site, '_original_get_app_list'):
+        admin_site._original_get_app_list = admin_site.get_app_list
+
+    # Define the wrapper function
+    def get_app_list(request, app_list=None):
+        if app_list is None:
+            app_list = admin_site._original_get_app_list(request)
+        return RQDashboardApp().get_app_list(request, app_list)
+
+    # Replace the get_app_list method
+    admin_site.get_app_list = get_app_list
