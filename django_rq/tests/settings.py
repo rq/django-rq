@@ -89,7 +89,13 @@ LOGGING = {
 
 
 RQ_QUEUES = {
-    'default': {'HOST': REDIS_HOST, 'PORT': 6379, 'DB': 0, 'DEFAULT_TIMEOUT': 500},
+    'default': {
+        'HOST': REDIS_HOST,
+        'PORT': 6379,
+        'DB': 0,
+        'DEFAULT_TIMEOUT': 500,
+        'DEFAULT_RESULT_TTL': 500,
+    },
     'test': {
         'HOST': REDIS_HOST,
         'PORT': 1,
@@ -120,6 +126,7 @@ RQ_QUEUES = {
         'HOST': REDIS_HOST,
         'PORT': 6379,
         'DB': 1,
+        'DEFAULT_RESULT_TTL': 800,
     },
     'async': {
         'HOST': REDIS_HOST,
