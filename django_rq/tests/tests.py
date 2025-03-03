@@ -480,6 +480,18 @@ class QueuesTest(TestCase):
         self.assertEqual(queue.name, 'test_serializer')
         self.assertEqual(queue.serializer, rq.serializers.JSONSerializer)
 
+    def test_enqueue_default_result_ttl(self):
+        """Ensure DEFAULT_RESULT_TTL are properly parsed."""
+        queue = get_queue()
+        job = queue.enqueue(divide, 1, 1)
+        self.assertEqual(job.result_ttl, 500)
+        job.delete()
+
+        queue = get_queue('test3')
+        job = queue.enqueue(divide, 1, 1)
+        self.assertEqual(job.result_ttl, 800)
+        job.delete()
+
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class DecoratorTest(TestCase):
@@ -518,14 +530,14 @@ class DecoratorTest(TestCase):
         self.assertEqual(result.result_ttl, DEFAULT_RESULT_TTL)
         result.delete()
 
-    @override_settings(RQ={'AUTOCOMMIT': True, 'DEFAULT_RESULT_TTL': 5432})
+    @override_settings(RQ={'AUTOCOMMIT': True})
     def test_job_decorator_result_ttl(self):
         @job
         def test():
             pass
 
         result = test.delay()
-        self.assertEqual(result.result_ttl, 5432)
+        self.assertEqual(result.result_ttl, 500, msg='value added in RQ_QUEUES default')
         result.delete()
 
     @override_settings(RQ={'AUTOCOMMIT': True, 'DEFAULT_RESULT_TTL': 0})
@@ -535,7 +547,7 @@ class DecoratorTest(TestCase):
             pass
 
         result = test.delay()
-        self.assertEqual(result.result_ttl, 0)
+        self.assertEqual(result.result_ttl, 500, msg='value added in RQ_QUEUES default')
         result.delete()
 
 

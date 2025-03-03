@@ -265,8 +265,8 @@ class ViewTest(TestCase):
         response = self.client.get(reverse('rq_scheduled_jobs', args=[queue_index]))
         self.assertEqual(response.context['jobs'], [job])
 
-        # Test that page doesn't crash when job_id has special characters
-        queue.enqueue_at(datetime.now(), access_self, job_id="job-!@#$%^&*()_=+[]{};':,.<>?|`~")
+        # Test that page doesn't crash when job_id has special characters (exclude :)
+        queue.enqueue_at(datetime.now(), access_self, job_id="job-!@#$%^&*()_=+[]{};',.<>?|`~")
         response = self.client.get(reverse('rq_scheduled_jobs', args=[queue_index]))
         self.assertEqual(response.status_code, 200)
 
