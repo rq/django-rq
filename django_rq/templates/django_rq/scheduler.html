@@ -93,7 +93,7 @@
                                         {{ job.ended_at|to_localtime|date:"Y-m-d, H:i:s" }}
                                     {% endif %}
                                 </td>
-                                <td>{{ job.get_status }}</td>
+                                <td>{{ job.get_status.value }}</td>
                                 <td>{{ job|show_func_name }}</td>
                             </tr>
                         {% endfor %}
