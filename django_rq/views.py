@@ -1,7 +1,7 @@
 from __future__ import division
 
 from math import ceil
-from typing import Any
+from typing import Any, cast, Tuple
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
@@ -222,9 +222,17 @@ def started_jobs(request, queue_index):
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
-        jobs = get_jobs(queue, job_ids, registry)
-        executions = get_executions(queue, job_ids)
+
+        try:
+            composite_keys = registry.get_job_and_execution_ids(offset, offset + items_per_page - 1)
+        except AttributeError:
+            composite_keys = [
+                cast(Tuple[str, str], key.split(':'))
+                for key in registry.get_job_ids(offset, offset + items_per_page - 1)
+            ]
+
+        jobs = get_jobs(queue, [i[0] for i in composite_keys], registry)
+        executions = get_executions(queue, composite_keys)
 
     else:
         page_range = []
