@@ -29,6 +29,9 @@
 
 {% block content_title %}<h2>Job {{ job.id }}</h2>{% endblock %}
 
+{# do not render object-tools (fix until https://github.com/django/django/pull/19389/files is released) #}
+{% block object-tools %}{% endblock %}
+
 {% block content %}
 
 <div id="content-main">
