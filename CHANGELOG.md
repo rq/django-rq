@@ -1,3 +1,9 @@
+### Version 3.0.1 (2025-04-28)
+* Temporarily disable `object-tools` block from job detail view. Thanks @terencehonles!
+* Fixed a typo in `setup.py`. Thanks @terencehonles!
+* Added support for RQ >= 2.2. Thanks @terencehonles!
+* Properly handle cases where no `HOST` is specified in Redis config. Thanks @spapas!
+
 ### Version 3.0 (2024-10-28)
 * Added support for RQ 2.0. Thanks @selwin!
 * Many typing improvements. Thanks @SpecLad and @terencehonles!
@@ -41,10 +47,10 @@
 ### Version 2.6.0 (2022-11-05)
 * Added `--max-jobs` argument to `rqworker` management command. Thanks @arpit-goel!
 * Remove job from `ScheduledJobRegistry` if a scheduled job is enqueued from admin. Thanks @robertaistleitner!
-* Minor code cleanup. Thanks @reybog90! 
+* Minor code cleanup. Thanks @reybog90!
 
 ### Version 2.5.1 (2021-11-22)
-* `Redis.from_url` does not accept `ssl_cert_reqs` argument for non SSL Redis URL. Thanks @barash-asenov! 
+* `Redis.from_url` does not accept `ssl_cert_reqs` argument for non SSL Redis URL. Thanks @barash-asenov!
 
 ### Version 2.5.0 (2021-11-17)
 * Better integration with Django admin, along with a new `Access admin page` permission that you can selectively grant to users. Thanks @haakenlid!
