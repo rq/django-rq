@@ -1,4 +1,4 @@
-from typing import cast, Optional, List, Union
+from typing import cast, Optional, List, Tuple, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connections
@@ -153,13 +153,12 @@ def get_jobs(
     return valid_jobs
 
 
-def get_executions(queue, composite_keys: List[str]) -> List[Execution]:
+def get_executions(queue, composite_keys: List[Tuple[str, str]]) -> List[Execution]:
     """Fetch executions in bulk from Redis.
     1. If execution data is not present in Redis, discard the result
     """
     executions = []
-    for key in composite_keys:
-        job_id, id = key.split(':')
+    for job_id, id in composite_keys:
         try:
             executions.append(Execution.fetch(id=id, job_id=job_id, connection=queue.connection))
         except ValueError:
