@@ -19,6 +19,7 @@ setup(
     },
     install_requires=['django>=3.2', 'rq>=2', 'redis>=3.5'],
     extras_require={
+        'prometheus-metrics': ['prometheus_client>=0.4.0'],
         'Sentry': ['sentry-sdk>=1.0.0'],
         'testing': [],
     },
