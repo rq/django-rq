@@ -67,9 +67,10 @@ def get_statistics(run_maintenance_tasks=False):
         else:
             oldest_job_timestamp = "-"
 
-        # parse_class and connection_pool are not needed and not JSON serializable
-        connection_kwargs.pop('parser_class', None)
+        # remove unneeded properties which are not serializable in JSON
         connection_kwargs.pop('connection_pool', None)
+        connection_kwargs.pop('parser_class', None)
+        connection_kwargs.pop('retry', None)
 
         queue_data = {
             'name': queue.name,
