@@ -367,7 +367,7 @@ class ViewTest(TestCase):
 
             # With token,
             token = '12345abcde'
-            with patch('django_rq.views.API_TOKEN', new_callable=PropertyMock(return_value=token)):
+            with patch('django_rq.stats_views.API_TOKEN', new_callable=PropertyMock(return_value=token)):
                 response = self.client.get(reverse('rq_home_json', args=[token]))
                 self.assertEqual(response.status_code, 200)
                 self.assertIn("name", response.content.decode('utf-8'))
