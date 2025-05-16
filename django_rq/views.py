@@ -5,7 +5,7 @@ from typing import Any, cast, Tuple
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
@@ -27,26 +27,6 @@ from rq.worker_registration import clean_worker_registry
 from .queues import get_queue_by_index, get_scheduler_by_index
 from .settings import API_TOKEN, QUEUES_MAP
 from .utils import get_executions, get_jobs, get_scheduler_statistics, get_statistics, stop_jobs
-
-
-@never_cache
-@staff_member_required
-def stats(request):
-    context_data = {
-        **admin.site.each_context(request),
-        **get_statistics(run_maintenance_tasks=True),
-        **get_scheduler_statistics(),
-    }
-    return render(request, 'django_rq/stats.html', context_data)
-
-
-def stats_json(request, token=None):
-    if request.user.is_staff or (token and token == API_TOKEN):
-        return JsonResponse(get_statistics())
-
-    return JsonResponse(
-        {"error": True, "description": "Please configure API_TOKEN in settings.py before accessing this view."}
-    )
 
 
 @never_cache
