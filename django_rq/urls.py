@@ -1,7 +1,7 @@
 from django.urls import re_path
 
 from . import stats_views, views
-from .metrics_collector import RQCollector
+from .contrib.prometheus import RQCollector
 
 metrics_view = [
     re_path(r'^metrics/?$', stats_views.prometheus_metrics, name='rq_metrics'),

@@ -1,7 +1,7 @@
 from rq.job import JobStatus
 
-from .queues import filter_connection_params, get_connection, get_queue, get_unique_connection_configs
-from .workers import get_worker_class
+from ..queues import filter_connection_params, get_connection, get_queue, get_unique_connection_configs
+from ..workers import get_worker_class
 
 try:
     from prometheus_client import Summary
@@ -13,7 +13,7 @@ try:
         summary = Summary('rq_request_processing_seconds_total', 'Time spent collecting RQ data')
 
         def collect(self):
-            from .settings import QUEUES
+            from ..settings import QUEUES
 
             with self.summary.time():
                 rq_workers = GaugeMetricFamily('rq_workers', 'RQ workers', labels=['name', 'state', 'queues'])

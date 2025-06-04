@@ -373,7 +373,7 @@ Configuring Prometheus
 
 ``django_rq`` also provides a Prometheus compatible view, which can be enabled
 by installing ``prometheus_client`` or installing the extra "prometheus-metrics"
-(``pip install django-rq[prometheus-metrics]``). The metrics are exposed at
+(``pip install django-rq[prometheus]``). The metrics are exposed at
 ``/django-rq/metrics/`` and the following is an example of the metrics that
 are exported::
 

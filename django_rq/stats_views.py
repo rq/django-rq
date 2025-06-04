@@ -10,7 +10,7 @@ from .utils import get_scheduler_statistics, get_statistics
 try:
     import prometheus_client
 
-    from .metrics_collector import RQCollector
+    from .contrib.prometheus import RQCollector
 except ImportError:
     prometheus_client = RQCollector = None  # type: ignore[assignment, misc]
 
@@ -23,7 +23,7 @@ def prometheus_metrics(request):
     global registry
 
     if not RQCollector:  # type: ignore[truthy-function]
-        raise Http404
+        raise Http404('prometheus_client has not been installed; install using extra "django-rq[prometheus]"')
 
     if not registry:
         registry = prometheus_client.CollectorRegistry(auto_describe=True)
