@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.http.request import HttpRequest
 from django.http.response import HttpResponse
 
-from . import views, settings, models
+from . import settings, stats_views, models
 
 
 class QueueAdmin(admin.ModelAdmin):
@@ -32,7 +32,7 @@ class QueueAdmin(admin.ModelAdmin):
     def changelist_view(self, request: HttpRequest, extra_context: Optional[Dict[str, Any]] = None) -> HttpResponse:
         """The 'change list' admin view for this model."""
         # proxy request to stats view
-        return views.stats(request)
+        return stats_views.stats(request)
 
 
 if settings.SHOW_ADMIN_LINK:

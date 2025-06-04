@@ -368,6 +368,33 @@ Additionally, these statistics are also accessible from  the command line.
 
 .. image:: demo-django-rq-cli-dashboard.gif
 
+Configuring Prometheus
+----------------------
+
+``django_rq`` also provides a Prometheus compatible view, which can be enabled
+by installing ``prometheus_client`` or installing the extra "prometheus-metrics"
+(``pip install django-rq[prometheus]``). The metrics are exposed at
+``/django-rq/metrics/`` and the following is an example of the metrics that
+are exported::
+
+    # HELP rq_workers RQ workers
+    # TYPE rq_workers gauge
+    # HELP rq_job_successful_total RQ successful job count
+    # TYPE rq_job_successful_total counter
+    # HELP rq_job_failed_total RQ failed job count
+    # TYPE rq_job_failed_total counter
+    # HELP rq_working_seconds_total RQ total working time
+    # TYPE rq_working_seconds_total counter
+    # HELP rq_jobs RQ jobs by status
+    # TYPE rq_jobs gauge
+    rq_jobs{queue="default",status="queued"} 0.0
+    rq_jobs{queue="default",status="started"} 0.0
+    rq_jobs{queue="default",status="finished"} 0.0
+    rq_jobs{queue="default",status="failed"} 0.0
+    rq_jobs{queue="default",status="deferred"} 0.0
+    rq_jobs{queue="default",status="scheduled"} 0.0
+
+
 Configuring Sentry
 -------------------
 Sentry
