@@ -185,12 +185,18 @@
                 <div class = "flex-container">
                     <label>Depends On:</label>
                     <div class="readonly">
+
                         {% for dependency in dependencies %}
                             {% if not forloop.first %}
                                 <br>
                             {% endif %}
-                            <a href = "{% url 'rq_job_detail' queue_index dependency.id %}">
-                                {{ dependency.func_name }} ({{ dependency.id }})
+                            <a href = "{% url 'rq_job_detail' queue_index dependency.0 %}">
+                                {% if dependency.1 %}
+                                    {{ dependency.1.func_name }}
+                                {% else %}
+                                    Deleted
+                                {% endif %}
+                                ({{ dependency.0 }})
                             </a>
                         {% endfor %}
 

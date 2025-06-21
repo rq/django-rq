@@ -347,13 +347,18 @@ def job_detail(request, queue_index, job_id):
     except AttributeError:
         exc_info = None
 
-    if job._dependency_ids:
+    dependencies = []
+    # if job._dependency_ids:
         # Fetch dependencies if they exist
-        dependencies = Job.fetch_many(
-            job._dependency_ids, connection=queue.connection, serializer=queue.serializer
-        )
-    else:
-        dependencies = []
+        # dependencies = Job.fetch_many(
+        #     job._dependency_ids, connection=queue.connection, serializer=queue.serializer
+        # )
+    for dependency_id in job._dependency_ids:
+        try:
+            dependency = Job.fetch(dependency_id, connection=queue.connection, serializer=queue.serializer)
+        except NoSuchJobError:
+            dependency = None
+        dependencies.append((dependency_id, dependency))
 
     context_data = {
         **admin.site.each_context(request),
