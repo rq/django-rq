@@ -141,7 +141,7 @@
                 <div class = "flex-container">
                     <label>Args:</label>
                     <div>
-                    
+
                         {% if data_is_valid %}
                             {% if job.args %}
                             <ul>
@@ -162,7 +162,7 @@
             <div>
                 <div class = "flex-container">
                     <label>Kwargs:</label>
-                    <div>                    
+                    <div>
                         {% if data_is_valid %}
                             {% if job.kwargs %}
                                 <ul>
@@ -179,18 +179,33 @@
             </div>
         </div>
 
+        {% if dependencies %}
         <div class="form-row">
             <div>
-                <label>Depends On:</label>
-                <div class="readonly">
-                    {% if dependency_id %}
-                    <a href = "{% url 'rq_job_detail' queue_index dependency_id %}">
-                        {{ dependency_id }}
-                    </a>
-                    {% endif %}
+                <div class = "flex-container">
+                    <label>Depends On:</label>
+                    <div class="readonly">
+
+                        {% for dependency in dependencies %}
+                            {% if not forloop.first %}
+                                <br>
+                            {% endif %}
+                            <a href = "{% url 'rq_job_detail' queue_index dependency.0 %}">
+                                {% if dependency.1 %}
+                                    {{ dependency.1.func_name }}
+                                {% else %}
+                                    Deleted
+                                {% endif %}
+                                ({{ dependency.0 }})
+                            </a>
+                        {% endfor %}
+
+                    </div>
                 </div>
             </div>
         </div>
+        {% endif %}
+
         {% if exc_info %}
             <div class="form-row">
                 <div>
