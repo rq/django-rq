@@ -156,16 +156,19 @@ def scheduled_jobs(request, queue_index):
     page = int(request.GET.get('page', 1))
     jobs = []
 
+    if request.GET.get('desc', '1') == '1':
+        sort_direction = 'descending'
+    else:
+        sort_direction = 'ascending'
+
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
-
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=sort_direction== 'descending')
         jobs = get_jobs(queue, job_ids, registry)
         for job in jobs:
             job.scheduled_at = registry.get_scheduled_time(job)  # type: ignore[attr-defined]
-
     else:
         page_range = []
 
@@ -177,9 +180,9 @@ def scheduled_jobs(request, queue_index):
         'num_jobs': num_jobs,
         'page': page,
         'page_range': page_range,
-        'job_status': 'Scheduled',
+        'sort_direction': sort_direction,
     }
-    return render(request, 'django_rq/jobs.html', context_data)
+    return render(request, 'django_rq/scheduled_jobs.html', context_data)
 
 
 @never_cache
@@ -284,12 +287,16 @@ def deferred_jobs(request, queue_index):
     page = int(request.GET.get('page', 1))
     jobs = []
 
+    if request.GET.get('desc', '1') == '1':
+        sort_direction = 'descending'
+    else:
+        sort_direction = 'ascending'
+
     if num_jobs > 0:
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1)
-
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=sort_direction == 'descending')
         for job_id in job_ids:
             try:
                 jobs.append(Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer))
@@ -308,8 +315,9 @@ def deferred_jobs(request, queue_index):
         'page': page,
         'page_range': page_range,
         'job_status': 'Deferred',
+        'sort_direction': sort_direction,
     }
-    return render(request, 'django_rq/jobs.html', context_data)
+    return render(request, 'django_rq/deferred_jobs.html', context_data)
 
 
 @never_cache
@@ -339,14 +347,27 @@ def job_detail(request, queue_index, job_id):
     except AttributeError:
         exc_info = None
 
+    dependencies = []
+    # if job._dependency_ids:
+        # Fetch dependencies if they exist
+        # dependencies = Job.fetch_many(
+        #     job._dependency_ids, connection=queue.connection, serializer=queue.serializer
+        # )
+    for dependency_id in job._dependency_ids:
+        try:
+            dependency = Job.fetch(dependency_id, connection=queue.connection, serializer=queue.serializer)
+        except NoSuchJobError:
+            dependency = None
+        dependencies.append((dependency_id, dependency))
+
     context_data = {
         **admin.site.each_context(request),
         'queue_index': queue_index,
         'job': job,
-        'dependency_id': job._dependency_id,
         'queue': queue,
         'data_is_valid': data_is_valid,
         'exc_info': exc_info,
+        'dependencies': dependencies,
     }
     return render(request, 'django_rq/job_detail.html', context_data)
 

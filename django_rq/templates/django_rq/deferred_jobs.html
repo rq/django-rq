@@ -1,0 +1,147 @@
+{% extends "admin/base_site.html" %}
+
+{% load static jquery_path django_rq %}
+
+{% block title %}{{ job_status }} Jobs in {{ queue.name }} {{ block.super }}{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <script type="text/javascript" src="{% get_jquery_path as jquery_path %}{% static jquery_path %}"></script>
+    <script type="text/javascript" src="{% static "admin/js/jquery.init.js" %}"></script>
+    <script type="text/javascript" src="{% static "admin/js/actions.js" %}"></script>
+    <script type="text/javascript">
+    (function($) {
+        $(document).ready(function($) {
+            $("tr input.action-select").actions();
+        });
+    })(django.jQuery);
+    </script>
+{% endblock %}
+
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+        <a href="{% url 'rq_home' %}">Django RQ</a> &rsaquo;
+        <a href="{% url 'rq_jobs' queue_index %}">{{ queue.name }}</a>
+    </div>
+{% endblock %}
+
+{% block content_title %}<h1>Deferred jobs in {{ queue.name }}</h1>{% endblock %}
+
+{% block content %}
+
+<div id="content-main">
+    <div class="module" id="changelist">
+        <div class="changelist-form-container">
+            <form id="changelist-form" action="{% url 'rq_confirm_action' queue_index %}" method="post">
+                {% csrf_token %}
+                <div class="actions">
+                    <label>Actions:
+                        <select name="action" required>
+                            <option value="" selected>---------</option>
+                            <option value="delete">Delete</option>
+                            {% if job_status == 'Failed' %}
+                                <option value="requeue">Requeue</option>
+                            {% endif %}
+                            {% if job_status == 'Started' %}
+                                <option value="stop">Stop</option>
+                            {% endif %}
+                        </select>
+                    </label>
+                    <button type="submit" class="button" title="Execute selected action" name="index" value="0">Go</button>
+                </div>
+                <div class="results">
+                    <table id="result_list">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="action-checkbox-column">
+                                    <div class="text">
+                                        <span><input type="checkbox" id="action-toggle"></span>
+                                    </div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable">
+                                    <div class='text'><span>ID</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable sorted {{ sort_direction }}">
+                                    <div class="sortoptions">
+                                        {% if sort_direction == 'ascending' %}
+                                            <a href="?desc=1" class="toggle ascending" title="Toggle sorting"></a>
+                                        {% else %}
+                                            <a href="?desc=0" class="toggle descending" title="Toggle sorting"></a>
+                                        {% endif %}
+                                      </div>
+                                    <div class='text'>
+                                        {% if sort_direction == 'ascending' %}
+                                            <a href="?desc=1">
+                                        {% else %}
+                                            <a href="?desc=0">
+                                        {% endif %}
+                                        Created
+                                        </a>
+                                    </div>
+
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable">
+                                    <div class='text'><span>Status</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable">
+                                    <div class='text'><span>Callable</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                {% block extra_columns %}
+                                {% endblock extra_columns %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in jobs %}
+                                <tr>
+                                    <td class="action-checkbox">
+                                        <input class="action-select" name="_selected_action" type="checkbox" value="{{ job.id }}">
+                                    </td>
+                                    <th>
+                                        <a href="{% url 'rq_job_detail' queue_index job.id %}">
+                                            {{ job.id }}
+                                        </a>
+                                    </th>
+                                    <td>
+                                        {% if job.created_at %}
+                                            {{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ job.get_status.value }}</td>
+                                    <td>{{ job|show_func_name }}</td>
+                                    {% block extra_columns_values %}
+                                    {% endblock extra_columns_values %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="paginator">
+                    {% for p in page_range %}
+                        {% if p == page %}
+                            <span class="this-page">{{ p }}</span>
+                        {% elif forloop.last %}
+                            <a href="?page={{ p }}" class="end">{{ p }}</a>
+                        {% else %}
+                            <a href="?page={{ p }}">{{ p }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    {{ num_jobs }} jobs
+                </p>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
