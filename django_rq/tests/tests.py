@@ -507,8 +507,10 @@ class DecoratorTest(TestCase):
         self.assertEqual(result.origin, 'default')
         result.delete()
 
+    @override_settings(RQ={'AUTOCOMMIT': True, 'DEFAULT_RESULT_TTL': 60})
     def test_job_decorator_with_result_ttl(self):
-        # Ensure that decorator result_ttl override the queue DEFAULT_RESULT_TTL when available
+        # Ensure that decorator result_ttl override the queue DEFAULT_RESULT_TTL and
+        # RQ DEFAULT_RESULT_TTL when available
         queue_name = 'test3'
         config = QUEUES[queue_name]
         @job(queue_name, result_ttl=674)
@@ -520,6 +522,7 @@ class DecoratorTest(TestCase):
         self.assertNotEqual(config['DEFAULT_RESULT_TTL'], 674)
         result.delete()
 
+    @override_settings(RQ={'AUTOCOMMIT': True, 'DEFAULT_RESULT_TTL': 60})
     def test_job_decorator_queue_result_ttl(self):
         # Ensure the queue DEFAULT_RESULT_TTL is used when the result_ttl is not passed
         queue_name = 'test3'
@@ -531,10 +534,27 @@ class DecoratorTest(TestCase):
 
         result = test.delay()
         self.assertEqual(result.result_ttl, config['DEFAULT_RESULT_TTL'])
+        self.assertNotEqual(config['DEFAULT_RESULT_TTL'], 60)
+        result.delete()
+
+    @override_settings(RQ={'AUTOCOMMIT': True, 'DEFAULT_RESULT_TTL': 60})
+    def test_job_decorator_queue_without_result_ttl(self):
+        # Ensure the RQ DEFAULT_RESULT_TTL is used when the result_ttl is not passed and 
+        # the queue does not have it either
+        queue_name = 'django_rq_test'
+        config = QUEUES[queue_name]
+
+        @job(queue_name)
+        def test():
+            pass
+
+        result = test.delay()
+        self.assertIsNone(config.get('DEFAULT_RESULT_TTL'))
+        self.assertEqual(result.result_ttl, 60)
         result.delete()
     
     def test_job_decorator_default_queue_result_ttl(self):
-        # Ensure the default queue DEFAULT_RESULT_TTL is used when queue is not passed
+        # Ensure the default queue DEFAULT_RESULT_TTL is used when queue name is not passed
 
         @job
         def test():

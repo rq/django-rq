@@ -1,10 +1,8 @@
 from rq.decorators import job as _rq_job
 from typing import Any, Callable, Optional, overload, Protocol, TYPE_CHECKING, TypeVar, Union
 
-from django.conf import settings
+from .queues import get_queue, get_result_ttl
 
-from .queues import get_queue
-from .settings import QUEUES
 
 if TYPE_CHECKING:
     from redis import Redis
@@ -67,7 +65,7 @@ def job(
         if connection is None:
             connection = queue.connection
 
-    kwargs['result_ttl'] = kwargs.get('result_ttl', QUEUES[queue_name].get('DEFAULT_RESULT_TTL'))
+    kwargs['result_ttl'] = kwargs.get('result_ttl', get_result_ttl(queue_name))
     kwargs['connection'] = connection
     decorator = _rq_job(queue, *args, **kwargs)
     if func:
