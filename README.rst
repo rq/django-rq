@@ -200,7 +200,7 @@ via ``DEFAULT_RESULT_TTL`` setting:
     }
 
 With this setting, job decorator will set ``result_ttl`` to 5000 unless it's
-specified explicitly.
+specified explicitly or included in the queue config.
 
 
 Running workers

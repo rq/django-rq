@@ -66,7 +66,7 @@ class DjangoRQ(Queue):
         from .settings import QUEUES
 
         queue_name = kwargs.get('queue_name') or self.name
-        kwargs['result_ttl'] = QUEUES[queue_name].get('DEFAULT_RESULT_TTL')
+        kwargs['result_ttl'] = kwargs.get('result_ttl', get_result_ttl(queue_name))
 
         return super(DjangoRQ, self).enqueue_call(*args, **kwargs)
 
@@ -315,6 +315,16 @@ def get_unique_connection_configs(config=None):
         if value not in connection_configs:
             connection_configs.append(value)
     return connection_configs
+
+
+def get_result_ttl(name: str = 'default'):
+    """
+    Returns the result ttl from RQ_QUEUES if found, otherwise from RQ
+    """
+    from .settings import QUEUES
+
+    RQ = getattr(settings, 'RQ', {})
+    return QUEUES[name].get('DEFAULT_RESULT_TTL', RQ.get('DEFAULT_RESULT_TTL'))
 
 
 """
