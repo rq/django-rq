@@ -480,18 +480,6 @@ class QueuesTest(TestCase):
         self.assertEqual(queue.name, 'test_serializer')
         self.assertEqual(queue.serializer, rq.serializers.JSONSerializer)
 
-    def test_enqueue_default_result_ttl(self):
-        """Ensure DEFAULT_RESULT_TTL are properly parsed."""
-        queue = get_queue()
-        job = queue.enqueue(divide, 1, 1)
-        self.assertEqual(job.result_ttl, 500)
-        job.delete()
-
-        queue = get_queue('test3')
-        job = queue.enqueue(divide, 1, 1)
-        self.assertEqual(job.result_ttl, 800)
-        job.delete()
-
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class DecoratorTest(TestCase):
@@ -519,35 +507,41 @@ class DecoratorTest(TestCase):
         self.assertEqual(result.origin, 'default')
         result.delete()
 
-    def test_job_decorator_result_ttl_default(self):
-        from rq.defaults import DEFAULT_RESULT_TTL
-
-        @job
+    def test_job_decorator_with_result_ttl(self):
+        # Ensure that decorator result_ttl override the queue DEFAULT_RESULT_TTL when available
+        queue_name = 'test3'
+        config = QUEUES[queue_name]
+        @job(queue_name, result_ttl=674)
         def test():
             pass
 
         result = test.delay()
-        self.assertEqual(result.result_ttl, DEFAULT_RESULT_TTL)
+        self.assertEqual(result.result_ttl, 674)
+        self.assertNotEqual(config['DEFAULT_RESULT_TTL'], 674)
         result.delete()
 
-    @override_settings(RQ={'AUTOCOMMIT': True})
-    def test_job_decorator_result_ttl(self):
-        @job
+    def test_job_decorator_queue_result_ttl(self):
+        # Ensure the queue DEFAULT_RESULT_TTL is used when the result_ttl is not passed
+        queue_name = 'test3'
+        config = QUEUES[queue_name]
+
+        @job(queue_name)
         def test():
             pass
 
         result = test.delay()
-        self.assertEqual(result.result_ttl, 500, msg='value added in RQ_QUEUES default')
+        self.assertEqual(result.result_ttl, config['DEFAULT_RESULT_TTL'])
         result.delete()
+    
+    def test_job_decorator_default_queue_result_ttl(self):
+        # Ensure the default queue DEFAULT_RESULT_TTL is used when queue is not passed
 
-    @override_settings(RQ={'AUTOCOMMIT': True, 'DEFAULT_RESULT_TTL': 0})
-    def test_job_decorator_result_ttl_zero(self):
         @job
         def test():
             pass
 
         result = test.delay()
-        self.assertEqual(result.result_ttl, 500, msg='value added in RQ_QUEUES default')
+        self.assertEqual(result.result_ttl, QUEUES['default']['DEFAULT_RESULT_TTL'])
         result.delete()
 
 
