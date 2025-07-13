@@ -1,9 +1,8 @@
 from rq.decorators import job as _rq_job
 from typing import Any, Callable, Optional, overload, Protocol, TYPE_CHECKING, TypeVar, Union
 
-from django.conf import settings
+from .queues import get_queue, get_result_ttl
 
-from .queues import get_queue
 
 if TYPE_CHECKING:
     from redis import Redis
@@ -44,8 +43,7 @@ def job(
     And also, it allows simplified ``@job`` syntax to put job into
     default queue.
 
-    If RQ.DEFAULT_RESULT_TTL setting is set, it is used as default
-    for ``result_ttl`` kwarg.
+    If ``result_ttl`` is not passed, It set the default ttl to the queue `DEFAULT_RESULT_TTL`.
     """
     if callable(func_or_queue):
         func = func_or_queue
@@ -54,7 +52,9 @@ def job(
         func = None
         queue = func_or_queue
 
+    queue_name = 'default'
     if isinstance(queue, str):
+        queue_name = queue
         try:
             queue = get_queue(queue)
             if connection is None:
@@ -65,11 +65,7 @@ def job(
         if connection is None:
             connection = queue.connection
 
-    RQ = getattr(settings, 'RQ', {})
-    default_result_ttl = RQ.get('DEFAULT_RESULT_TTL')
-    if default_result_ttl is not None:
-        kwargs.setdefault('result_ttl', default_result_ttl)
-
+    kwargs['result_ttl'] = kwargs.get('result_ttl', get_result_ttl(queue_name))
     kwargs['connection'] = connection
     decorator = _rq_job(queue, *args, **kwargs)
     if func:
