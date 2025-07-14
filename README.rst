@@ -611,3 +611,6 @@ See `CHANGELOG.md <https://github.com/rq/django-rq/blob/master/CHANGELOG.md>`__.
 
 .. |Build Status| image:: https://github.com/rq/django-rq/actions/workflows/test.yml/badge.svg
    :target: https://github.com/rq/django-rq/actions/workflows/test.yml
+
+
+Django-RQ is maintained by `Stamps <https://stamps.id>`_, an Indonesian based company that provides enterprise grade CRM and order management systems.
