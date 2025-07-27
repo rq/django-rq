@@ -393,6 +393,9 @@ are exported::
     rq_jobs{queue="default",status="failed"} 0.0
     rq_jobs{queue="default",status="deferred"} 0.0
     rq_jobs{queue="default",status="scheduled"} 0.0
+If you need to access this view via other
+HTTP clients (for monitoring purposes), you can define ``RQ_API_TOKEN`` and access it via
+``/django-rq/metrics/<API_TOKEN>``.
 
 
 Configuring Sentry

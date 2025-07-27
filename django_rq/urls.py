@@ -4,7 +4,7 @@ from . import stats_views, views
 from .contrib.prometheus import RQCollector
 
 metrics_view = [
-    re_path(r'^metrics/?$', stats_views.prometheus_metrics, name='rq_metrics'),
+    re_path(r'^metrics/(?P<token>[\w]+)?/?$', stats_views.prometheus_metrics, name='rq_metrics'),
 ] if RQCollector else []  # type: ignore[truthy-function]
 
 urlpatterns = [

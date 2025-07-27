@@ -18,22 +18,26 @@ registry = None
 
 
 @never_cache
-@staff_member_required
-def prometheus_metrics(request):
-    global registry
+def prometheus_metrics(request, token=None):
+    if request.user.is_staff or (token and token == API_TOKEN):
+        global registry
 
-    if not RQCollector:  # type: ignore[truthy-function]
-        raise Http404('prometheus_client has not been installed; install using extra "django-rq[prometheus]"')
+        if not RQCollector:  # type: ignore[truthy-function]
+            raise Http404('prometheus_client has not been installed; install using extra "django-rq[prometheus]"')
 
-    if not registry:
-        registry = prometheus_client.CollectorRegistry(auto_describe=True)
-        registry.register(RQCollector())
+        if not registry:
+            registry = prometheus_client.CollectorRegistry(auto_describe=True)
+            registry.register(RQCollector())
 
-    encoder, content_type = prometheus_client.exposition.choose_encoder(request.META.get('HTTP_ACCEPT', ''))
-    if 'name[]' in request.GET:
-        registry = registry.restricted_registry(request.GET.getlist('name[]'))
+        encoder, content_type = prometheus_client.exposition.choose_encoder(request.META.get('HTTP_ACCEPT', ''))
+        if 'name[]' in request.GET:
+            registry = registry.restricted_registry(request.GET.getlist('name[]'))
 
-    return HttpResponse(encoder(registry), headers={'Content-Type': content_type})
+        return HttpResponse(encoder(registry), headers={'Content-Type': content_type})
+   
+    return JsonResponse(
+        {"error": True, "description": "Please configure API_TOKEN in settings.py before accessing this view."}
+    )
 
 
 @never_cache
