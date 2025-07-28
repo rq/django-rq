@@ -36,7 +36,14 @@ def prometheus_metrics(request, token=None):
         return HttpResponse(encoder(registry), headers={'Content-Type': content_type})
    
     return JsonResponse(
-        {"error": True, "description": "Please configure API_TOKEN in settings.py before accessing this view."}
+        {
+            "error": True,
+            "description": (
+                "Please log in or configure the Django setting `RQ_API_TOKEN`."
+                if not API_TOKEN
+                else "Please log in or provide a valid API token."
+        },
+        status=401 if request.user.is_anonymous and not token else 403
     )
 
 
