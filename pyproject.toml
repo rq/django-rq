@@ -1,0 +1,92 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "django-rq"
+version = "3.0.1"
+description = "An app that provides django integration for RQ (Redis Queue)"
+readme = "README.rst"
+license = "MIT"
+license-files = ["LICENSE.txt"]
+authors = [
+    { name = "Selwin Ong", email = "selwin.ong@gmail.com" },
+]
+requires-python = ">=3.8"
+dependencies = [
+  "django>=3.2",
+  "rq>=2",
+  "redis>=3.5",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Web Environment",
+  "Framework :: Django",
+  "Intended Audience :: Developers",
+  "Intended Audience :: End Users/Desktop",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: System Administrators",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Internet",
+  "Topic :: Internet :: WWW/HTTP",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: System :: Distributed Computing",
+  "Topic :: System :: Monitoring",
+  "Topic :: System :: Systems Administration",
+]
+
+[project.optional-dependencies]
+prometheus = ["prometheus_client >= 0.4.0"]
+Sentry = ["sentry-sdk >= 1.0.0"]
+testing = []
+
+[project.urls]
+changelog = "https://github.com/rq/django-rq/blob/master/CHANGELOG.md"
+homepage = "https://python-rq.org/patterns/django/"
+repository = "https://github.com/rq/django-rq"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/django_rq",
+  "/CHANGELOG.md",
+  "/pyproject.toml",
+]
+
+[tool.mypy]
+allow_redefinition = true
+check_untyped_defs = true
+pretty = true
+show_error_codes = true
+show_error_context = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = "django_redis.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "prometheus_client.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "redis_cache.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "rq_scheduler.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "sentry_sdk.*"
+ignore_missing_imports = true

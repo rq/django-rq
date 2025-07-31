@@ -1,4 +1,0 @@
-include LICENSE.txt
-include README.rst
-include CHANGELOG.md
-recursive-include django_rq *.py *.html
