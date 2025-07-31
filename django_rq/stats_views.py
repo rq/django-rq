@@ -46,26 +46,11 @@ def prometheus_metrics(request):
         registry = prometheus_client.CollectorRegistry(auto_describe=True)
         registry.register(RQCollector())
 
-<<<<<<< HEAD
-        return HttpResponse(encoder(registry), headers={'Content-Type': content_type})
-   
-    return JsonResponse(
-        {
-            "error": True,
-            "description": (
-                "Please log in or configure the Django setting `RQ_API_TOKEN`."
-                if not API_TOKEN
-                else "Please log in or provide a valid API token."
-        },
-        status=401 if request.user.is_anonymous and not token else 403
-    )
-=======
     encoder, content_type = prometheus_client.exposition.choose_encoder(request.META.get('HTTP_ACCEPT', ''))
     if 'name[]' in request.GET:
         registry = registry.restricted_registry(request.GET.getlist('name[]'))
 
     return HttpResponse(encoder(registry), headers={'Content-Type': content_type})
->>>>>>> 3b44cc9 (bearer token support)
 
 
 @never_cache
