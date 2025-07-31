@@ -64,6 +64,7 @@ def stats(request):
     return render(request, 'django_rq/stats.html', context_data)
 
 
+@never_cache
 def stats_json(request):
     if not is_authorized(request):
         return JsonResponse(
