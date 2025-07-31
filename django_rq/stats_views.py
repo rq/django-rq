@@ -1,3 +1,5 @@
+from secrets import compare_digest
+
 from django.contrib import admin
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, HttpResponse, JsonResponse
@@ -17,22 +19,34 @@ except ImportError:
 registry = None
 
 
+def is_authorized(request):
+    auth_header = request.headers.get("Authorization", "")
+    token = None
+
+    if auth_header.startswith("Bearer "):
+        token = auth_header.removeprefix("Bearer ").strip()
+
+    return request.user.is_staff or (API_TOKEN and token and compare_digest(API_TOKEN, token))
+
+
 @never_cache
-def prometheus_metrics(request, token=None):
-    if request.user.is_staff or (token and token == API_TOKEN):
-        global registry
+def prometheus_metrics(request):
+    if not is_authorized(request):
+        return JsonResponse(
+            {"error": True, "description": "Missing bearer token. Set token in headers and configure RQ_API_TOKEN in settings.py"},
+            status=401
+        )
 
-        if not RQCollector:  # type: ignore[truthy-function]
-            raise Http404('prometheus_client has not been installed; install using extra "django-rq[prometheus]"')
+    global registry
 
-        if not registry:
-            registry = prometheus_client.CollectorRegistry(auto_describe=True)
-            registry.register(RQCollector())
+    if not RQCollector:  # type: ignore[truthy-function]
+        raise Http404('prometheus_client has not been installed; install using extra "django-rq[prometheus]"')
 
-        encoder, content_type = prometheus_client.exposition.choose_encoder(request.META.get('HTTP_ACCEPT', ''))
-        if 'name[]' in request.GET:
-            registry = registry.restricted_registry(request.GET.getlist('name[]'))
+    if not registry:
+        registry = prometheus_client.CollectorRegistry(auto_describe=True)
+        registry.register(RQCollector())
 
+<<<<<<< HEAD
         return HttpResponse(encoder(registry), headers={'Content-Type': content_type})
    
     return JsonResponse(
@@ -45,6 +59,13 @@ def prometheus_metrics(request, token=None):
         },
         status=401 if request.user.is_anonymous and not token else 403
     )
+=======
+    encoder, content_type = prometheus_client.exposition.choose_encoder(request.META.get('HTTP_ACCEPT', ''))
+    if 'name[]' in request.GET:
+        registry = registry.restricted_registry(request.GET.getlist('name[]'))
+
+    return HttpResponse(encoder(registry), headers={'Content-Type': content_type})
+>>>>>>> 3b44cc9 (bearer token support)
 
 
 @never_cache
@@ -58,10 +79,11 @@ def stats(request):
     return render(request, 'django_rq/stats.html', context_data)
 
 
-def stats_json(request, token=None):
-    if request.user.is_staff or (token and token == API_TOKEN):
-        return JsonResponse(get_statistics())
+def stats_json(request):
+    if not is_authorized(request):
+        return JsonResponse(
+            {"error": True, "description": "Missing bearer token. Set token in headers and configure RQ_API_TOKEN in settings.py"},
+            status=401
+        )
 
-    return JsonResponse(
-        {"error": True, "description": "Please configure API_TOKEN in settings.py before accessing this view."}
-    )
+    return JsonResponse(get_statistics())
