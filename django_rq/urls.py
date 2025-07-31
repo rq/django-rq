@@ -4,12 +4,12 @@ from . import stats_views, views
 from .contrib.prometheus import RQCollector
 
 metrics_view = [
-    re_path(r'^metrics/(?P<token>[\w]+)?/?$', stats_views.prometheus_metrics, name='rq_metrics'),
+    re_path(r'^metrics/?$', stats_views.prometheus_metrics, name='rq_metrics'),
 ] if RQCollector else []  # type: ignore[truthy-function]
 
 urlpatterns = [
     re_path(r'^$', stats_views.stats, name='rq_home'),
-    re_path(r'^stats.json/(?P<token>[\w]+)?/?$', stats_views.stats_json, name='rq_home_json'),
+    re_path(r'^stats.json/?$', stats_views.stats_json, name='rq_home_json'),
     *metrics_view,
     re_path(r'^queues/(?P<queue_index>[\d]+)/$', views.jobs, name='rq_jobs'),
     re_path(r'^workers/(?P<queue_index>[\d]+)/$', views.workers, name='rq_workers'),
