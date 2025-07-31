@@ -349,8 +349,10 @@ modifies the default admin template.
 These statistics are also available in JSON format via
 ``/django-rq/stats.json``, which is accessible to staff members.
 If you need to access this view via other
-HTTP clients (for monitoring purposes), you can define ``RQ_API_TOKEN`` and access it via
-``/django-rq/stats.json/<API_TOKEN>``.
+HTTP clients (for monitoring purposes), you can define ``RQ_API_TOKEN``.
+Then, include the token in the Authorization header as a Bearer token:
+``Authorization: Bearer <token>``
+and access it via ``/django-rq/stats.json``.
 
 .. image::  demo-django-rq-json-dashboard.png
 
@@ -395,8 +397,10 @@ are exported::
     rq_jobs{queue="default",status="scheduled"} 0.0
 
 If you need to access this view via other
-HTTP clients (for monitoring purposes), you can define ``RQ_API_TOKEN`` and access it via
-``/django-rq/metrics/<API_TOKEN>``.
+HTTP clients (for monitoring purposes), you can define ``RQ_API_TOKEN``.
+Then, include the token in the Authorization header as a Bearer token:
+``Authorization: Bearer <token>``
+and access it via ``/django-rq/metrics``.
 
 
 Configuring Sentry
