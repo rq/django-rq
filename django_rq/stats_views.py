@@ -65,8 +65,8 @@ def stats(request):
 
 
 @never_cache
-def stats_json(request):
-    if not is_authorized(request):
+def stats_json(request, token: str = None):
+    if not is_authorized(request) or (token and token != API_TOKEN):
         return JsonResponse(
             {"error": True, "description": "Missing bearer token. Set token in headers and configure RQ_API_TOKEN in settings.py"},
             status=401
