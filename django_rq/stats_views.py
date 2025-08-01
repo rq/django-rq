@@ -60,12 +60,13 @@ def stats(request):
         **admin.site.each_context(request),
         **get_statistics(run_maintenance_tasks=True),
         **get_scheduler_statistics(),
+        "view_metrics": RQCollector is not None,
     }
     return render(request, 'django_rq/stats.html', context_data)
 
 
 @never_cache
-def stats_json(request, token: str = None):
+def stats_json(request, token=None):
     if not is_authorized(request) or (token and token != API_TOKEN):
         return JsonResponse(
             {"error": True, "description": "Missing bearer token. Set token in headers and configure RQ_API_TOKEN in settings.py"},
