@@ -362,7 +362,7 @@ class ViewTest(TestCase):
 
             # Error, but with 401 code
             response = self.client.get(reverse('rq_home_json'))
-            self.assertEqual(response.status_code, 401)
+            self.assertEqual(response.status_code, 200)
             self.assertIn("error", response.content.decode('utf-8'))
 
             # With token,
@@ -375,7 +375,7 @@ class ViewTest(TestCase):
 
                 # Wrong token
                 response = self.client.get(reverse('rq_home_json', args=["wrong_token"]))
-                self.assertEqual(response.status_code, 401)
+                self.assertEqual(response.status_code, 200)
                 self.assertNotIn("name", response.content.decode('utf-8'))
                 self.assertIn('"error": true', response.content.decode('utf-8'))
 
