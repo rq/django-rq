@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-rq"
-version = "3.0.1"
+version = "3.1"
 description = "An app that provides django integration for RQ (Redis Queue)"
 readme = "README.rst"
 license = "MIT"
