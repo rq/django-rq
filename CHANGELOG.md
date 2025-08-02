@@ -1,3 +1,10 @@
+### Version 3.1 (2025-08-02)
+* Added `/metrics` endpoint to expose RQ metrics in Prometheus format. Thanks @terencehonles!
+* Added token based authentication for the `/metrics` and `/stats.json` endpoints. Thanks @RasmusThing!
+* Migrated Django-RQ to use Python's modern packaging standard. Thanks @terencehonles!
+* Fixed an issue with setting `result_ttl` via job decorators. Thanks @Sir-heed!
+* Various admin page improvements. Thanks @selwin and @DhavalGojiya!
+
 ### Version 3.0.1 (2025-04-28)
 * Temporarily disable `object-tools` block from job detail view. Thanks @terencehonles!
 * Fixed a typo in `setup.py`. Thanks @terencehonles!
