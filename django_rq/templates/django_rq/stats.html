@@ -146,6 +146,11 @@
                 <p class="paginator">
                     <a href="{% url 'rq_home_json' %}" class="showall">View as JSON</a>
                 </p>
+                {% if view_metrics %}
+                <p class="paginator">
+                    <a href="{% url 'rq_metrics' %}" class="showall">View Metrics</a>
+                </p>
+                {% endif %}
             </form>
         </div>
     </div>

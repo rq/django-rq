@@ -1,3 +1,5 @@
+from secrets import compare_digest
+
 from django.contrib import admin
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, HttpResponse, JsonResponse
@@ -17,9 +19,23 @@ except ImportError:
 registry = None
 
 
+def is_authorized(request):
+    auth_header = request.headers.get("Authorization", "")
+    token = None
+
+    if auth_header.startswith("Bearer "):
+        token = auth_header.removeprefix("Bearer ").strip()
+
+    return request.user.is_staff or (API_TOKEN and token and compare_digest(API_TOKEN, token))
+
+
 @never_cache
-@staff_member_required
 def prometheus_metrics(request):
+    if not is_authorized(request):
+        return JsonResponse(
+            {"error": True, "description": "Missing bearer token. Set token in headers and configure RQ_API_TOKEN in settings.py"}
+        )
+
     global registry
 
     if not RQCollector:  # type: ignore[truthy-function]
@@ -43,14 +59,19 @@ def stats(request):
         **admin.site.each_context(request),
         **get_statistics(run_maintenance_tasks=True),
         **get_scheduler_statistics(),
+        "view_metrics": RQCollector is not None,
     }
     return render(request, 'django_rq/stats.html', context_data)
 
 
+@never_cache
 def stats_json(request, token=None):
-    if request.user.is_staff or (token and token == API_TOKEN):
-        return JsonResponse(get_statistics())
-
-    return JsonResponse(
-        {"error": True, "description": "Please configure API_TOKEN in settings.py before accessing this view."}
-    )
+    if not is_authorized(request):
+        if token and token == API_TOKEN:
+            return JsonResponse(get_statistics())
+        else:
+            return JsonResponse(
+                {"error": True, "description": "Missing bearer token. Set token in headers and configure RQ_API_TOKEN in settings.py"}
+            )
+    
+    return JsonResponse(get_statistics())

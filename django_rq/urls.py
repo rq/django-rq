@@ -9,6 +9,7 @@ metrics_view = [
 
 urlpatterns = [
     re_path(r'^$', stats_views.stats, name='rq_home'),
+    re_path(r'^stats.json/?$', stats_views.stats_json, name='rq_home_json'),
     re_path(r'^stats.json/(?P<token>[\w]+)?/?$', stats_views.stats_json, name='rq_home_json'),
     *metrics_view,
     re_path(r'^queues/(?P<queue_index>[\d]+)/$', views.jobs, name='rq_jobs'),
