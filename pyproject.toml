@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-rq"
-version = "3.1"
+dynamic = ["version"]
 description = "An app that provides django integration for RQ (Redis Queue)"
 readme = "README.rst"
 license = "MIT"
@@ -48,6 +48,9 @@ testing = []
 changelog = "https://github.com/rq/django-rq/blob/master/CHANGELOG.md"
 homepage = "https://python-rq.org/patterns/django/"
 repository = "https://github.com/rq/django-rq"
+
+[tool.hatch.version]
+path = "django_rq/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 include = ["/django_rq", "/CHANGELOG.md", "/pyproject.toml"]
