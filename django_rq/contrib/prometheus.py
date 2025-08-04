@@ -1,6 +1,7 @@
 from rq.job import JobStatus
 
 from ..queues import filter_connection_params, get_connection, get_queue, get_unique_connection_configs
+from ..utils import get_scheduler_statistics
 from ..workers import get_worker_class
 
 try:
@@ -22,6 +23,7 @@ try:
                 rq_working_seconds_total = CounterMetricFamily('rq_working_seconds_total', 'RQ total working time', labels=['name', 'queues'])
 
                 rq_jobs = GaugeMetricFamily('rq_jobs', 'RQ jobs by status', labels=['queue', 'status'])
+                rq_scheduled_jobs = GaugeMetricFamily('rq_scheduler_jobs', 'RQ scheduled jobs', labels=['scheduler'])
 
                 worker_class = get_worker_class()
                 unique_configs = get_unique_connection_configs()
@@ -49,11 +51,15 @@ try:
                     rq_jobs.add_metric([queue_name, JobStatus.DEFERRED], queue.deferred_job_registry.count)
                     rq_jobs.add_metric([queue_name, JobStatus.SCHEDULED], queue.scheduled_job_registry.count)
 
+                for conn_key, scheduler_stats in get_scheduler_statistics()['schedulers'].items():
+                    rq_scheduled_jobs.add_metric([conn_key], scheduler_stats['count'])
+
                 yield rq_workers
                 yield rq_job_successful_total
                 yield rq_job_failed_total
                 yield rq_working_seconds_total
                 yield rq_jobs
+                yield rq_scheduled_jobs
 
 except ImportError:
     RQCollector = None  # type: ignore[assignment, misc]
