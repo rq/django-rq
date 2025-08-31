@@ -35,3 +35,8 @@ def access_self():
 
 def failing_job():
     raise ValueError
+
+
+def say_hello(name='World'):
+    """Simple test function for cron job testing."""
+    return f"Hello, {name}!"
