@@ -29,8 +29,8 @@ class DjangoCronScheduler(CronScheduler):
             name: Optional name for the scheduler instance
         """
         # Call parent __init__ with connection=None initially
-        super().__init__(connection=None, logging_level=logging_level, name=name)
-        
+        super().__init__(connection=None, logging_level=logging_level)
+
         # Track our django_rq specific state
         self._connection_config = None
 
@@ -46,7 +46,7 @@ class DjangoCronScheduler(CronScheduler):
         """
         connection = get_connection(queue_name)
         kwargs = connection.connection_pool.connection_kwargs
-        
+
         # Only compare essential connection parameters that determine if
         # two connections are to the same Redis instance
         essential_params = ['host', 'port', 'db', 'username', 'password']
