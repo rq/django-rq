@@ -75,18 +75,9 @@ class CronTest(TestCase):
 
 class CronCommandTest(TestCase):
 
-    def tearDown(self):
-        """Clear the global job registry and module cache after each test."""
-        import sys
-
-        # Remove test config modules from cache so they can be re-imported
-        for module_name in ['django_rq.tests.cron_config1', 'django_rq.tests.cron_config2']:
-            if module_name in sys.modules:
-                del sys.modules[module_name]
-
     @patch('django_rq.cron.DjangoCronScheduler.start')
     def test_rqcron_command(self, mock_start):
-        """Test rqcron command execution: success, file not found, and import errors."""
+        """Test rqcron command execution: success and import errors from load_config_from_file."""
         mock_start.return_value = None
 
         # Test 1: Successful execution
@@ -100,21 +91,17 @@ class CronCommandTest(TestCase):
         self.assertIn('Starting cron scheduler with 2 jobs...', output)
         mock_start.assert_called_once()
 
-        # Test 2: File not found
-        err = StringIO()
-        with self.assertRaises(SystemExit):
-            call_command('rqcron', 'nonexistent_file.py', stderr=err)
+        # Test 2: File not found - should raise ImportError from RQ
+        with self.assertRaises(ImportError) as cm:
+            call_command('rqcron', 'nonexistent_file.py')
 
-        # Verify it's a FileNotFoundError by checking the error message
-        self.assertIn("Configuration file not found", err.getvalue())
+        self.assertIn("No module named 'nonexistent_file'", str(cm.exception))
 
         # Test 3: Import error
-        err = StringIO()
-        with self.assertRaises(SystemExit):
-            call_command('rqcron', 'nonexistent.module.path', stderr=err)
+        with self.assertRaises(ImportError) as cm:
+            call_command('rqcron', 'nonexistent.module.path')
 
-        # Verify it's an ImportError by checking the error message
-        self.assertIn("Failed to import configuration", err.getvalue())
+        self.assertIn("No module named 'nonexistent'", str(cm.exception))
 
     @patch('django_rq.cron.DjangoCronScheduler.start')
     @patch('django_rq.cron.DjangoCronScheduler.load_config_from_file')
@@ -127,10 +114,12 @@ class CronCommandTest(TestCase):
         with self.assertRaises(SystemExit):
             call_command('rqcron', 'django_rq.tests.cron_config2')
 
-        # Test general exception handling
+        # Test general exception handling - should bubble up as raw exception
         mock_load_config.side_effect = Exception("Test error")
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(Exception) as cm:
             call_command('rqcron', 'django_rq.tests.cron_config2')
+
+        self.assertEqual(str(cm.exception), "Test error")
 
     def test_rqcron_command_successful_run(self):
         """Test successful rqcron command execution without mocking."""

@@ -53,21 +53,6 @@ class Command(BaseCommand):
             
             scheduler.start()
             
-        except FileNotFoundError:
-            self.stderr.write(
-                self.style.ERROR(f"Configuration file not found: '{config_path}'")
-            )
-            sys.exit(1)
-        except ImportError as e:
-            self.stderr.write(
-                self.style.ERROR(f"Failed to import configuration: {e}")
-            )
-            sys.exit(1)
         except KeyboardInterrupt:
             self.stdout.write('\nShutting down cron scheduler...')
             sys.exit(0)
-        except Exception as e:
-            self.stderr.write(
-                self.style.ERROR(f"Error starting cron scheduler: {e}")
-            )
-            sys.exit(1)
