@@ -71,6 +71,7 @@ def get_statistics(run_maintenance_tasks=False):
         connection_kwargs.pop('connection_pool', None)
         connection_kwargs.pop('parser_class', None)
         connection_kwargs.pop('retry', None)
+        connection_kwargs.pop('password', None)
 
         queue_data = {
             'name': queue.name,
