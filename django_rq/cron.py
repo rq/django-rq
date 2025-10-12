@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Callable, Dict, Optional, Tuple
 
+from redis import Redis
 from rq.cron import CronScheduler
 
 from .queues import get_connection
@@ -12,46 +13,54 @@ class DjangoCronScheduler(CronScheduler):
     queue configuration system.
 
     Key differences from RQ's CronScheduler:
-    - Can be initialized without a connection parameter
-    - Connection is set dynamically when the first job is registered
+    - Can be initialized with or without a connection parameter
+    - If no connection provided, connection is set dynamically when the first job is registered
     - Validates that all registered jobs use queues with the same Redis connection
     - Integrates with RQ_QUEUES configuration from Django settings
     """
 
     _connection_config: Optional[Dict[str, Any]]
 
-    def __init__(self, logging_level: int = logging.INFO, name: str = ""):
+    def __init__(
+        self,
+        connection: Optional[Redis] = None,
+        logging_level: int = logging.INFO,
+        name: str = '',
+    ):
         """
-        Initialize DjangoCronScheduler without Redis connection.
+        Initialize DjangoCronScheduler with optional Redis connection.
 
-        Connection will be set when the first job is registered via register().
+        If connection is not provided, it will be set when the first job is registered via register().
 
         Args:
+            connection: Optional Redis connection instance
             logging_level: Logging level for the scheduler
             name: Optional name for the scheduler instance
         """
-        # Call parent __init__ with connection=None initially
-        super().__init__(connection=None, logging_level=logging_level)
+        # Call parent __init__ with the provided connection (or None)
+        super().__init__(connection=connection, logging_level=logging_level)
 
         # Track our django_rq specific state
-        self._connection_config = None
+        if connection is not None:
+            self._connection_config = self._get_connection_config(connection)
+        else:
+            self._connection_config = None
 
-    def _get_connection_config(self, queue_name: str) -> Dict[str, Any]:
+    def _get_connection_config(self, connection: Redis) -> Dict[str, Any]:
         """
-        Extract Redis connection configuration for a queue to compare connections.
+        Extract Redis connection configuration to compare connections.
 
         Args:
-            queue_name: Name of the queue
+            connection: Redis connection instance
 
         Returns:
             Dictionary of connection parameters for comparison
         """
-        connection = get_connection(queue_name)
         kwargs = connection.connection_pool.connection_kwargs
 
         # Only compare essential connection parameters that determine if
         # two connections are to the same Redis instance
-        essential_params = ["host", "port", "db", "username", "password"]
+        essential_params = ['host', 'port', 'db', 'username', 'password']
         return {key: kwargs.get(key) for key in essential_params if key in kwargs}
 
     def register(
@@ -95,15 +104,15 @@ class DjangoCronScheduler(CronScheduler):
         """
         # Get connection for this queue
         connection = get_connection(queue_name)
-        current_config = self._get_connection_config(queue_name)
+        current_config = self._get_connection_config(connection)
 
         if self._connection_config:
             # Validate that this queue uses the same Redis connection
             if current_config != self._connection_config:
                 raise ValueError(
                     f"Queue '{queue_name}' uses a different Redis connection than previously "
-                    + "registered queues. All jobs in a DjangoCronScheduler instance must use "
-                    + "queues with the same Redis connection."
+                    + 'registered queues. All jobs in a DjangoCronScheduler instance must use '
+                    + 'queues with the same Redis connection.'
                 )
         else:
             # First registration - set connection

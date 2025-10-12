@@ -125,6 +125,30 @@ def get_scheduler_statistics():
     return {'schedulers': schedulers}
 
 
+def get_cron_schedulers() -> List[DjangoCronScheduler]:
+    """
+    Creates and returns a list of DjangoCronScheduler instances, one for each unique
+    Redis connection defined in RQ_QUEUES.
+
+    Returns:
+        List of DjangoCronScheduler instances with connections initialized
+    """
+    unique_configs = get_unique_connection_configs()
+    cron_schedulers = []
+
+    for config in unique_configs:
+        try:
+            connection = get_redis_connection(config)
+            scheduler = DjangoCronScheduler(connection=connection)
+            cron_schedulers.append(scheduler)
+        except Exception:
+            # Skip configs that fail to create a connection
+            # (e.g., USE_REDIS_CACHE without django-redis installed)
+            pass
+
+    return cron_schedulers
+
+
 def get_jobs(
     queue,
     job_ids,
