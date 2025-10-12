@@ -20,7 +20,7 @@ class DjangoCronScheduler(CronScheduler):
 
     _connection_config: Optional[Dict[str, Any]]
 
-    def __init__(self, logging_level: int = logging.INFO, name: str = ''):
+    def __init__(self, logging_level: int = logging.INFO, name: str = ""):
         """
         Initialize DjangoCronScheduler without Redis connection.
 
@@ -51,9 +51,8 @@ class DjangoCronScheduler(CronScheduler):
 
         # Only compare essential connection parameters that determine if
         # two connections are to the same Redis instance
-        essential_params = ['host', 'port', 'db', 'username', 'password']
+        essential_params = ["host", "port", "db", "username", "password"]
         return {key: kwargs.get(key) for key in essential_params if key in kwargs}
-
 
     def register(
         self,
@@ -98,13 +97,13 @@ class DjangoCronScheduler(CronScheduler):
         connection = get_connection(queue_name)
         current_config = self._get_connection_config(queue_name)
 
-        if self.connection:
+        if self._connection_config:
             # Validate that this queue uses the same Redis connection
             if current_config != self._connection_config:
                 raise ValueError(
                     f"Queue '{queue_name}' uses a different Redis connection than previously "
-                    f"registered queues. All jobs in a DjangoCronScheduler instance must use "
-                    f"queues with the same Redis connection."
+                    + "registered queues. All jobs in a DjangoCronScheduler instance must use "
+                    + "queues with the same Redis connection."
                 )
         else:
             # First registration - set connection

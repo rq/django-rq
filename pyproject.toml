@@ -82,5 +82,9 @@ module = "rq_scheduler.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
+module = "rq.cron"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
 module = "sentry_sdk.*"
 ignore_missing_imports = true
