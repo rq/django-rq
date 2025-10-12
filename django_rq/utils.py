@@ -17,7 +17,14 @@ from rq.registry import (
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
-from .queues import get_connection, get_queue_by_index, get_scheduler
+from .cron import DjangoCronScheduler
+from .queues import (
+    get_connection,
+    get_queue_by_index,
+    get_redis_connection,
+    get_scheduler,
+    get_unique_connection_configs,
+)
 from .settings import QUEUES_LIST
 from .templatetags.django_rq import to_localtime
 
