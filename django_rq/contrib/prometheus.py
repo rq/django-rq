@@ -5,7 +5,7 @@ from ..workers import get_worker_class
 
 try:
     from prometheus_client import Summary
-    from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily
+    from prometheus_client.core import CounterMetricFamily, GaugeMetricFamily
 
     class RQCollector:
         """RQ stats collector"""

@@ -1,48 +1,48 @@
-import sys
 import datetime
+import sys
 import time
-from typing import Any, cast, Dict, List
-from unittest import skipIf, mock
-from unittest.mock import patch, PropertyMock, MagicMock
+from typing import Any, Dict, List, cast
+from unittest import mock, skipIf
+from unittest.mock import MagicMock, PropertyMock, patch
 from uuid import uuid4
 
+import rq
 from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.safestring import SafeString
-
-from redis.exceptions import ConnectionError
-from rq import get_current_job, Queue
-import rq
+from rq import Queue
 from rq.exceptions import NoSuchJobError
 from rq.job import Job
 from rq.registry import FinishedJobRegistry, ScheduledJobRegistry
+from rq.serializers import DefaultSerializer, JSONSerializer
 from rq.suspension import is_suspended
 from rq.worker import Worker
-from rq.serializers import DefaultSerializer, JSONSerializer
 
+from django_rq import thread_queue
 from django_rq.decorators import job
 from django_rq.jobs import get_job_class
 from django_rq.management.commands import rqworker
 from django_rq.queues import (
+    DjangoRQ,
     get_connection,
     get_queue,
     get_queues,
-    get_unique_connection_configs,
-    DjangoRQ,
     get_redis_connection,
+    get_unique_connection_configs,
 )
-from django_rq import thread_queue
 from django_rq.templatetags.django_rq import force_escape, to_localtime
-from django_rq.tests.fixtures import access_self, DummyJob, DummyQueue, DummyWorker
-from django_rq.utils import get_jobs, get_statistics, get_scheduler_pid
+from django_rq.tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self
+from django_rq.utils import get_jobs, get_scheduler_pid, get_statistics
 from django_rq.workers import get_worker, get_worker_class
 
 try:
     from rq_scheduler import Scheduler
-    from ..queues import get_scheduler
+
     from django_rq.tests.fixtures import DummyScheduler
+
+    from ..queues import get_scheduler
 
     RQ_SCHEDULER_INSTALLED = True
 except ImportError:
@@ -199,7 +199,6 @@ class QueuesTest(TestCase):
         Test that get_queue use the right parameters for queues using URL for
         connection.
         """
-        config = QUEUES['url']
         queue = get_queue('url')
         connection_kwargs = queue.connection.connection_pool.connection_kwargs
         self.assertEqual(queue.name, 'url')
@@ -214,7 +213,6 @@ class QueuesTest(TestCase):
         connection, where URL contains the db number (either as querystring
         or path segment).
         """
-        config = QUEUES['url_with_db']
         queue = get_queue('url_with_db')
         connection_kwargs = queue.connection.connection_pool.connection_kwargs
         self.assertEqual(queue.name, 'url_with_db')
@@ -493,14 +491,12 @@ class DecoratorTest(TestCase):
     def test_job_decorator(self):
         # Ensure that decorator passes in the right queue from settings.py
         queue_name = 'test3'
-        config = QUEUES[queue_name]
 
         @job(queue_name)
         def test():
             pass
 
         result = test.delay()
-        queue = get_queue(queue_name)
         self.assertEqual(result.origin, queue_name)
         result.delete()
 
@@ -951,7 +947,7 @@ class SchedulerPIDTest(TestCase):
                 'name': test_queue,
             }
         ]
-        with patch('rq.scheduler.RQScheduler.release_locks') as mock_release_locks:
+        with patch('rq.scheduler.RQScheduler.release_locks'):
             with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
                 queue = get_queue(test_queue)
                 worker = get_worker(test_queue, name=uuid4().hex)

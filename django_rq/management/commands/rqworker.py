@@ -1,13 +1,12 @@
 import os
 import sys
 
+from django.core.management.base import BaseCommand
 from redis.exceptions import ConnectionError
 from rq.logutils import setup_loghandlers
 
-from django.core.management.base import BaseCommand
-
-from ...workers import get_worker
 from ...utils import configure_sentry, reset_db_connections
+from ...workers import get_worker
 
 
 class Command(BaseCommand):

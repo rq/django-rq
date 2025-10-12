@@ -2,13 +2,12 @@ import warnings
 from typing import Any, Callable, Optional, Type, Union
 
 import redis
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from redis.sentinel import Sentinel
 from rq.job import Job
 from rq.queue import Queue
 from rq.utils import import_attribute
-
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 
 from . import thread_queue
 from .jobs import get_job_class
@@ -63,7 +62,6 @@ class DjangoRQ(Queue):
         super(DjangoRQ, self).__init__(*args, **kwargs)
 
     def original_enqueue_call(self, *args, **kwargs):
-        from .settings import QUEUES
 
         queue_name = kwargs.get('queue_name') or self.name
         kwargs['result_ttl'] = kwargs.get('result_ttl', get_result_ttl(queue_name))

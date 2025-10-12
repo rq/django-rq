@@ -1,5 +1,5 @@
 from math import ceil
-from typing import Any, cast, Tuple
+from typing import Any, Tuple, cast
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required

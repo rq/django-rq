@@ -1,16 +1,12 @@
-import tempfile
-import os
 from contextlib import suppress
 from io import StringIO
 from unittest import TestCase
 from unittest.mock import patch
 
 from django.core.management import call_command
-from django.core.management.base import CommandError
 from rq.cron import CronJob
 
 from ..cron import DjangoCronScheduler
-from ..management.commands.rqcron import Command as RqcronCommand
 from .fixtures import say_hello
 
 

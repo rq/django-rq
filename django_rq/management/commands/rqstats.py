@@ -1,6 +1,6 @@
-import click
 import time
 
+import click
 from django.core.management.base import BaseCommand, CommandError
 
 from ...utils import get_statistics

@@ -1,16 +1,14 @@
 import os
 import sys
 
+from django.core.management.base import BaseCommand
+from rq.logutils import setup_loghandlers
 from rq.serializers import resolve_serializer
 from rq.worker_pool import WorkerPool
-from rq.logutils import setup_loghandlers
-from typing import cast
-
-from django.core.management.base import BaseCommand
 
 from ...jobs import get_job_class
-from ...utils import configure_sentry
 from ...queues import get_queues
+from ...utils import configure_sentry
 from ...workers import get_worker_class
 
 

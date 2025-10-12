@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, print_function, unicode_literals
 
 import logging
 import os
@@ -133,7 +131,7 @@ class IntegrationTest(unittest.TestCase):
         self.assertEntries(["first"])
 
     def test_worker_lost_connection(self):
-        with DjangoCommand("rqworker") as worker:
+        with DjangoCommand("rqworker"):
             self.enqueue("first")
             time.sleep(2)  # wait for the worker to do the job
             self.assertEntries(["first"])  # job is done

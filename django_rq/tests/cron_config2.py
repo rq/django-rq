@@ -4,8 +4,8 @@ Contains different jobs for alternative test scenarios.
 """
 
 from rq import cron
-from .fixtures import say_hello
 
+from .fixtures import say_hello
 
 # Register a job with different arguments for testing
 cron.register(say_hello, 'default', args=('from cron config2',), cron='*/2 * * * *')  # Every 2 minutes

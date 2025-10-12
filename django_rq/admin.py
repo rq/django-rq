@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.http.request import HttpRequest
 from django.http.response import HttpResponse
 
-from . import settings, stats_views, models
+from . import models, settings, stats_views
 
 
 class QueueAdmin(admin.ModelAdmin):

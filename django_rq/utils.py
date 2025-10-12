@@ -1,4 +1,4 @@
-from typing import cast, Optional, List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connections
@@ -40,7 +40,7 @@ def get_scheduler_pid(queue):
         # TODO: (RQ>= 1.13) return queue.scheduler_pid
         pid = queue.connection.get(RQScheduler.get_locking_key(queue.name))
         return int(pid.decode()) if pid is not None else None
-    except Exception as e:
+    except Exception:
         pass  # Return None
     return None
 
