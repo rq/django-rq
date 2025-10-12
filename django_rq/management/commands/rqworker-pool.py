@@ -1,16 +1,14 @@
 import os
 import sys
 
+from django.core.management.base import BaseCommand
+from rq.logutils import setup_loghandlers
 from rq.serializers import resolve_serializer
 from rq.worker_pool import WorkerPool
-from rq.logutils import setup_loghandlers
-from typing import cast
-
-from django.core.management.base import BaseCommand
 
 from ...jobs import get_job_class
-from ...utils import configure_sentry
 from ...queues import get_queues
+from ...utils import configure_sentry
 from ...workers import get_worker_class
 
 
@@ -27,22 +25,26 @@ class Command(BaseCommand):
     args = '<queue queue ...>'
 
     def add_arguments(self, parser):
-        parser.add_argument('--num-workers', action='store', dest='num_workers',
-                            type=int, default=1, help='Number of workers to spawn')
-        parser.add_argument('--worker-class', action='store', dest='worker_class',
-                            help='RQ Worker class to use')
-        parser.add_argument('--pid', action='store', dest='pid',
-                            default=None, help='PID file to write the worker`s pid into')
-        parser.add_argument('--burst', action='store_true', dest='burst',
-                            default=False, help='Run worker in burst mode')
-        parser.add_argument('--queue-class', action='store', dest='queue_class',
-                            help='Queues class to use')
-        parser.add_argument('--job-class', action='store', dest='job_class',
-                            help='Jobs class to use')
-        parser.add_argument('--serializer', action='store', default='rq.serializers.DefaultSerializer', dest='serializer',
-                            help='Specify a custom Serializer.')
-        parser.add_argument('args', nargs='*', type=str,
-                            help='The queues to work on, separated by space')
+        parser.add_argument(
+            '--num-workers', action='store', dest='num_workers', type=int, default=1, help='Number of workers to spawn'
+        )
+        parser.add_argument('--worker-class', action='store', dest='worker_class', help='RQ Worker class to use')
+        parser.add_argument(
+            '--pid', action='store', dest='pid', default=None, help='PID file to write the worker`s pid into'
+        )
+        parser.add_argument(
+            '--burst', action='store_true', dest='burst', default=False, help='Run worker in burst mode'
+        )
+        parser.add_argument('--queue-class', action='store', dest='queue_class', help='Queues class to use')
+        parser.add_argument('--job-class', action='store', dest='job_class', help='Jobs class to use')
+        parser.add_argument(
+            '--serializer',
+            action='store',
+            default='rq.serializers.DefaultSerializer',
+            dest='serializer',
+            help='Specify a custom Serializer.',
+        )
+        parser.add_argument('args', nargs='*', type=str, help='The queues to work on, separated by space')
 
         # Args present in `rqworker` command but not yet implemented here
         # parser.add_argument('--worker-ttl', action='store', type=int,
@@ -54,12 +56,19 @@ class Command(BaseCommand):
         #                     default=False, help='Run worker with scheduler enabled')
 
         # Sentry arguments
-        parser.add_argument('--sentry-dsn', action='store', default=None, dest='sentry_dsn',
-                            help='Report exceptions to this Sentry DSN')
-        parser.add_argument('--sentry-ca-certs', action='store', default=None, dest='sentry_ca_certs',
-                            help='A path to an alternative CA bundle file in PEM-format')
-        parser.add_argument('--sentry-debug', action='store', default=False, dest='sentry_debug',
-                            help='Turns debug mode on or off.')
+        parser.add_argument(
+            '--sentry-dsn', action='store', default=None, dest='sentry_dsn', help='Report exceptions to this Sentry DSN'
+        )
+        parser.add_argument(
+            '--sentry-ca-certs',
+            action='store',
+            default=None,
+            dest='sentry_ca_certs',
+            help='A path to an alternative CA bundle file in PEM-format',
+        )
+        parser.add_argument(
+            '--sentry-debug', action='store', default=False, dest='sentry_debug', help='Turns debug mode on or off.'
+        )
 
     def handle(self, *args, **options):
         pid = options.get('pid')

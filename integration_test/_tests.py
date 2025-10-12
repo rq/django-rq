@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, print_function, unicode_literals
 
 import logging
 import os
@@ -10,7 +8,7 @@ import subprocess
 import sys
 import time
 import unittest
-from urllib.parse import urlunsplit import urlunsplit
+from urllib.parse import urlunsplit
 
 import psycopg2
 import requests
@@ -69,11 +67,14 @@ def terminate_all_postgres_connections(profile="default"):
     }
     with psycopg2.connect(**conn_params) as conn:
         cursor = conn.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT pg_terminate_backend(pg_stat_activity.pid)
                 FROM pg_stat_activity
                 WHERE pg_stat_activity.datname = %s
-        """, (db_settings["NAME"], ))
+        """,
+            (db_settings["NAME"],),
+        )
 
 
 class IntegrationTest(unittest.TestCase):
@@ -84,9 +85,13 @@ class IntegrationTest(unittest.TestCase):
         DjangoCommand.run("flush", "--noinput")
         # self.site = DjangoCommand("runserver", self.ADDRPORT)
         self.site = Process(
-            "gunicorn", "-b", self.ADDRPORT,
-            "--timeout", "600",  # useful for worker debugging
-            "integration_test.wsgi:application")
+            "gunicorn",
+            "-b",
+            self.ADDRPORT,
+            "--timeout",
+            "600",  # useful for worker debugging
+            "integration_test.wsgi:application",
+        )
         self.site.start()
 
     def tearDown(self):
@@ -126,18 +131,18 @@ class IntegrationTest(unittest.TestCase):
         self.assertEntries(["first"])
 
     def test_worker_lost_connection(self):
-        with DjangoCommand("rqworker") as worker:
+        with DjangoCommand("rqworker"):
             self.enqueue("first")
-            time.sleep(2) # wait for the worker to do the job
-            self.assertEntries(["first"]) # job is done
+            time.sleep(2)  # wait for the worker to do the job
+            self.assertEntries(["first"])  # job is done
 
             terminate_all_postgres_connections()
 
             self.enqueue("second")
-            time.sleep(2) # wait for the worker to do the job
+            time.sleep(2)  # wait for the worker to do the job
 
-            self.assertFailure() # let the gunicorn worker reconnect
-            self.assertEntries(["first", "second"]) # work is done
+            self.assertFailure()  # let the gunicorn worker reconnect
+            self.assertEntries(["first", "second"])  # work is done
 
 
 if __name__ == '__main__':

@@ -1,10 +1,8 @@
 from operator import itemgetter
-from typing import Any, cast, Dict, List, Optional
+from typing import Any, Dict, List, cast
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-
-from .queues import get_unique_connection_configs
 
 SHOW_ADMIN_LINK = getattr(settings, 'RQ_SHOW_ADMIN_LINK', False)
 

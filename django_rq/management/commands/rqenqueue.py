@@ -7,14 +7,13 @@ class Command(BaseCommand):
     """
     Queue a function with the given arguments.
     """
+
     help = __doc__
     args = '<function arg arg ...>'
 
     def add_arguments(self, parser):
-        parser.add_argument('--queue', '-q', dest='queue', default='default',
-                            help='Specify the queue [default]')
-        parser.add_argument('--timeout', '-t', type=int, dest='timeout',
-                            help='A timeout in seconds')
+        parser.add_argument('--queue', '-q', dest='queue', default='default', help='Specify the queue [default]')
+        parser.add_argument('--timeout', '-t', type=int, dest='timeout', help='A timeout in seconds')
         parser.add_argument('args', nargs='*')
 
     def handle(self, *args, **options):

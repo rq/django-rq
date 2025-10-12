@@ -8,6 +8,7 @@ from ... import get_scheduler
 try:
     from rq_scheduler.utils import setup_loghandlers
 except ImportError:
+
     def setup_loghandlers(*args, **kwargs):
         raise ImproperlyConfigured('rq_scheduler not installed')
 
@@ -16,17 +17,29 @@ class Command(BaseCommand):
     """
     Runs RQ scheduler
     """
+
     help = __doc__
     args = '<queue>'
 
     def add_arguments(self, parser):
-        parser.add_argument('--pid', action='store', dest='pid',
-                            default=None, help='PID file to write the scheduler`s pid into')
-        parser.add_argument('--interval', '-i', type=int, dest='interval',
-                            default=60, help="""How often the scheduler checks for new jobs to add to the
-                            queue (in seconds).""")
-        parser.add_argument('--queue', dest='queue', default='default',
-                            help="Name of the queue used for scheduling.",)
+        parser.add_argument(
+            '--pid', action='store', dest='pid', default=None, help='PID file to write the scheduler`s pid into'
+        )
+        parser.add_argument(
+            '--interval',
+            '-i',
+            type=int,
+            dest='interval',
+            default=60,
+            help="""How often the scheduler checks for new jobs to add to the
+                            queue (in seconds).""",
+        )
+        parser.add_argument(
+            '--queue',
+            dest='queue',
+            default='default',
+            help="Name of the queue used for scheduling.",
+        )
         parser.add_argument('args', nargs='*')
 
     def handle(self, *args, **options):
@@ -45,6 +58,5 @@ class Command(BaseCommand):
             level = 'INFO'
         setup_loghandlers(level)
 
-        scheduler = get_scheduler(
-            name=options['queue'], interval=options['interval'])
+        scheduler = get_scheduler(name=options['queue'], interval=options['interval'])
         scheduler.run()

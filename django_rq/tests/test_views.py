@@ -1,7 +1,6 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from unittest.mock import PropertyMock, patch
-
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
@@ -17,7 +16,6 @@ from rq.registry import (
 )
 
 from django_rq import get_queue
-from django_rq.queues import get_scheduler
 from django_rq.workers import get_worker
 
 from .fixtures import access_self, failing_job

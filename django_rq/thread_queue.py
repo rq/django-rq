@@ -1,6 +1,5 @@
 import threading
 
-
 _thread_data = threading.local()
 
 

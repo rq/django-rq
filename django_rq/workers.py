@@ -1,10 +1,9 @@
 from typing import Optional, Type, Union
 
+from django.conf import settings
 from rq import Worker
 from rq.job import Job
 from rq.utils import import_attribute
-
-from django.conf import settings
 
 from .jobs import get_job_class
 from .queues import DjangoRQ, get_queues
@@ -61,5 +60,5 @@ def get_worker(
         exception_handlers=get_exception_handlers() or None,
         job_class=job_class,
         queue_class=queue_class,
-        **kwargs
+        **kwargs,
     )
