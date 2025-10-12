@@ -165,7 +165,7 @@ def scheduled_jobs(request, queue_index):
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=sort_direction== 'descending')
+        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=sort_direction == 'descending')
         jobs = get_jobs(queue, job_ids, registry)
         for job in jobs:
             job.scheduled_at = registry.get_scheduled_time(job)  # type: ignore[attr-defined]
@@ -349,10 +349,10 @@ def job_detail(request, queue_index, job_id):
 
     dependencies = []
     # if job._dependency_ids:
-        # Fetch dependencies if they exist
-        # dependencies = Job.fetch_many(
-        #     job._dependency_ids, connection=queue.connection, serializer=queue.serializer
-        # )
+    # Fetch dependencies if they exist
+    # dependencies = Job.fetch_many(
+    #     job._dependency_ids, connection=queue.connection, serializer=queue.serializer
+    # )
     for dependency_id in job._dependency_ids:
         try:
             dependency = Job.fetch(dependency_id, connection=queue.connection, serializer=queue.serializer)

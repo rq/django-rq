@@ -42,10 +42,9 @@ def get_queue_index(name='default'):
                 # backoff strategy
                 #
                 # fixed in https://github.com/redis/redis-py/pull/3668
-                with patch.object(
-                    pool_kwargs['retry'], '_backoff', NoBackoff()
-                ), patch.object(
-                    connection_kwargs['retry'], '_backoff', NoBackoff()
+                with (
+                    patch.object(pool_kwargs['retry'], '_backoff', NoBackoff()),
+                    patch.object(connection_kwargs['retry'], '_backoff', NoBackoff()),
                 ):
                     assert pool_kwargs == connection_kwargs
 

@@ -12,15 +12,7 @@ class Migration(migrations.Migration):
             fields=[
                 # Does not create any table / fields in the database
                 # Registers the Queue model as migrated
-                (
-                    'id',
-                    models.AutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name='ID'
-                    )
-                ),
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
             ],
             options={
                 # Enables the Django contenttype framework for django_rq

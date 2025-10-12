@@ -8,6 +8,7 @@ from ...queues import get_connection
 
 log = logging.getLogger(__name__)
 
+
 class Command(BaseCommand):
     help = "Suspend all queues."
 

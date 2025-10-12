@@ -2,6 +2,7 @@
 Cron configuration file #2 for testing the rqcron management command.
 Contains different jobs for alternative test scenarios.
 """
+
 from rq import cron
 from .fixtures import say_hello
 

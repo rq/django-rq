@@ -141,7 +141,7 @@ def get_redis_connection(config, use_strict_redis=False):
         password=config.get('PASSWORD'),
         ssl=config.get('SSL', False),
         ssl_cert_reqs=config.get('SSL_CERT_REQS', 'required'),
-        **config.get('REDIS_CLIENT_KWARGS', {})
+        **config.get('REDIS_CLIENT_KWARGS', {}),
     )
 
 
@@ -198,7 +198,7 @@ def get_queue(
         job_class=job_class,
         autocommit=autocommit,
         serializer=serializer,
-        **kwargs
+        **kwargs,
     )
 
 
@@ -213,8 +213,9 @@ def get_queue_by_index(index):
         config['name'],
         connection=get_redis_connection(config['connection_config']),
         is_async=config.get('ASYNC', True),
-        serializer=config['connection_config'].get('SERIALIZER')
+        serializer=config['connection_config'].get('SERIALIZER'),
     )
+
 
 def get_scheduler_by_index(index):
     """
@@ -275,15 +276,13 @@ def get_queues(*queue_names, **kwargs):
         queue = get_queue(name, **kwargs)
         if type(queue) is not type(queues[0]):
             raise ValueError(
-                'Queues must have the same class.'
-                '"{0}" and "{1}" have '
-                'different classes'.format(name, queue_names[0])
+                'Queues must have the same class."{0}" and "{1}" have different classes'.format(name, queue_names[0])
             )
         if connection_params != filter_connection_params(QUEUES[name]):
             raise ValueError(
-                'Queues must have the same redis connection.'
-                '"{0}" and "{1}" have '
-                'different connections'.format(name, queue_names[0])
+                'Queues must have the same redis connection."{0}" and "{1}" have different connections'.format(
+                    name, queue_names[0]
+                )
             )
         queues.append(queue)
 

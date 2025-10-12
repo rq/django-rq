@@ -61,5 +61,5 @@ def get_worker(
         exception_handlers=get_exception_handlers() or None,
         job_class=job_class,
         queue_class=queue_class,
-        **kwargs
+        **kwargs,
     )

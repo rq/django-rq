@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 @overload
 def job(func_or_queue: 'Callable[P, R]') -> '_JobFn[P, R]': ...
 
+
 @overload
 def job(
     func_or_queue: Union['Queue', str],

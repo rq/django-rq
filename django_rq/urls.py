@@ -3,9 +3,13 @@ from django.urls import re_path
 from . import stats_views, views
 from .contrib.prometheus import RQCollector
 
-metrics_view = [
-    re_path(r'^metrics/?$', stats_views.prometheus_metrics, name='rq_metrics'),
-] if RQCollector else []  # type: ignore[truthy-function]
+metrics_view = (
+    [
+        re_path(r'^metrics/?$', stats_views.prometheus_metrics, name='rq_metrics'),
+    ]
+    if RQCollector
+    else []
+)  # type: ignore[truthy-function]
 
 urlpatterns = [
     re_path(r'^$', stats_views.stats, name='rq_home'),
@@ -24,9 +28,7 @@ urlpatterns = [
     re_path(r'^queues/(?P<queue_index>[\d]+)/empty/$', views.clear_queue, name='rq_clear'),
     re_path(r'^queues/(?P<queue_index>[\d]+)/requeue-all/$', views.requeue_all, name='rq_requeue_all'),
     re_path(r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[^/]+)/$', views.job_detail, name='rq_job_detail'),
-    re_path(
-        r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[^/]+)/delete/$', views.delete_job, name='rq_delete_job'
-    ),
+    re_path(r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[^/]+)/delete/$', views.delete_job, name='rq_delete_job'),
     re_path(r'^queues/confirm-action/(?P<queue_index>[\d]+)/$', views.confirm_action, name='rq_confirm_action'),
     re_path(r'^queues/actions/(?P<queue_index>[\d]+)/$', views.actions, name='rq_actions'),
     re_path(
@@ -34,11 +36,7 @@ urlpatterns = [
         views.requeue_job_view,
         name='rq_requeue_job',
     ),
-    re_path(
-        r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[^/]+)/enqueue/$', views.enqueue_job, name='rq_enqueue_job'
-    ),
-    re_path(
-        r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[^/]+)/stop/$', views.stop_job, name='rq_stop_job'
-    ),
+    re_path(r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[^/]+)/enqueue/$', views.enqueue_job, name='rq_enqueue_job'),
+    re_path(r'^queues/(?P<queue_index>[\d]+)/(?P<job_id>[^/]+)/stop/$', views.stop_job, name='rq_stop_job'),
     re_path(r'^schedulers/(?P<scheduler_index>[\d]+)/$', views.scheduler_jobs, name='rq_scheduler_jobs'),
 ]
