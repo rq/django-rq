@@ -1,7 +1,10 @@
 import logging
 from typing import Any, Callable, Dict, Optional, Tuple
 
+<<<<<<< HEAD
 from redis import Redis
+=======
+>>>>>>> master
 from rq.cron import CronScheduler
 
 from .queues import get_connection
