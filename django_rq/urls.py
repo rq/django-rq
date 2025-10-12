@@ -7,9 +7,9 @@ metrics_view = (
     [
         re_path(r'^metrics/?$', stats_views.prometheus_metrics, name='rq_metrics'),
     ]
-    if RQCollector
+    if RQCollector is not None
     else []
-)  # type: ignore[truthy-function]
+)
 
 urlpatterns = [
     re_path(r'^$', stats_views.stats, name='rq_home'),
