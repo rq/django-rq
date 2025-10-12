@@ -1,6 +1,6 @@
-import click
 import time
 
+import click
 from django.core.management.base import BaseCommand, CommandError
 
 from ...utils import get_statistics
@@ -10,27 +10,31 @@ class Command(BaseCommand):
     """
     Print RQ statistics
     """
+
     help = __doc__
     _separator: str
 
     def add_arguments(self, parser):
         # TODO: convert this to @click.command like rq does
         parser.add_argument(
-            '-j', '--json',
+            '-j',
+            '--json',
             action='store_true',
             dest='json',
             help='Output statistics as JSON',
         )
 
         parser.add_argument(
-            '-y', '--yaml',
+            '-y',
+            '--yaml',
             action='store_true',
             dest='yaml',
             help='Output statistics as YAML',
         )
 
         parser.add_argument(
-            '-i', '--interval',
+            '-i',
+            '--interval',
             dest='interval',
             type=float,
             help='Poll statistics every N seconds',
@@ -54,8 +58,8 @@ class Command(BaseCommand):
 
         # Header
         click.echo(
-            """| %-15s|%10s |%10s |%10s |%10s |%10s |%10s |""" %
-            ("Name", "Queued", "Active", "Deferred", "Finished", "Failed", "Workers")
+            """| %-15s|%10s |%10s |%10s |%10s |%10s |%10s |"""
+            % ("Name", "Queued", "Active", "Deferred", "Finished", "Failed", "Workers")
         )
 
         self._print_separator()
@@ -63,11 +67,16 @@ class Command(BaseCommand):
         # Print every queues in a row
         for queue in statistics["queues"]:
             click.echo(
-                """| %-15s|%10s |%10s |%10s |%10s |%10s |%10s |""" %
-                (queue["name"], queue["jobs"],
-                 queue["started_jobs"], queue["deferred_jobs"],
-                 queue["finished_jobs"],queue["failed_jobs"],
-                 queue["workers"])
+                """| %-15s|%10s |%10s |%10s |%10s |%10s |%10s |"""
+                % (
+                    queue["name"],
+                    queue["jobs"],
+                    queue["started_jobs"],
+                    queue["deferred_jobs"],
+                    queue["finished_jobs"],
+                    queue["failed_jobs"],
+                    queue["workers"],
+                )
             )
 
         self._print_separator()
@@ -77,9 +86,9 @@ class Command(BaseCommand):
             click.echo("Press 'Ctrl+c' to quit")
 
     def handle(self, *args, **options):
-
         if options.get("json"):
             import json
+
             click.echo(json.dumps(get_statistics()))
             return
 

@@ -4,7 +4,6 @@ from django import template
 from django.utils import timezone
 from django.utils.html import escape
 
-
 register = template.Library()
 
 

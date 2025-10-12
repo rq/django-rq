@@ -1,21 +1,16 @@
-import tempfile
-import os
 from contextlib import suppress
 from io import StringIO
 from unittest import TestCase
 from unittest.mock import patch
 
 from django.core.management import call_command
-from django.core.management.base import CommandError
 from rq.cron import CronJob
 
 from ..cron import DjangoCronScheduler
-from ..management.commands.rqcron import Command as RqcronCommand
 from .fixtures import say_hello
 
 
 class CronTest(TestCase):
-
     def test_django_cron_scheduler_init(self):
         """Test DjangoCronScheduler can be initialized without connection."""
         scheduler = DjangoCronScheduler()
@@ -74,7 +69,6 @@ class CronTest(TestCase):
 
 
 class CronCommandTest(TestCase):
-
     @patch('django_rq.cron.DjangoCronScheduler.start')
     def test_rqcron_command(self, mock_start):
         """Test rqcron command execution: success and import errors from load_config_from_file."""

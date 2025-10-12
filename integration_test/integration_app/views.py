@@ -1,9 +1,9 @@
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import *
-
 import django_rq
+
+from .models import MyModel, add_mymodel
 
 
 @csrf_exempt

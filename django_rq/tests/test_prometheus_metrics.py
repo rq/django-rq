@@ -41,9 +41,7 @@ class PrometheusTest(TestCase):
     def assertMetricsContain(self, lines):
         response = self.client.get(reverse('rq_metrics'))
         self.assertEqual(response.status_code, 200)
-        self.assertLessEqual(
-            lines, set(response.content.decode('utf-8').splitlines())
-        )
+        self.assertLessEqual(lines, set(response.content.decode('utf-8').splitlines()))
 
     @patch('django_rq.settings.QUEUES', RQ_QUEUES)
     def test_metrics_default(self):

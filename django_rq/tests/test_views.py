@@ -1,7 +1,6 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from unittest.mock import PropertyMock, patch
-
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
@@ -17,7 +16,6 @@ from rq.registry import (
 )
 
 from django_rq import get_queue
-from django_rq.queues import get_scheduler
 from django_rq.workers import get_worker
 
 from .fixtures import access_self, failing_job
@@ -58,12 +56,12 @@ class ViewTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertIn('DeserializationError', response.content.decode())
-    
+
     def test_job_details_with_results(self):
         """Job with results is displayed properly"""
         queue = get_queue('default')
         job = queue.enqueue(access_self)
-        queue_index = get_queue_index('default')        
+        queue_index = get_queue_index('default')
         worker = get_worker('default')
         worker.work(burst=True)
         result = job.results()[0]
