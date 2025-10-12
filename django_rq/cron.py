@@ -18,6 +18,8 @@ class DjangoCronScheduler(CronScheduler):
     - Integrates with RQ_QUEUES configuration from Django settings
     """
 
+    _connection_config: Optional[Dict[str, Any]]
+
     def __init__(self, logging_level: int = logging.INFO, name: str = ''):
         """
         Initialize DjangoCronScheduler without Redis connection.
@@ -29,7 +31,7 @@ class DjangoCronScheduler(CronScheduler):
             name: Optional name for the scheduler instance
         """
         # Call parent __init__ with connection=None initially
-        super().__init__(connection=None, logging_level=logging_level)
+        super().__init__(connection=None, logging_level=logging_level)  # type: ignore[arg-type]
 
         # Track our django_rq specific state
         self._connection_config = None
@@ -55,17 +57,17 @@ class DjangoCronScheduler(CronScheduler):
 
     def register(
         self,
-        func: Callable,
+        func: Callable[..., Any],
         queue_name: str,
-        args: Optional[Tuple] = None,
-        kwargs: Optional[Dict] = None,
+        args: Optional[Tuple[Any, ...]] = None,
+        kwargs: Optional[Dict[str, Any]] = None,
         interval: Optional[int] = None,
         cron: Optional[str] = None,
         timeout: Optional[int] = None,
         result_ttl: int = 500,
         ttl: Optional[int] = None,
         failure_ttl: Optional[int] = None,
-        meta: Optional[dict] = None,
+        meta: Optional[Dict[str, Any]] = None,
     ):
         """
         Register a function to be run at regular intervals.
