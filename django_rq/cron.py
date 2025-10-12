@@ -31,7 +31,7 @@ class DjangoCronScheduler(CronScheduler):
             name: Optional name for the scheduler instance
         """
         # Call parent __init__ with connection=None initially
-        super().__init__(connection=None, logging_level=logging_level)  # type: ignore[arg-type]
+        super().__init__(connection=None, logging_level=logging_level)
 
         # Track our django_rq specific state
         self._connection_config = None
