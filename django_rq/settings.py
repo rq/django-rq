@@ -1,12 +1,12 @@
 from operator import itemgetter
-from typing import Any, Dict, List, cast
+from typing import Any, cast
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
 SHOW_ADMIN_LINK = getattr(settings, 'RQ_SHOW_ADMIN_LINK', False)
 
-QUEUES = cast(Dict[str, Any], getattr(settings, 'RQ_QUEUES', None))
+QUEUES = cast(dict[str, Any], getattr(settings, 'RQ_QUEUES', None))
 if QUEUES is None:
     raise ImproperlyConfigured("You have to define RQ_QUEUES in settings.py")
 NAME = getattr(settings, 'RQ_NAME', 'default')
@@ -20,7 +20,7 @@ for key, value in sorted(QUEUES.items(), key=itemgetter(0)):
     QUEUES_MAP[key] = len(QUEUES_LIST) - 1
 
 # Get exception handlers
-EXCEPTION_HANDLERS: List[str] = getattr(settings, 'RQ_EXCEPTION_HANDLERS', [])
+EXCEPTION_HANDLERS: list[str] = getattr(settings, 'RQ_EXCEPTION_HANDLERS', [])
 
 # Token for querying statistics
 API_TOKEN: str = getattr(settings, 'RQ_API_TOKEN', '')
