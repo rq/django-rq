@@ -4,6 +4,7 @@ from typing import Any, Callable, Optional, Type, Union
 import redis
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from redis import Redis
 from redis.sentinel import Sentinel
 from rq.job import Job
 from rq.queue import Queue
@@ -145,7 +146,7 @@ def get_redis_connection(config, use_strict_redis=False):
 def get_connection(
     name: str = 'default',
     use_strict_redis: bool = False,
-) -> redis.Redis:
+) -> Redis:
     """
     Returns a Redis connection to use based on parameters in settings.RQ_QUEUES
     """
@@ -159,7 +160,7 @@ def get_queue(
     default_timeout: Optional[int] = None,
     is_async: Optional[bool] = None,
     autocommit: Optional[bool] = None,
-    connection: Optional[redis.Redis] = None,
+    connection: Optional[Redis] = None,
     queue_class: Optional[Union[str, Type[DjangoRQ]]] = None,
     job_class: Optional[Union[str, Type[Job]]] = None,
     serializer: Any = None,
@@ -353,7 +354,7 @@ try:
         name: str = 'default',
         queue: Optional[DjangoRQ] = None,
         interval: int = 60,
-        connection: Optional[redis.Redis] = None,
+        connection: Optional[Redis] = None,
     ) -> DjangoScheduler:
         """
         Returns an RQ Scheduler instance using parameters defined in

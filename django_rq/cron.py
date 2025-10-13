@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple, cast
 
 from redis import Redis
 from rq.cron import CronScheduler
@@ -38,7 +38,7 @@ class DjangoCronScheduler(CronScheduler):
             name: Optional name for the scheduler instance
         """
         # Call parent __init__ with the provided connection (or None)
-        super().__init__(connection=connection, logging_level=logging_level)
+        super().__init__(connection=cast(Redis, connection), logging_level=logging_level)
 
         # Track our django_rq specific state
         if connection is not None:
