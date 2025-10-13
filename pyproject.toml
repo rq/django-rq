@@ -100,9 +100,9 @@ lint.select = [
   "E", # pycodestyle errors
   "F", # pyflakes errors
   "I", # import sorting
-  "W", # pycodestyle warnings
+  "W", # pycodestyle warnings,
+  "UP",
 ]
-select = ["UP"]
 lint.isort.known-first-party = [ "django_rq" ]
 lint.isort.section-order = [
   "future",

@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connections

@@ -1,5 +1,5 @@
 from operator import itemgetter
-from typing import Any, Dict, List, cast
+from typing import Any, cast
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured

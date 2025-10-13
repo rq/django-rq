@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, Optional, Union
 
 import redis
 from django.conf import settings
