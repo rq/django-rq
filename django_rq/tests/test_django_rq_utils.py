@@ -19,7 +19,10 @@ class UtilsTest(TestCase):
         schedulers = get_cron_schedulers()
 
         self.assertIsInstance(schedulers, list)
-        self.assertEqual(len(schedulers), 7)
+        # Base queues yield seven schedulers; installing django-redis adds one more.
+        # unittest has assertGreater/assertLess (no assertGreaterThan), so compare against bounds.
+        self.assertGreater(len(schedulers), 6)  # equivalent to >= 7
+        self.assertLess(len(schedulers), 9)     # equivalent to <= 8
 
         for scheduler in schedulers:
             self.assertIsInstance(scheduler, DjangoCronScheduler)
