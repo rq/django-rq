@@ -102,6 +102,7 @@ lint.select = [
   "I", # import sorting
   "W", # pycodestyle warnings
 ]
+select = ["UP"]
 lint.isort.known-first-party = [ "django_rq" ]
 lint.isort.section-order = [
   "future",

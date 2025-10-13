@@ -48,7 +48,7 @@ def job(
     """
     if callable(func_or_queue):
         func = func_or_queue
-        queue: Union['Queue', str] = 'default'
+        queue: Union[Queue, str] = 'default'
     else:
         func = None
         queue = func_or_queue

@@ -14,7 +14,7 @@ except ImportError:
     Retry = None  # type: ignore[misc, assignment]
 
 
-def _is_buggy_retry(kwargs: Dict[str, Any]) -> bool:
+def _is_buggy_retry(kwargs: dict[str, Any]) -> bool:
     return (
         Retry is not None
         and (retry := kwargs.get('retry')) is not None

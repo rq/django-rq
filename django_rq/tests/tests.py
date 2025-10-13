@@ -261,7 +261,7 @@ class QueuesTest(TestCase):
         Checks that passing queues via commandline arguments works
         """
         queue_names = ['django_rq_test', 'django_rq_test2']
-        jobs: List[Any] = []
+        jobs: list[Any] = []
         for queue_name in queue_names:
             queue = get_queue(queue_name)
             jobs.append(
@@ -278,7 +278,7 @@ class QueuesTest(TestCase):
             self.assertIn(job['job'].id, job['finished_job_registry'].get_job_ids())
 
         # Test with rqworker-pool command
-        jobs: List[Any] = []
+        jobs: list[Any] = []
         for queue_name in queue_names:
             queue = get_queue(queue_name)
             jobs.append(
@@ -431,7 +431,7 @@ class QueuesTest(TestCase):
         # Make sure old keyword argument 'async' works for backwards
         # compatibility with code expecting older versions of rq or django-rq.
         # Note 'async' is a reserved keyword in Python >= 3.7.
-        default_queue_async = get_queue('default', **cast(Dict[str, Any], {'async': False}))
+        default_queue_async = get_queue('default', **cast(dict[str, Any], {'async': False}))
         self.assertFalse(default_queue_async._is_async)
 
         # Make sure is_async setting works

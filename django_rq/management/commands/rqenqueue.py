@@ -24,4 +24,4 @@ class Command(BaseCommand):
         queue = get_queue(options['queue'])
         job = queue.enqueue_call(args[0], args=args[1:], timeout=options['timeout'])
         if options['verbosity']:
-            print('Job %s created' % job.id)
+            print(f'Job {job.id} created')
