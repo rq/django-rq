@@ -25,7 +25,7 @@ class CronTest(TestCase):
         scheduler = DjangoCronScheduler()
 
         # Register a job with cron expression (run every minute)
-        cron_job = scheduler.register(say_hello, 'default', cron='* * * * *')
+        cron_job = scheduler.register(say_hello, "default", cron="* * * * *")
 
         # Should now have connection set
         self.assertIsNotNone(scheduler.connection)
@@ -34,7 +34,7 @@ class CronTest(TestCase):
         self.assertEqual(len(scheduler.get_jobs()), 1)
 
         # Verify cron expression is set correctly
-        self.assertEqual(cron_job.cron, '* * * * *')
+        self.assertEqual(cron_job.cron, "* * * * *")
         self.assertIsNone(cron_job.interval)
         self.assertIsNotNone(cron_job.next_run_time)
 
@@ -44,28 +44,28 @@ class CronTest(TestCase):
         scheduler = DjangoCronScheduler()
 
         # Same queue multiple times should work
-        job1 = scheduler.register(say_hello, 'test3', interval=60)
-        job2 = scheduler.register(say_hello, 'test3', interval=120)
+        job1 = scheduler.register(say_hello, "test3", interval=60)
+        job2 = scheduler.register(say_hello, "test3", interval=120)
 
         self.assertEqual(len(scheduler.get_jobs()), 2)
-        self.assertEqual(job1.queue_name, 'test3')
-        self.assertEqual(job2.queue_name, 'test3')
+        self.assertEqual(job1.queue_name, "test3")
+        self.assertEqual(job2.queue_name, "test3")
 
         # Compatible queues (same Redis connection) should work
         # Both 'test3' and 'async' use localhost:6379 with DB=1
-        job3 = scheduler.register(say_hello, 'async', interval=180)
+        job3 = scheduler.register(say_hello, "async", interval=180)
         self.assertEqual(len(scheduler.get_jobs()), 3)
-        self.assertEqual(job3.queue_name, 'async')
+        self.assertEqual(job3.queue_name, "async")
 
         # Queues having different Redis connections should fail
         # 'default' uses DB=0 while test3/async use DB=1
         with self.assertRaises(ValueError):
-            scheduler.register(say_hello, 'default', interval=240)
+            scheduler.register(say_hello, "default", interval=240)
 
         # Undefined queue_name should fail
         scheduler = DjangoCronScheduler()
         with self.assertRaises(KeyError):
-            scheduler.register(say_hello, 'nonexistent_queue', interval=300)
+            scheduler.register(say_hello, "nonexistent_queue", interval=300)
 
 
 class CronCommandTest(TestCase):
@@ -76,29 +76,29 @@ class CronCommandTest(TestCase):
 
         # Test 1: Successful execution
         out = StringIO()
-        config_path = 'django_rq.tests.cron_config1'
+        config_path = "django_rq.tests.cron_config1"
 
-        call_command('rqcron', config_path, stdout=out)
+        call_command("rqcron", config_path, stdout=out)
 
         output = out.getvalue()
-        self.assertIn(f'Loading cron configuration from {config_path}', output)
-        self.assertIn('Starting cron scheduler with 2 jobs...', output)
+        self.assertIn(f"Loading cron configuration from {config_path}", output)
+        self.assertIn("Starting cron scheduler with 2 jobs...", output)
         mock_start.assert_called_once()
 
         # Test 2: File not found - should raise ImportError from RQ
         with self.assertRaises(ImportError) as cm:
-            call_command('rqcron', 'nonexistent_file.py')
+            call_command("rqcron", "nonexistent_file.py")
 
         self.assertIn("No module named 'nonexistent_file'", str(cm.exception))
 
         # Test 3: Import error
         with self.assertRaises(ImportError) as cm:
-            call_command('rqcron', 'nonexistent.module.path')
+            call_command("rqcron", "nonexistent.module.path")
 
         self.assertIn("No module named 'nonexistent'", str(cm.exception))
 
-    @patch('django_rq.cron.DjangoCronScheduler.start')
-    @patch('django_rq.cron.DjangoCronScheduler.load_config_from_file')
+    @patch("django_rq.cron.DjangoCronScheduler.start")
+    @patch("django_rq.cron.DjangoCronScheduler.load_config_from_file")
     def test_rqcron_command_exceptions(self, mock_load_config, mock_start):
         """Test rqcron command exception handling."""
         mock_load_config.return_value = None
@@ -106,19 +106,19 @@ class CronCommandTest(TestCase):
         # Test KeyboardInterrupt handling
         mock_start.side_effect = KeyboardInterrupt()
         with self.assertRaises(SystemExit):
-            call_command('rqcron', 'django_rq.tests.cron_config2')
+            call_command("rqcron", "django_rq.tests.cron_config2")
 
         # Test general exception handling - should bubble up as raw exception
         mock_load_config.side_effect = Exception("Test error")
         with self.assertRaises(Exception) as cm:
-            call_command('rqcron', 'django_rq.tests.cron_config2')
+            call_command("rqcron", "django_rq.tests.cron_config2")
 
         self.assertEqual(str(cm.exception), "Test error")
 
     def test_rqcron_command_successful_run(self):
         """Test successful rqcron command execution without mocking."""
         out = StringIO()
-        config_path = 'django_rq.tests.cron_config1'
+        config_path = "django_rq.tests.cron_config1"
 
         # Use a very short timeout to test actual execution
         import signal
@@ -133,11 +133,11 @@ class CronCommandTest(TestCase):
         try:
             # The command will be interrupted and may or may not raise SystemExit depending on Django version
             with suppress(SystemExit):
-                call_command('rqcron', config_path, stdout=out)
+                call_command("rqcron", config_path, stdout=out)
         finally:
             signal.alarm(0)  # Cancel the alarm
             signal.signal(signal.SIGALRM, old_handler)
 
         output = out.getvalue()
-        self.assertIn(f'Loading cron configuration from {config_path}', output)
-        self.assertIn('Starting cron scheduler with 2 jobs...', output)
+        self.assertIn(f"Loading cron configuration from {config_path}", output)
+        self.assertIn("Starting cron scheduler with 2 jobs...", output)

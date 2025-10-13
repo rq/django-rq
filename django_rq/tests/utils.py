@@ -1,6 +1,9 @@
 from typing import Any, Dict
 from unittest.mock import patch
 
+from rq.exceptions import NoSuchJobError
+from rq.job import Job
+
 from django_rq.queues import get_connection, get_queue_by_index
 
 try:
@@ -51,3 +54,15 @@ def get_queue_index(name='default'):
             return i
 
     return None
+
+
+def flush_registry(registry):
+    """Helper function to flush a registry and delete all jobs in it."""
+    connection = registry.connection
+    for job_id in registry.get_job_ids():
+        connection.zrem(registry.key, job_id)
+        try:
+            job = Job.fetch(job_id, connection=connection)
+            job.delete()
+        except NoSuchJobError:
+            pass

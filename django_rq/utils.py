@@ -17,7 +17,14 @@ from rq.registry import (
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
-from .queues import get_connection, get_queue_by_index, get_scheduler
+from .cron import DjangoCronScheduler
+from .queues import (
+    get_connection,
+    get_queue_by_index,
+    get_redis_connection,
+    get_scheduler,
+    get_unique_connection_configs,
+)
 from .settings import QUEUES_LIST
 from .templatetags.django_rq import to_localtime
 
@@ -124,6 +131,30 @@ def get_scheduler_statistics():
             except ImproperlyConfigured:
                 pass
     return {'schedulers': schedulers}
+
+
+def get_cron_schedulers() -> List[DjangoCronScheduler]:
+    """
+    Creates and returns a list of DjangoCronScheduler instances, one for each unique
+    Redis connection defined in RQ_QUEUES.
+
+    Returns:
+        List of DjangoCronScheduler instances with connections initialized
+    """
+    unique_configs = get_unique_connection_configs()
+    cron_schedulers = []
+
+    for config in unique_configs:
+        try:
+            connection = get_redis_connection(config)
+            scheduler = DjangoCronScheduler(connection=connection)
+            cron_schedulers.append(scheduler)
+        except Exception:
+            # Skip configs that fail to create a connection
+            # (e.g., USE_REDIS_CACHE without django-redis installed)
+            pass
+
+    return cron_schedulers
 
 
 def get_jobs(

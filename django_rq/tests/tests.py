@@ -13,9 +13,8 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.safestring import SafeString
 from rq import Queue
-from rq.exceptions import NoSuchJobError
 from rq.job import Job
-from rq.registry import FinishedJobRegistry, ScheduledJobRegistry
+from rq.registry import FinishedJobRegistry
 from rq.serializers import DefaultSerializer, JSONSerializer
 from rq.suspension import is_suspended
 from rq.worker import Worker
@@ -34,7 +33,7 @@ from django_rq.queues import (
 )
 from django_rq.templatetags.django_rq import force_escape, to_localtime
 from django_rq.tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self
-from django_rq.utils import get_jobs, get_scheduler_pid, get_statistics
+from django_rq.utils import get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
 
 try:
@@ -58,17 +57,6 @@ def divide(a, b):
 def long_running_job(timeout=10):
     time.sleep(timeout)
     return 'Done sleeping...'
-
-
-def flush_registry(registry):
-    connection = registry.connection
-    for job_id in registry.get_job_ids():
-        connection.zrem(registry.key, job_id)
-        try:
-            job = Job.fetch(job_id, connection=connection)
-            job.delete()
-        except NoSuchJobError:
-            pass
 
 
 class RqStatsTest(TestCase):
@@ -977,51 +965,3 @@ class SchedulerPIDTest(TestCase):
                 with_scheduler=False, burst=True
             )  # worker will not acquire lock, scheduler_pid should return None
             self.assertIsNone(get_scheduler_pid(worker.queues[0]))
-
-
-class UtilsTest(TestCase):
-    def test_get_statistics(self):
-        """get_statistics() returns the right number of workers"""
-        queues = [
-            {
-                'connection_config': {
-                    'DB': 0,
-                    'HOST': 'localhost',
-                    'PORT': 6379,
-                },
-                'name': 'async',
-            }
-        ]
-
-        with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
-            worker = get_worker('async', name=uuid4().hex)
-            worker.register_birth()
-            statistics = get_statistics()
-            data = statistics['queues'][0]
-            self.assertEqual(data['name'], 'async')
-            self.assertEqual(data['workers'], 1)
-            worker.register_death()
-
-    def test_get_jobs(self):
-        """get_jobs() works properly"""
-        queue = get_queue('django_rq_test')
-
-        registry = ScheduledJobRegistry(queue.name, queue.connection)
-        flush_registry(registry)
-
-        now = datetime.datetime.now()
-        job = queue.enqueue_at(now, access_self)
-        job2 = queue.enqueue_at(now, access_self)
-        self.assertEqual(get_jobs(queue, [job.id, job2.id]), [job, job2])
-        self.assertEqual(len(registry), 2)
-
-        # job has been deleted, so the result will be filtered out
-        queue.connection.delete(job.key)
-        self.assertEqual(get_jobs(queue, [job.id, job2.id]), [job2])
-        self.assertEqual(len(registry), 2)
-
-        # If job has been deleted and `registry` is passed,
-        # job will also be removed from registry
-        queue.connection.delete(job2.key)
-        self.assertEqual(get_jobs(queue, [job.id, job2.id], registry), [])
-        self.assertEqual(len(registry), 0)

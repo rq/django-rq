@@ -41,7 +41,7 @@ class Command(BaseCommand):
 
         try:
             # Load configuration from file
-            self.stdout.write(f'Loading cron configuration from {config_path}')
+            self.stdout.write(f"Loading cron configuration from {config_path}")
             scheduler.load_config_from_file(config_path)
 
             # Start the scheduler

@@ -62,7 +62,6 @@ class DjangoRQ(Queue):
         super(DjangoRQ, self).__init__(*args, **kwargs)
 
     def original_enqueue_call(self, *args, **kwargs):
-
         queue_name = kwargs.get('queue_name') or self.name
         kwargs['result_ttl'] = kwargs.get('result_ttl', get_result_ttl(queue_name))
 
