@@ -15,19 +15,40 @@ from .utils import flush_registry
 
 class UtilsTest(TestCase):
     def test_get_cron_schedulers(self):
-        """Test get_cron_schedulers returns DjangoCronScheduler instances for unique connections."""
+        """Test get_cron_schedulers returns running DjangoCronScheduler instances."""
+        from ..queues import get_connection
+
+        # Initially, no schedulers should be running
         schedulers = get_cron_schedulers()
-
         self.assertIsInstance(schedulers, list)
-        # Base queues yield seven schedulers; installing django-redis adds one more.
-        # unittest has assertGreater/assertLess (no assertGreaterThan), so compare against bounds.
-        self.assertGreater(len(schedulers), 6)  # equivalent to >= 7
-        self.assertLess(len(schedulers), 9)     # equivalent to <= 8
+        initial_count = len(schedulers)
 
-        for scheduler in schedulers:
-            self.assertIsInstance(scheduler, DjangoCronScheduler)
-            self.assertIsNotNone(scheduler.connection)
-            self.assertTrue(hasattr(scheduler.connection, "ping"))
+        # Start a test scheduler
+        connection = get_connection('default')
+        test_scheduler = DjangoCronScheduler(connection=connection, name='test-scheduler')
+        test_scheduler.register_birth()
+        test_scheduler.heartbeat()
+
+        try:
+            # Now we should get at least one more scheduler
+            schedulers = get_cron_schedulers()
+            self.assertGreater(len(schedulers), initial_count)
+
+            # Find our test scheduler in the results
+            found_scheduler = None
+            for scheduler in schedulers:
+                self.assertIsInstance(scheduler, DjangoCronScheduler)
+                self.assertIsNotNone(scheduler.connection)
+                if scheduler.name == 'test-scheduler':
+                    found_scheduler = scheduler
+
+            # Verify our test scheduler was found and has proper data
+            self.assertIsNotNone(found_scheduler)
+            self.assertIsNotNone(found_scheduler.last_heartbeat)
+
+        finally:
+            # Clean up
+            test_scheduler.register_death()
 
     def test_get_statistics(self):
         """get_statistics() returns the right number of workers"""
