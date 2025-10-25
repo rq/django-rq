@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connections
@@ -133,7 +133,7 @@ def get_scheduler_statistics():
     return {'schedulers': schedulers}
 
 
-def get_cron_schedulers() -> List[DjangoCronScheduler]:
+def get_cron_schedulers() -> list[DjangoCronScheduler]:
     """
     Creates and returns a list of DjangoCronScheduler instances, one for each unique
     Redis connection defined in RQ_QUEUES.
@@ -169,7 +169,7 @@ def get_jobs(
             StartedJobRegistry,
         ]
     ] = None,
-) -> List[Job]:
+) -> list[Job]:
     """Fetch jobs in bulk from Redis.
     1. If job data is not present in Redis, discard the result
     2. If `registry` argument is supplied, delete empty jobs from registry
@@ -186,7 +186,7 @@ def get_jobs(
     return valid_jobs
 
 
-def get_executions(queue, composite_keys: List[Tuple[str, str]]) -> List[Execution]:
+def get_executions(queue, composite_keys: list[tuple[str, str]]) -> list[Execution]:
     """Fetch executions in bulk from Redis.
     1. If execution data is not present in Redis, discard the result
     """

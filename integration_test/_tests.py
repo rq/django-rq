@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import, print_function, unicode_literals
 
 import logging
 import os
@@ -21,7 +19,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
-class Process(object):
+class Process:
     @staticmethod
     def _command(args):
         return list(args)
@@ -35,7 +33,7 @@ class Process(object):
 
     def start(self):
         self.process = subprocess.Popen(self._command(self.args), preexec_fn=os.setsid)
-        logger.info("START PROCESS args:{} pid:{}".format(self.args, self.process.pid))
+        logger.info(f"START PROCESS args:{self.args} pid:{self.process.pid}")
         time.sleep(1)
 
     def stop(self):

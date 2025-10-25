@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import patch
 
 from rq.exceptions import NoSuchJobError
@@ -14,7 +14,7 @@ except ImportError:
     Retry = None  # type: ignore[misc, assignment]
 
 
-def _is_buggy_retry(kwargs: Dict[str, Any]) -> bool:
+def _is_buggy_retry(kwargs: dict[str, Any]) -> bool:
     return (
         Retry is not None
         and (retry := kwargs.get('retry')) is not None

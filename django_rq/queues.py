@@ -1,9 +1,10 @@
 import warnings
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, Optional, Union
 
 import redis
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from redis import Redis
 from redis.sentinel import Sentinel
 from rq.job import Job
 from rq.queue import Queue
@@ -59,13 +60,13 @@ class DjangoRQ(Queue):
         autocommit = kwargs.pop('autocommit', None)
         self._autocommit = get_commit_mode() if autocommit is None else autocommit
 
-        super(DjangoRQ, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def original_enqueue_call(self, *args, **kwargs):
         queue_name = kwargs.get('queue_name') or self.name
         kwargs['result_ttl'] = kwargs.get('result_ttl', get_result_ttl(queue_name))
 
-        return super(DjangoRQ, self).enqueue_call(*args, **kwargs)
+        return super().enqueue_call(*args, **kwargs)
 
     def enqueue_call(self, *args, **kwargs):
         if self._autocommit:
@@ -145,7 +146,7 @@ def get_redis_connection(config, use_strict_redis=False):
 def get_connection(
     name: str = 'default',
     use_strict_redis: bool = False,
-) -> redis.Redis:
+) -> Redis:
     """
     Returns a Redis connection to use based on parameters in settings.RQ_QUEUES
     """
@@ -159,9 +160,9 @@ def get_queue(
     default_timeout: Optional[int] = None,
     is_async: Optional[bool] = None,
     autocommit: Optional[bool] = None,
-    connection: Optional[redis.Redis] = None,
-    queue_class: Optional[Union[str, Type[DjangoRQ]]] = None,
-    job_class: Optional[Union[str, Type[Job]]] = None,
+    connection: Optional[Redis] = None,
+    queue_class: Optional[Union[str, type[DjangoRQ]]] = None,
+    job_class: Optional[Union[str, type[Job]]] = None,
     serializer: Any = None,
     **kwargs: Any,
 ) -> DjangoRQ:
@@ -273,13 +274,11 @@ def get_queues(*queue_names, **kwargs):
         queue = get_queue(name, **kwargs)
         if type(queue) is not type(queues[0]):
             raise ValueError(
-                'Queues must have the same class."{0}" and "{1}" have different classes'.format(name, queue_names[0])
+                f'Queues must have the same class."{name}" and "{queue_names[0]}" have different classes'
             )
         if connection_params != filter_connection_params(QUEUES[name]):
             raise ValueError(
-                'Queues must have the same redis connection."{0}" and "{1}" have different connections'.format(
-                    name, queue_names[0]
-                )
+                f'Queues must have the same redis connection."{name}" and "{queue_names[0]}" have different connections'
             )
         queues.append(queue)
 
@@ -347,13 +346,13 @@ try:
             if kwargs.get('result_ttl') is None:
                 kwargs['result_ttl'] = getattr(settings, 'RQ', {}).get('DEFAULT_RESULT_TTL')
 
-            return super(DjangoScheduler, self)._create_job(*args, **kwargs)
+            return super()._create_job(*args, **kwargs)
 
     def get_scheduler(
         name: str = 'default',
         queue: Optional[DjangoRQ] = None,
         interval: int = 60,
-        connection: Optional[redis.Redis] = None,
+        connection: Optional[Redis] = None,
     ) -> DjangoScheduler:
         """
         Returns an RQ Scheduler instance using parameters defined in

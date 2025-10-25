@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 
 REDIS_HOST = os.environ.get("REDIS_HOST", 'localhost')
@@ -51,7 +50,7 @@ elif REDIS_CACHE_TYPE == 'django-redis-cache':
     CACHES = {
         'default': {
             'BACKEND': 'redis_cache.cache.RedisCache',
-            'LOCATION': '%s:6379' % REDIS_HOST,
+            'LOCATION': f'{REDIS_HOST}:6379',
             'KEY_PREFIX': 'django-rq-tests',
             'OPTIONS': {
                 'DB': 2,

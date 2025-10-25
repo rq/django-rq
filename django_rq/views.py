@@ -1,5 +1,5 @@
 from math import ceil
-from typing import Any, Tuple, cast
+from typing import Any, cast
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
@@ -208,7 +208,7 @@ def started_jobs(request, queue_index):
             composite_keys = registry.get_job_and_execution_ids(offset, offset + items_per_page - 1)
         except AttributeError:
             composite_keys = [
-                cast(Tuple[str, str], key.split(':'))
+                cast(tuple[str, str], key.split(':'))
                 for key in registry.get_job_ids(offset, offset + items_per_page - 1)
             ]
 
@@ -329,7 +329,7 @@ def job_detail(request, queue_index, job_id):
     try:
         job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
     except NoSuchJobError:
-        raise Http404("Couldn't find job with this ID: %s" % job_id)
+        raise Http404(f"Couldn't find job with this ID: {job_id}")
 
     try:
         job.func_name
@@ -383,7 +383,7 @@ def delete_job(request, queue_index, job_id):
         # Remove job id from queue and delete the actual job
         queue.connection.lrem(queue.key, 0, job.id)
         job.delete()
-        messages.info(request, 'You have successfully deleted %s' % job.id)
+        messages.info(request, f'You have successfully deleted {job.id}')
         return redirect('rq_jobs', queue_index)
 
     context_data = {
@@ -404,7 +404,7 @@ def requeue_job_view(request, queue_index, job_id):
 
     if request.method == 'POST':
         requeue_job(job_id, connection=queue.connection, serializer=queue.serializer)
-        messages.info(request, 'You have successfully requeued %s' % job.id)
+        messages.info(request, f'You have successfully requeued {job.id}')
         return redirect('rq_job_detail', queue_index, job_id)
 
     context_data = {
@@ -425,7 +425,7 @@ def clear_queue(request, queue_index):
     if request.method == 'POST':
         try:
             queue.empty()
-            messages.info(request, 'You have successfully cleared the queue %s' % queue.name)
+            messages.info(request, f'You have successfully cleared the queue {queue.name}')
         except ResponseError as e:
             try:
                 suppress = 'EVALSHA' in e.message  # type: ignore[attr-defined]
@@ -550,7 +550,7 @@ def actions(request, queue_index):
                     # Remove job id from queue and delete the actual job
                     queue.connection.lrem(queue.key, 0, job.id)
                     job.delete()
-                messages.info(request, 'You have successfully deleted %s jobs!' % len(job_ids))
+                messages.info(request, f'You have successfully deleted {len(job_ids)} jobs!')
             elif request.POST['action'] == 'requeue':
                 for job_id in job_ids:
                     requeue_job(job_id, connection=queue.connection, serializer=queue.serializer)
@@ -593,7 +593,7 @@ def enqueue_job(request, queue_index, job_id):
             registry = ScheduledJobRegistry(queue.name, queue.connection)
             registry.remove(job)
 
-        messages.info(request, 'You have successfully enqueued %s' % job.id)
+        messages.info(request, f'You have successfully enqueued {job.id}')
         return redirect('rq_job_detail', queue_index, job_id)
 
     context_data = {
@@ -614,10 +614,10 @@ def stop_job(request, queue_index, job_id):
     queue = get_queue_by_index(queue_index)
     stopped, _ = stop_jobs(queue, job_id)
     if len(stopped) == 1:
-        messages.info(request, 'You have successfully stopped %s' % job_id)
+        messages.info(request, f'You have successfully stopped {job_id}')
         return redirect('rq_job_detail', queue_index, job_id)
     else:
-        messages.error(request, 'Failed to stop %s' % job_id)
+        messages.error(request, f'Failed to stop {job_id}')
         return redirect('rq_job_detail', queue_index, job_id)
 
 

@@ -1,4 +1,4 @@
-from typing import Optional, Type, Union
+from typing import Optional, Union
 
 from django.conf import settings
 from rq import Worker
@@ -41,9 +41,9 @@ def get_worker_class(worker_class=None):
 
 def get_worker(
     *queue_names: str,
-    job_class: Optional[Union[str, Type[Job]]] = None,
-    queue_class: Optional[Union[str, Type[DjangoRQ]]] = None,
-    worker_class: Optional[Union[str, Type[Worker]]] = None,
+    job_class: Optional[Union[str, type[Job]]] = None,
+    queue_class: Optional[Union[str, type[DjangoRQ]]] = None,
+    worker_class: Optional[Union[str, type[Worker]]] = None,
     **kwargs,
 ) -> Worker:
     """
