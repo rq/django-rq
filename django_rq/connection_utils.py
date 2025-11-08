@@ -1,9 +1,11 @@
+from typing import Any
+
 import redis
 from redis import Redis
 from redis.sentinel import Sentinel
 
 
-def get_redis_connection(config, use_strict_redis=False):
+def get_redis_connection(config: dict[str, Any], use_strict_redis: bool = False) -> Redis:
     """
     Returns a redis connection from a connection config
     """
@@ -107,7 +109,7 @@ def filter_connection_params(queue_params):
     return dict((p, v) for (p, v) in queue_params.items() if p in CONNECTION_PARAMS)
 
 
-def get_unique_connection_configs(config=None):
+def get_unique_connection_configs(config: dict[str, dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     """
     Returns a list of unique Redis connections from config
     """
