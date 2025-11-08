@@ -172,9 +172,7 @@ def get_queues(*queue_names, **kwargs):
     for name in queue_names[1:]:
         queue = get_queue(name, **kwargs)
         if type(queue) is not type(queues[0]):
-            raise ValueError(
-                f'Queues must have the same class."{name}" and "{queue_names[0]}" have different classes'
-            )
+            raise ValueError(f'Queues must have the same class."{name}" and "{queue_names[0]}" have different classes')
         if connection_params != filter_connection_params(QUEUES[name]):
             raise ValueError(
                 f'Queues must have the same redis connection."{name}" and "{queue_names[0]}" have different connections'

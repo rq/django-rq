@@ -24,11 +24,7 @@ from django_rq.connection_utils import get_connection
 from django_rq.decorators import job
 from django_rq.jobs import get_job_class
 from django_rq.management.commands import rqworker
-from django_rq.queues import (
-    DjangoRQ,
-    get_queue,
-    get_queues,
-)
+from django_rq.queues import DjangoRQ, get_queue, get_queues
 from django_rq.templatetags.django_rq import force_escape, to_localtime
 from django_rq.tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self
 from django_rq.utils import get_scheduler_pid
