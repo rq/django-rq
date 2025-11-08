@@ -38,10 +38,10 @@ def get_redis_connection(config: dict[str, Any], use_strict_redis: bool = False)
         cache = caches[config['USE_REDIS_CACHE']]
         # We're using django-redis-cache
         try:
-            return cache._client
+            return cache._client  # type: ignore[attr-defined]
         except AttributeError:
             # For django-redis-cache > 0.13.1
-            return cache.get_master_client()
+            return cache.get_master_client()  # type: ignore[attr-defined]
 
     if 'UNIX_SOCKET_PATH' in config:
         return redis_cls(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
@@ -111,7 +111,9 @@ def filter_connection_params(queue_params):
 
 def get_unique_connection_configs(config: dict[str, dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     """
-    Returns a list of unique Redis connections from config
+    Returns a list of unique Redis connections from config in deterministic order.
+    Configs are ordered based on sorted queue names, allowing reliable use of
+    connection_index to access specific connections.
     """
     if config is None:
         from .settings import QUEUES
@@ -119,8 +121,9 @@ def get_unique_connection_configs(config: dict[str, dict[str, Any]] | None = Non
         config = QUEUES
 
     connection_configs = []
-    for key, value in config.items():
-        value = filter_connection_params(value)
+    # Sort queue names to ensure deterministic ordering
+    for key in sorted(config.keys()):
+        value = filter_connection_params(config[key])
         if value not in connection_configs:
             connection_configs.append(value)
     return connection_configs

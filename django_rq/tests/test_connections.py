@@ -147,6 +147,58 @@ class ConnectionTest(TestCase):
         self.assertIn(connection_params_1, unique_configs)
         self.assertIn(connection_params_2, unique_configs)
 
+    def test_get_unique_connection_configs_deterministic_order(self):
+        """
+        Test that get_unique_connection_configs returns configs in deterministic order
+        based on sorted queue names, regardless of input dict key order.
+        This allows using connection_index reliably.
+        """
+        import random
+
+        connection_params_1 = {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 0,
+        }
+        connection_params_2 = {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 1,
+        }
+        connection_params_3 = {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 2,
+        }
+
+        # Test with duplicates: zebra and alpha share connection_params_1
+        queue_items = [
+            ('zebra', connection_params_3),
+            ('alpha', connection_params_1),
+            ('charlie', connection_params_2),
+            ('delta', connection_params_1),  # duplicate of alpha
+        ]
+
+        results = []
+        # Call get_unique_connection_configs 5 times with reshuffled key order
+        for _ in range(5):
+            # Reshuffle the order of items to prove ordering doesn't matter
+            random.shuffle(queue_items)
+            config = dict(queue_items)
+
+            result = get_unique_connection_configs(config)
+            results.append(result)
+
+        # All results should be identical despite different input dict orderings
+        first_result = results[0]
+        for result in results:
+            self.assertEqual(result, first_result)
+
+        # Results should be in order based on sorted queue names
+        # Sorted order: alpha (params_1), charlie (params_2), delta (params_1 dup), zebra (params_3)
+        # Unique configs in order: params_1 (from alpha), params_2 (from charlie), params_3 (from zebra)
+        self.assertEqual(first_result, [connection_params_1, connection_params_2, connection_params_3])
+
 
 class RedisCacheTest(TestCase):
     @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis', 'django-redis not installed')
