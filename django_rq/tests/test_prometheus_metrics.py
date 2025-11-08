@@ -7,7 +7,7 @@ from django.test import TestCase, override_settings
 from django.test.client import Client
 from django.urls import NoReverseMatch, reverse
 
-from django_rq import get_queue
+from django_rq import get_queue, thread_queue
 from django_rq.workers import get_worker
 
 from .fixtures import access_self, failing_job
@@ -37,6 +37,8 @@ class PrometheusTest(TestCase):
         self.client = Client()
         self.client.force_login(self.user)
         get_queue('default').connection.flushall()
+        # Clear thread_queue to prevent test pollution from tests with AUTOCOMMIT=False
+        thread_queue.clear()
 
     def assertMetricsContain(self, lines):
         response = self.client.get(reverse('rq_metrics'))
