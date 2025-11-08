@@ -25,7 +25,7 @@ class UtilsTest(TestCase):
 
         # Start a test scheduler
         connection = get_connection('default')
-        test_scheduler = DjangoCronScheduler(connection=connection, name='test-scheduler')
+        test_scheduler = DjangoCronScheduler(connection=connection)
         test_scheduler.register_birth()
         test_scheduler.heartbeat()
 
@@ -39,7 +39,7 @@ class UtilsTest(TestCase):
             for scheduler in schedulers:
                 self.assertIsInstance(scheduler, DjangoCronScheduler)
                 self.assertIsNotNone(scheduler.connection)
-                if scheduler.name == 'test-scheduler':
+                if scheduler.name == test_scheduler.name:
                     found_scheduler = scheduler
 
             # Verify our test scheduler was found and has proper data
