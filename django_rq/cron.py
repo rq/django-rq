@@ -4,7 +4,7 @@ from typing import Any, Callable, Optional, cast
 from redis import Redis
 from rq.cron import CronScheduler
 
-from .queues import get_connection
+from .connection_utils import get_connection
 
 
 class DjangoCronScheduler(CronScheduler):
