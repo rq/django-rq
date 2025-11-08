@@ -12,7 +12,7 @@ def get_redis_connection(config: dict[str, Any], use_strict_redis: bool = False)
     redis_cls = redis.StrictRedis if use_strict_redis else redis.Redis
 
     if 'URL' in config:
-        if config.get('SSL') or config.get('URL').startswith('rediss://'):
+        if config.get('SSL') or config['URL'].startswith('rediss://'):
             return redis_cls.from_url(
                 config['URL'],
                 db=config.get('DB'),
@@ -38,16 +38,16 @@ def get_redis_connection(config: dict[str, Any], use_strict_redis: bool = False)
         cache = caches[config['USE_REDIS_CACHE']]
         # We're using django-redis-cache
         try:
-            return cache._client  # type: ignore[attr-defined]
+            return cache._client
         except AttributeError:
             # For django-redis-cache > 0.13.1
-            return cache.get_master_client()  # type: ignore[attr-defined]
+            return cache.get_master_client()
 
     if 'UNIX_SOCKET_PATH' in config:
         return redis_cls(unix_socket_path=config['UNIX_SOCKET_PATH'], db=config['DB'])
 
     if 'SENTINELS' in config:
-        connection_kwargs = {
+        connection_kwargs: dict[str, Any] = {
             'db': config.get('DB'),
             'password': config.get('PASSWORD'),
             'username': config.get('USERNAME'),
