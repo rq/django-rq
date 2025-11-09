@@ -127,3 +127,18 @@ def get_unique_connection_configs(config: dict[str, dict[str, Any]] | None = Non
         if value not in connection_configs:
             connection_configs.append(value)
     return connection_configs
+
+
+def get_connection_by_index(index: int) -> Redis:
+    """
+    Returns a Redis connection using parameters from the unique connection
+    at the specified index in get_unique_connection_configs()
+
+    Args:
+        index: The index of the connection in the unique connection configs list
+
+    Returns:
+        A Redis connection instance
+    """
+    config = get_unique_connection_configs()[index]
+    return get_redis_connection(config)
