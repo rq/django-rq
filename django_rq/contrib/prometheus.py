@@ -1,6 +1,7 @@
 from rq.job import JobStatus
 
-from ..queues import filter_connection_params, get_connection, get_queue, get_unique_connection_configs
+from ..connection_utils import filter_connection_params, get_connection, get_unique_connection_configs
+from ..queues import get_queue
 from ..workers import get_worker_class
 
 try:

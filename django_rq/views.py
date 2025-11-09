@@ -8,7 +8,6 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
-from redis.exceptions import ResponseError
 from rq import requeue_job
 from rq.exceptions import NoSuchJobError
 from rq.job import Job, JobStatus
@@ -423,22 +422,8 @@ def clear_queue(request, queue_index):
     queue = get_queue_by_index(queue_index)
 
     if request.method == 'POST':
-        try:
-            queue.empty()
-            messages.info(request, f'You have successfully cleared the queue {queue.name}')
-        except ResponseError as e:
-            try:
-                suppress = 'EVALSHA' in e.message  # type: ignore[attr-defined]
-            except AttributeError:
-                suppress = 'EVALSHA' in str(e)
-
-            if suppress:
-                messages.error(
-                    request,
-                    'This action is not supported on Redis versions < 2.6.0, please use the bulk delete command instead',
-                )
-            else:
-                raise e
+        queue.empty()
+        messages.info(request, f'You have successfully cleared the queue {queue.name}')
         return redirect('rq_jobs', queue_index)
 
     context_data = {
