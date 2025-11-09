@@ -169,3 +169,17 @@ class DjangoCronScheduler(CronScheduler):
 
         # This should never happen - if we have a connection_config, it must be in the list
         raise ValueError('Could not find matching connection config in unique configs.')
+
+    @classmethod
+    def all(cls, connection: Redis, cleanup: bool = True) -> list['DjangoCronScheduler']:  # type: ignore[override]
+        """
+        Returns all DjangoCronScheduler instances from the registry.
+
+        Args:
+            connection: Redis connection to use
+            cleanup: If True, removes stale entries from registry before fetching schedulers
+
+        Returns:
+            List of DjangoCronScheduler instances
+        """
+        return super().all(connection, cleanup)  # type: ignore[return-value]

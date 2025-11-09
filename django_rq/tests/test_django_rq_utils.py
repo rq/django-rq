@@ -43,7 +43,7 @@ class UtilsTest(TestCase):
                     found_scheduler = scheduler
 
             # Verify our test scheduler was found and has proper data
-            self.assertIsNotNone(found_scheduler)
+            assert found_scheduler is not None  # Type narrowing for mypy
             self.assertIsNotNone(found_scheduler.last_heartbeat)
 
         finally:
