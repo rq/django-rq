@@ -1,10 +1,11 @@
 import logging
+from functools import cached_property
 from typing import Any, Callable, Optional, cast
 
 from redis import Redis
 from rq.cron import CronScheduler
 
-from .connection_utils import get_connection
+from .connection_utils import get_connection, get_redis_connection, get_unique_connection_configs
 
 
 class DjangoCronScheduler(CronScheduler):
@@ -118,6 +119,9 @@ class DjangoCronScheduler(CronScheduler):
             # First registration - set connection
             self.connection = connection
             self._connection_config = current_config
+            # Clear cached_property so it recalculates with new connection
+            if 'connection_index' in self.__dict__:
+                del self.__dict__['connection_index']
 
         # Now call parent register method
         return super().register(
@@ -133,3 +137,35 @@ class DjangoCronScheduler(CronScheduler):
             failure_ttl=failure_ttl,
             meta=meta,
         )
+
+    @cached_property
+    def connection_index(self) -> int:
+        """
+        Returns the index of this scheduler's Redis connection in the unique connection configs list.
+
+        This allows identifying which connection the scheduler is using, which can be useful for
+        monitoring and management purposes (e.g., identifying schedulers by connection_index).
+
+        Returns:
+            The index of the connection in get_unique_connection_configs()
+
+        Raises:
+            ValueError: If no connection has been set yet (before first register() call),
+                       or if the connection config cannot be found in unique configs
+        """
+        if not self._connection_config:
+            raise ValueError('No connection has been set for this scheduler yet.')
+
+        unique_configs = get_unique_connection_configs()
+
+        # Find which index matches our connection by comparing essential params
+        for i, unique_config in enumerate(unique_configs):
+            conn = get_redis_connection(unique_config)
+            config = self._get_connection_config(conn)
+
+            # If it matches our connection config, this is our index
+            if config == self._connection_config:
+                return i
+
+        # This should never happen - if we have a connection_config, it must be in the list
+        raise ValueError('Could not find matching connection config in unique configs.')

@@ -6,6 +6,7 @@ from unittest.mock import patch
 from django.core.management import call_command
 from rq.cron import CronJob
 
+from ..connection_utils import get_connection_by_index
 from ..cron import DjangoCronScheduler
 from .fixtures import say_hello
 
@@ -66,6 +67,29 @@ class CronTest(TestCase):
         scheduler = DjangoCronScheduler()
         with self.assertRaises(KeyError):
             scheduler.register(say_hello, "nonexistent_queue", interval=300)
+
+    def test_connection_index_property(self):
+        """Test connection_index property returns correct index or raises appropriate exceptions."""
+
+        scheduler = DjangoCronScheduler()
+
+        # Before any registration, connection_index should raise ValueError
+        with self.assertRaises(ValueError):
+            _ = scheduler.connection_index
+
+        # Register a job with 'test3' queue (localhost:6379, DB=1)
+        scheduler.register(say_hello, "test3", interval=60)
+
+        # Now connection_index should return a valid index
+        connection_index = scheduler.connection_index
+        self.assertGreaterEqual(connection_index, 0)
+
+        # Test with a queue using a different connection
+        scheduler2 = DjangoCronScheduler()
+        scheduler2.register(say_hello, "default", interval=60)  # Uses DB=0
+
+        # Should have a different connection_index
+        self.assertNotEqual(scheduler2.connection_index, scheduler.connection_index)
 
 
 class CronCommandTest(TestCase):
