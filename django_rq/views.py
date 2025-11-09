@@ -3,12 +3,11 @@ from typing import Any, cast
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import Http404
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
-from redis.exceptions import ResponseError
 from rq import requeue_job
 from rq.exceptions import NoSuchJobError
 from rq.job import Job, JobStatus
@@ -29,8 +28,7 @@ from .utils import get_executions, get_jobs, stop_jobs
 
 @never_cache
 @staff_member_required
-def jobs(request, queue_index):
-    queue_index = int(queue_index)
+def jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
 
     items_per_page = 100
@@ -61,8 +59,7 @@ def jobs(request, queue_index):
 
 @never_cache
 @staff_member_required
-def finished_jobs(request, queue_index):
-    queue_index = int(queue_index)
+def finished_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
 
     registry = FinishedJobRegistry(queue.name, queue.connection)
@@ -103,8 +100,7 @@ def finished_jobs(request, queue_index):
 
 @never_cache
 @staff_member_required
-def failed_jobs(request, queue_index):
-    queue_index = int(queue_index)
+def failed_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
 
     registry = FailedJobRegistry(queue.name, queue.connection)
@@ -145,8 +141,7 @@ def failed_jobs(request, queue_index):
 
 @never_cache
 @staff_member_required
-def scheduled_jobs(request, queue_index):
-    queue_index = int(queue_index)
+def scheduled_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
 
     registry = ScheduledJobRegistry(queue.name, queue.connection)
@@ -187,8 +182,7 @@ def scheduled_jobs(request, queue_index):
 
 @never_cache
 @staff_member_required
-def started_jobs(request, queue_index):
-    queue_index = int(queue_index)
+def started_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
 
     registry = StartedJobRegistry(queue.name, queue.connection)
@@ -234,8 +228,7 @@ def started_jobs(request, queue_index):
 
 @never_cache
 @staff_member_required
-def workers(request, queue_index):
-    queue_index = int(queue_index)
+def workers(request: HttpRequest, queue_index: int) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
     clean_worker_registry(queue)
     all_workers = Worker.all(queue.connection)
@@ -252,8 +245,7 @@ def workers(request, queue_index):
 
 @never_cache
 @staff_member_required
-def worker_details(request, queue_index, key):
-    queue_index = int(queue_index)
+def worker_details(request: HttpRequest, queue_index: int, key: str) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
     worker = Worker.find_by_key(key, connection=queue.connection)
     assert worker
@@ -276,8 +268,7 @@ def worker_details(request, queue_index, key):
 
 @never_cache
 @staff_member_required
-def deferred_jobs(request, queue_index):
-    queue_index = int(queue_index)
+def deferred_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
 
     registry = DeferredJobRegistry(queue.name, queue.connection)
@@ -322,8 +313,7 @@ def deferred_jobs(request, queue_index):
 
 @never_cache
 @staff_member_required
-def job_detail(request, queue_index, job_id):
-    queue_index = int(queue_index)
+def job_detail(request: HttpRequest, queue_index: int, job_id: str) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
 
     try:
@@ -374,8 +364,7 @@ def job_detail(request, queue_index, job_id):
 
 @never_cache
 @staff_member_required
-def delete_job(request, queue_index, job_id):
-    queue_index = int(queue_index)
+def delete_job(request: HttpRequest, queue_index: int, job_id: str) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
 
@@ -397,8 +386,7 @@ def delete_job(request, queue_index, job_id):
 
 @never_cache
 @staff_member_required
-def requeue_job_view(request, queue_index, job_id):
-    queue_index = int(queue_index)
+def requeue_job_view(request: HttpRequest, queue_index: int, job_id: str) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
 
@@ -418,27 +406,12 @@ def requeue_job_view(request, queue_index, job_id):
 
 @never_cache
 @staff_member_required
-def clear_queue(request, queue_index):
-    queue_index = int(queue_index)
+def clear_queue(request: HttpRequest, queue_index: int) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
 
     if request.method == 'POST':
-        try:
-            queue.empty()
-            messages.info(request, f'You have successfully cleared the queue {queue.name}')
-        except ResponseError as e:
-            try:
-                suppress = 'EVALSHA' in e.message  # type: ignore[attr-defined]
-            except AttributeError:
-                suppress = 'EVALSHA' in str(e)
-
-            if suppress:
-                messages.error(
-                    request,
-                    'This action is not supported on Redis versions < 2.6.0, please use the bulk delete command instead',
-                )
-            else:
-                raise e
+        queue.empty()
+        messages.info(request, f'You have successfully cleared the queue {queue.name}')
         return redirect('rq_jobs', queue_index)
 
     context_data = {
@@ -451,8 +424,7 @@ def clear_queue(request, queue_index):
 
 @never_cache
 @staff_member_required
-def requeue_all(request, queue_index):
-    queue_index = int(queue_index)
+def requeue_all(request: HttpRequest, queue_index: int) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
     registry = FailedJobRegistry(queue=queue)
 
@@ -482,8 +454,7 @@ def requeue_all(request, queue_index):
 
 @never_cache
 @staff_member_required
-def delete_failed_jobs(request, queue_index):
-    queue_index = int(queue_index)
+def delete_failed_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
     registry = FailedJobRegistry(queue=queue)
 
@@ -511,8 +482,7 @@ def delete_failed_jobs(request, queue_index):
 
 @never_cache
 @staff_member_required
-def confirm_action(request, queue_index):
-    queue_index = int(queue_index)
+def confirm_action(request: HttpRequest, queue_index: int) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
     next_url = request.META.get('HTTP_REFERER') or reverse('rq_jobs', args=[queue_index])
 
@@ -534,8 +504,7 @@ def confirm_action(request, queue_index):
 
 @never_cache
 @staff_member_required
-def actions(request, queue_index):
-    queue_index = int(queue_index)
+def actions(request: HttpRequest, queue_index: int) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
     next_url = request.POST.get('next_url') or reverse('rq_jobs', args=[queue_index])
 
@@ -567,9 +536,8 @@ def actions(request, queue_index):
 
 @never_cache
 @staff_member_required
-def enqueue_job(request, queue_index, job_id):
+def enqueue_job(request: HttpRequest, queue_index: int, job_id: str) -> HttpResponse:
     """Enqueue deferred jobs"""
-    queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
 
@@ -608,9 +576,8 @@ def enqueue_job(request, queue_index, job_id):
 @never_cache
 @staff_member_required
 @require_POST
-def stop_job(request, queue_index, job_id):
+def stop_job(request: HttpRequest, queue_index: int, job_id: str) -> HttpResponse:
     """Stop started job"""
-    queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
     stopped, _ = stop_jobs(queue, job_id)
     if len(stopped) == 1:
@@ -623,7 +590,7 @@ def stop_job(request, queue_index, job_id):
 
 @never_cache
 @staff_member_required
-def scheduler_jobs(request, scheduler_index):
+def scheduler_jobs(request: HttpRequest, scheduler_index: int) -> HttpResponse:
     scheduler = get_scheduler_by_index(scheduler_index)
 
     items_per_page = 100
