@@ -153,6 +153,38 @@
         </div>
     </div>
 
+    <h1>Cron Schedulers</h1>
+    <div class="module" id="changelist">
+        <div class="results">
+            {% if cron_schedulers %}
+            <table id="result_list">
+                <thead>
+                    <tr>
+                        <th>
+                            <div class="text"><span>Name</span></div>
+                        </th>
+                        <th><div class="text"><span>Host</span></div></th>
+                        <th><div class="text"><span>Port</span></div></th>
+                        <th><div class="text"><span>DB</span></div></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cron_scheduler in cron_schedulers %}
+                    <tr class="{% cycle 'row1' 'row2' %}">
+                        <td><a href="{% url 'rq_cron_scheduler_detail' cron_scheduler.connection_index cron_scheduler.name %}">{{ cron_scheduler.name }}</a></td>
+                        <td>{{ cron_scheduler.connection.connection_pool.connection_kwargs.host }}</td>
+                        <td>{{ cron_scheduler.connection.connection_pool.connection_kwargs.port }}</td>
+                        <td>{{ cron_scheduler.connection.connection_pool.connection_kwargs.db }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="paginator">No running cron schedulers</p>
+            {% endif %}
+        </div>
+    </div>
+
     {% if schedulers %}
     <h2>RQ Scheduler</h2>
     <table>

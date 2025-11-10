@@ -1,6 +1,6 @@
 from django.urls import path, re_path
 
-from . import stats_views, views
+from . import cron_views, stats_views, views
 from .contrib.prometheus import RQCollector
 
 metrics_view = (
@@ -35,4 +35,9 @@ urlpatterns = [
     path('queues/<int:queue_index>/<str:job_id>/enqueue/', views.enqueue_job, name='rq_enqueue_job'),
     path('queues/<int:queue_index>/<str:job_id>/stop/', views.stop_job, name='rq_stop_job'),
     path('schedulers/<int:scheduler_index>/', views.scheduler_jobs, name='rq_scheduler_jobs'),
+    path(
+        'cron-schedulers/<int:connection_index>/<str:scheduler_name>/',
+        cron_views.cron_scheduler_detail,
+        name='rq_cron_scheduler_detail',
+    ),
 ]
