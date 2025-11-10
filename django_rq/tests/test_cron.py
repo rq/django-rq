@@ -1,12 +1,14 @@
 from contextlib import suppress
 from io import StringIO
-from unittest import TestCase
 from unittest.mock import patch
 
+from django.contrib.auth.models import User
 from django.core.management import call_command
+from django.test import TestCase
+from django.test.client import Client
+from django.urls import reverse
 from rq.cron import CronJob
 
-from ..connection_utils import get_connection_by_index
 from ..cron import DjangoCronScheduler
 from .fixtures import say_hello
 
@@ -165,3 +167,39 @@ class CronCommandTest(TestCase):
         output = out.getvalue()
         self.assertIn(f"Loading cron configuration from {config_path}", output)
         self.assertIn("Starting cron scheduler with 2 jobs...", output)
+
+
+class CronViewTest(TestCase):
+    def setUp(self):
+        """Set up test user and client."""
+        self.user = User.objects.create_user('foo', password='pass', is_staff=True, is_active=True)
+        self.client = Client()
+        self.client.login(username=self.user.username, password='pass')
+
+    def test_cron_scheduler_detail_view(self):
+        """Test cron scheduler detail view with various scenarios."""
+        # Create a real scheduler and register it
+        scheduler = DjangoCronScheduler(name='test-scheduler')
+        scheduler.register(say_hello, "default", interval=60)
+        scheduler.register_birth()
+
+        # Test 1: Successful view of existing scheduler
+        connection_index = scheduler.connection_index
+        url = reverse('rq_cron_scheduler_detail', args=[connection_index, 'test-scheduler'])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['scheduler'].name, 'test-scheduler')
+        self.assertContains(response, 'test-scheduler')
+
+        # Test 2: Non-existent scheduler returns 404
+        url = reverse('rq_cron_scheduler_detail', args=[connection_index, 'nonexistent-scheduler'])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        # Test 3: Invalid connection index returns 404
+        url = reverse('rq_cron_scheduler_detail', args=[999, 'test-scheduler'])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        # Clean up
+        scheduler.register_death()

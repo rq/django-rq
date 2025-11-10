@@ -171,7 +171,7 @@
                 <tbody>
                     {% for cron_scheduler in cron_schedulers %}
                     <tr class="{% cycle 'row1' 'row2' %}">
-                        <td>{{ cron_scheduler.name }}</td>
+                        <td><a href="{% url 'rq_cron_scheduler_detail' cron_scheduler.connection_index cron_scheduler.name %}">{{ cron_scheduler.name }}</a></td>
                         <td>{{ cron_scheduler.connection.connection_pool.connection_kwargs.host }}</td>
                         <td>{{ cron_scheduler.connection.connection_pool.connection_kwargs.port }}</td>
                         <td>{{ cron_scheduler.connection.connection_pool.connection_kwargs.db }}</td>
