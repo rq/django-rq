@@ -1,0 +1,98 @@
+{% extends "admin/base_site.html" %}
+
+{% load static django_rq %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'admin/css/forms.css' %}">
+{% endblock %}
+
+{% block title %}Cron Scheduler: {{ scheduler.name }}{% endblock %}
+
+{% block content_title %}<h1>Cron Scheduler: {{ scheduler.name }}</h1>{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+        <a href="{% url 'rq_home' %}">Django RQ</a> &rsaquo;
+        Cron Scheduler: {{ scheduler.name }}
+    </div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+
+    <fieldset class="module aligned">
+
+        <div class="form-row">
+            <div>
+                <div class="flex-container">
+                    <label>Name:</label>
+                    <div class="readonly">{{ scheduler.name }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <div class="flex-container">
+                    <label>Hostname:</label>
+                    <div class="readonly">{{ scheduler.hostname }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <div class="flex-container">
+                    <label>PID:</label>
+                    <div class="readonly">{{ scheduler.pid }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <div class="flex-container">
+                    <label>Created At:</label>
+                    <div class="readonly">
+                        {% if scheduler.created_at %}
+                            {{ scheduler.created_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <div class="flex-container">
+                    <label>Last Heartbeat:</label>
+                    <div class="readonly">
+                        {% if scheduler.last_heartbeat %}
+                            {{ scheduler.last_heartbeat|to_localtime|date:"Y-m-d, H:i:s" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if scheduler.config_file %}
+        <div class="form-row">
+            <div>
+                <div class="flex-container">
+                    <label>Config File:</label>
+                    <div class="readonly">{{ scheduler.config_file }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </fieldset>
+
+</div>
+{% endblock %}

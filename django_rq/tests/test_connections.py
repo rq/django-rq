@@ -5,7 +5,12 @@ from unittest.mock import MagicMock, patch
 from django.conf import settings
 from django.test import TestCase, override_settings
 
-from django_rq.connection_utils import get_connection, get_redis_connection, get_unique_connection_configs
+from django_rq.connection_utils import (
+    get_connection,
+    get_connection_by_index,
+    get_redis_connection,
+    get_unique_connection_configs,
+)
 from django_rq.queues import get_queue
 from django_rq.tests.fixtures import access_self
 
@@ -198,6 +203,41 @@ class ConnectionTest(TestCase):
         # Sorted order: alpha (params_1), charlie (params_2), delta (params_1 dup), zebra (params_3)
         # Unique configs in order: params_1 (from alpha), params_2 (from charlie), params_3 (from zebra)
         self.assertEqual(first_result, [connection_params_1, connection_params_2, connection_params_3])
+
+    def test_get_connection_by_index(self):
+        """
+        Test that get_connection_by_index returns the correct connection for valid indices.
+        """
+        # Get all unique configs to know how many we have
+        unique_configs = get_unique_connection_configs()
+
+        # Test all valid indices and verify connections are correct
+        for i in range(len(unique_configs)):
+            expected_config = unique_configs[i]
+
+            # Skip configs that might not be valid Redis connections (cache backends)
+            if 'USE_REDIS_CACHE' in expected_config:
+                continue
+
+            connection = get_connection_by_index(i)
+
+            connection_kwargs = connection.connection_pool.connection_kwargs
+
+            # Verify connection matches expected config
+            if 'HOST' in expected_config:
+                # Regular HOST/PORT/DB config
+                self.assertEqual(connection_kwargs['host'], expected_config['HOST'])
+                self.assertEqual(connection_kwargs['port'], expected_config['PORT'])
+                self.assertEqual(connection_kwargs['db'], expected_config.get('DB', 0))
+            elif 'URL' in expected_config:
+                # URL-based config - verify DB if specified
+                if 'DB' in expected_config:
+                    self.assertEqual(connection_kwargs['db'], expected_config['DB'])
+            elif 'SENTINELS' in expected_config:
+                # Sentinel config - connection pool type is different
+                from redis.sentinel import SentinelConnectionPool
+
+                self.assertIsInstance(connection.connection_pool, SentinelConnectionPool)
 
 
 class RedisCacheTest(TestCase):

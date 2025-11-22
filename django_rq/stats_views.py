@@ -7,7 +7,7 @@ from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 
 from .settings import API_TOKEN
-from .utils import get_scheduler_statistics, get_statistics
+from .utils import get_cron_schedulers, get_scheduler_statistics, get_statistics
 
 try:
     import prometheus_client
@@ -63,6 +63,7 @@ def stats(request):
         **get_statistics(run_maintenance_tasks=True),
         **get_scheduler_statistics(),
         "view_metrics": RQCollector is not None,
+        "cron_schedulers": get_cron_schedulers(),
     }
     return render(request, 'django_rq/stats.html', context_data)
 
