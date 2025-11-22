@@ -71,7 +71,7 @@ class DjangoCronScheduler(CronScheduler):
         kwargs: Optional[dict[str, Any]] = None,
         interval: Optional[int] = None,
         cron: Optional[str] = None,
-        timeout: Optional[int] = None,
+        job_timeout: Optional[int] = None,
         result_ttl: int = 500,
         ttl: Optional[int] = None,
         failure_ttl: Optional[int] = None,
@@ -90,7 +90,7 @@ class DjangoCronScheduler(CronScheduler):
             kwargs: Keyword arguments to pass to the function
             interval: Interval in seconds (mutually exclusive with cron)
             cron: Cron expression (mutually exclusive with interval)
-            timeout: Job timeout in seconds
+            job_timeout: Job timeout in seconds
             result_ttl: How long to keep job results
             ttl: Job time-to-live
             failure_ttl: How long to keep failed job info
@@ -127,7 +127,7 @@ class DjangoCronScheduler(CronScheduler):
             kwargs=kwargs,
             interval=interval,
             cron=cron,
-            timeout=timeout,
+            job_timeout=job_timeout,
             result_ttl=result_ttl,
             ttl=ttl,
             failure_ttl=failure_ttl,
