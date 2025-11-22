@@ -17,7 +17,7 @@ class Command(BaseCommand):
             "--duration",
             "-d",
             type=int,
-            help="The duration in seconds to suspend the workers.  If not provided, workers will be suspended indefinitely",
+            help="The duration in seconds to suspend the workers. If blank, workers will be suspended indefinitely",
         )
 
     def handle(self, *args, **options):
@@ -30,7 +30,10 @@ class Command(BaseCommand):
 
         if duration:
             suspend(connection, duration)
-            msg = f"Suspending workers for {duration} seconds.  No new jobs will be started during that time, but then will automatically resume"
+            msg = (
+                f"Suspending workers for {duration} seconds. No new jobs will be started "
+                "during that time, but then will automatically resume"
+            )
             log.info(msg)
         else:
             suspend(connection)

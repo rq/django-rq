@@ -26,16 +26,15 @@ from django_rq.jobs import get_job_class
 from django_rq.management.commands import rqworker
 from django_rq.queues import DjangoRQ, get_queue, get_queues
 from django_rq.templatetags.django_rq import force_escape, to_localtime
-from tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self
 from django_rq.utils import get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
+from tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self
 
 try:
     from rq_scheduler import Scheduler
 
-    from tests.fixtures import DummyScheduler
-
     from django_rq.queues import get_scheduler
+    from tests.fixtures import DummyScheduler
 
     RQ_SCHEDULER_INSTALLED = True
 except ImportError:
