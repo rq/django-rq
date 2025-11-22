@@ -12,7 +12,7 @@ from django_rq.connection_utils import (
     get_unique_connection_configs,
 )
 from django_rq.queues import get_queue
-from django_rq.tests.fixtures import access_self
+from tests.fixtures import access_self
 
 QUEUES = settings.RQ_QUEUES
 
