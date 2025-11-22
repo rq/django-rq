@@ -236,20 +236,26 @@ If you are using built-in scheduler you have to start workers with scheduler sup
 python manage.py rqworker --with-scheduler
 ```
 
-Alternatively you can use [RQ Scheduler](https://github.com/ui/rq-scheduler). After install you can also use the `get_scheduler` function to return a `Scheduler` instance for queues defined in settings.py's `RQ_QUEUES`. For example:
+### Support for RQ's CronScheduler
+
+Create a cron configuration file:
 
 ```python
-import django_rq
+# cron_config.py
+from rq import cron
+from myapp.tasks import send_report, sync_data
 
-scheduler = django_rq.get_scheduler('default')
-job = scheduler.enqueue_at(datetime(2020, 10, 10), func)
+cron.register(send_report, queue_name='default', cron='0 9 * * *')  # Daily at 9:00 AM
+cron.register(sync_data, queue_name='high', interval=30)  # Every 30 seconds
 ```
 
-You can also use the management command `rqscheduler` to start the scheduler:
+Then start the cron scheduler:
 
 ```bash
-python manage.py rqscheduler
+python manage.py rqcron cron_config.py
 ```
+
+For more options, visit [RQ's CronScheduler documentation](https://python-rq.org/docs/cron/).
 
 ### Support for django-redis and django-redis-cache
 
