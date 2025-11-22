@@ -1,3 +1,8 @@
+### Version 3.2 (2025-11-22)
+* Added support for RQ's new `CronScheduler`. Thanks @selwin!
+* You can now run tests using pytest. Thanks @selwin!
+* Refactored the codebase to follow modern Django and Python best practices. Thanks @selwin!
+
 ### Version 3.1 (2025-08-02)
 * Added `/metrics` endpoint to expose RQ metrics in Prometheus format. Thanks @terencehonles!
 * Added token based authentication for the `/metrics` and `/stats.json` endpoints. Thanks @RasmusThing!
