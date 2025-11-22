@@ -37,7 +37,7 @@ jobs:
 
       - name: Run Test
         run: |
-          `which django-admin` test django_rq --settings=django_rq.tests.settings --pythonpath=. -v2
+          `which django-admin` test tests --settings=tests.settings --pythonpath=. -v2
 
       - name: Install optional dependencies
         run: |
@@ -45,7 +45,7 @@ jobs:
 
       - name: Run Test with optional dependencies
         run: |
-          `which django-admin` test django_rq --settings=django_rq.tests.settings --pythonpath=. -v2
+          `which django-admin` test tests --settings=tests.settings --pythonpath=. -v2
 
   mypy:
     runs-on: ubuntu-latest

@@ -5,18 +5,18 @@ from uuid import uuid4
 
 from rq.registry import ScheduledJobRegistry
 
-from ..cron import DjangoCronScheduler
-from ..queues import get_queue
-from ..utils import get_cron_schedulers, get_jobs, get_statistics
-from ..workers import get_worker
-from .fixtures import access_self
-from .utils import flush_registry
+from django_rq.cron import DjangoCronScheduler
+from django_rq.queues import get_queue
+from django_rq.utils import get_cron_schedulers, get_jobs, get_statistics
+from django_rq.workers import get_worker
+from tests.fixtures import access_self
+from tests.utils import flush_registry
 
 
 class UtilsTest(TestCase):
     def test_get_cron_schedulers(self):
         """Test get_cron_schedulers returns running DjangoCronScheduler instances."""
-        from ..queues import get_connection
+        from django_rq.queues import get_connection
 
         # Initially, no schedulers should be running
         schedulers = get_cron_schedulers()

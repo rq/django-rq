@@ -26,16 +26,16 @@ from django_rq.jobs import get_job_class
 from django_rq.management.commands import rqworker
 from django_rq.queues import DjangoRQ, get_queue, get_queues
 from django_rq.templatetags.django_rq import force_escape, to_localtime
-from django_rq.tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self
+from tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self
 from django_rq.utils import get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
 
 try:
     from rq_scheduler import Scheduler
 
-    from django_rq.tests.fixtures import DummyScheduler
+    from tests.fixtures import DummyScheduler
 
-    from ..queues import get_scheduler
+    from django_rq.queues import get_scheduler
 
     RQ_SCHEDULER_INSTALLED = True
 except ImportError:
@@ -449,9 +449,9 @@ class WorkersTest(TestCase):
 
     def test_get_worker_custom_classes(self):
         w = get_worker(
-            job_class='django_rq.tests.fixtures.DummyJob',
-            queue_class='django_rq.tests.fixtures.DummyQueue',
-            worker_class='django_rq.tests.fixtures.DummyWorker',
+            job_class='tests.fixtures.DummyJob',
+            queue_class='tests.fixtures.DummyQueue',
+            worker_class='tests.fixtures.DummyWorker',
         )
         self.assertIs(w.job_class, DummyJob)
         self.assertIsInstance(w.queues[0], DummyQueue)
@@ -605,7 +605,7 @@ class SchedulerTest(TestCase):
             call_command('rqscheduler', verbosity=verbosity)
             setup_loghandlers_mock.assert_called_once_with(expected_level[verbosity])
 
-    @override_settings(RQ={'SCHEDULER_CLASS': 'django_rq.tests.fixtures.DummyScheduler'})
+    @override_settings(RQ={'SCHEDULER_CLASS': 'tests.fixtures.DummyScheduler'})
     def test_scheduler_default(self):
         """
         Scheduler class customization.
@@ -641,13 +641,13 @@ class JobClassTest(TestCase):
         job_class = get_job_class()
         self.assertIs(job_class, Job)
 
-    @override_settings(RQ={'JOB_CLASS': 'django_rq.tests.fixtures.DummyJob'})
+    @override_settings(RQ={'JOB_CLASS': 'tests.fixtures.DummyJob'})
     def test_custom_class(self):
         job_class = get_job_class()
         self.assertIs(job_class, DummyJob)
 
     def test_local_override(self):
-        self.assertIs(get_job_class('django_rq.tests.fixtures.DummyJob'), DummyJob)
+        self.assertIs(get_job_class('tests.fixtures.DummyJob'), DummyJob)
 
 
 class SuspendResumeTest(TestCase):
@@ -679,13 +679,13 @@ class WorkerClassTest(TestCase):
         worker = get_worker()
         self.assertIsInstance(worker, Worker)
 
-    @override_settings(RQ={'WORKER_CLASS': 'django_rq.tests.fixtures.DummyWorker'})
+    @override_settings(RQ={'WORKER_CLASS': 'tests.fixtures.DummyWorker'})
     def test_custom_class(self):
         worker = get_worker()
         self.assertIsInstance(worker, DummyWorker)
 
     def test_local_override(self):
-        self.assertIs(get_worker_class('django_rq.tests.fixtures.DummyWorker'), DummyWorker)
+        self.assertIs(get_worker_class('tests.fixtures.DummyWorker'), DummyWorker)
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})

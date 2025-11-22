@@ -9,8 +9,8 @@ from django.test.client import Client
 from django.urls import reverse
 from rq.cron import CronJob
 
-from ..cron import DjangoCronScheduler
-from .fixtures import say_hello
+from django_rq.cron import DjangoCronScheduler
+from tests.fixtures import say_hello
 
 
 class CronTest(TestCase):
@@ -102,7 +102,7 @@ class CronCommandTest(TestCase):
 
         # Test 1: Successful execution
         out = StringIO()
-        config_path = "django_rq.tests.cron_config1"
+        config_path = "tests.cron_config1"
 
         call_command("rqcron", config_path, stdout=out)
 
@@ -132,19 +132,19 @@ class CronCommandTest(TestCase):
         # Test KeyboardInterrupt handling
         mock_start.side_effect = KeyboardInterrupt()
         with self.assertRaises(SystemExit):
-            call_command("rqcron", "django_rq.tests.cron_config2")
+            call_command("rqcron", "tests.cron_config2")
 
         # Test general exception handling - should bubble up as raw exception
         mock_load_config.side_effect = Exception("Test error")
         with self.assertRaises(Exception) as cm:
-            call_command("rqcron", "django_rq.tests.cron_config2")
+            call_command("rqcron", "tests.cron_config2")
 
         self.assertEqual(str(cm.exception), "Test error")
 
     def test_rqcron_command_successful_run(self):
         """Test successful rqcron command execution without mocking."""
         out = StringIO()
-        config_path = "django_rq.tests.cron_config1"
+        config_path = "tests.cron_config1"
 
         # Use a very short timeout to test actual execution
         import signal

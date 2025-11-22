@@ -114,7 +114,7 @@ RQ_QUEUES = {
         'PORT': 1,
         'DB': 1,
         'DEFAULT_TIMEOUT': 400,
-        'QUEUE_CLASS': 'django_rq.tests.fixtures.DummyQueue',
+        'QUEUE_CLASS': 'tests.fixtures.DummyQueue',
     },
     'test2': {
         'HOST': REDIS_HOST,
@@ -200,7 +200,7 @@ RQ = {
 if REDIS_CACHE_TYPE == 'django-redis-cache':
     RQ_QUEUES['django-redis-cache'] = {'USE_REDIS_CACHE': 'django-redis-cache'}
 
-ROOT_URLCONF = 'django_rq.tests.urls'
+ROOT_URLCONF = 'tests.urls'
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

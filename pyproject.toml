@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "django-rq"
 dynamic = ["version"]
 description = "An app that provides django integration for RQ (Redis Queue)"
-readme = "README.rst"
+readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE.txt"]
 authors = [{ name = "Selwin Ong", email = "selwin.ong@gmail.com" }]
@@ -113,7 +113,7 @@ lint.isort.section-order = [
 ]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "django_rq.tests.settings"
+DJANGO_SETTINGS_MODULE = "tests.settings"
 pythonpath = ["."]
-testpaths = ["django_rq/tests"]
+testpaths = ["tests"]
 python_files = ["test_*.py", "tests.py"]
