@@ -11,8 +11,8 @@ from tests.tests import divide
 
 class CommitModeTest(TestCase):
     @override_settings(RQ={})
-    def test_default_commit_mode_is_auto(self):
-        self.assertEqual(get_commit_mode(), 'auto')
+    def test_default_commit_mode_is_on_db_commit(self):
+        self.assertEqual(get_commit_mode(), 'on_db_commit')
 
     @override_settings(RQ={'COMMIT_MODE': 'auto'})
     def test_commit_mode_auto_explicit(self):
@@ -34,7 +34,7 @@ class CommitModeTest(TestCase):
 
     @override_settings(RQ={'COMMIT_MODE': ''})
     def test_commit_mode_empty_string_falls_back(self):
-        self.assertEqual(get_commit_mode(), 'auto')
+        self.assertEqual(get_commit_mode(), 'on_db_commit')
 
     @override_settings(RQ={'COMMIT_MODE': 123})
     def test_commit_mode_invalid_type(self):

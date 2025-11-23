@@ -25,9 +25,9 @@ def get_commit_mode():
     Returns the configured commit mode.
 
     COMMIT_MODE is preferred and supports:
+    - "on_db_commit" (default): enqueue when the database transaction commits
     - "auto": enqueue immediately
     - "request_finished": enqueue when the request finishes (legacy behavior)
-    - "on_db_commit": enqueue when the database transaction commits
 
     If COMMIT_MODE isn't set, fall back to AUTOCOMMIT for backwards
     compatibility (True -> "auto", False -> "request_finished").
@@ -38,7 +38,8 @@ def get_commit_mode():
     if not commit_mode:
         if 'AUTOCOMMIT' in RQ:
             warnings.warn('"AUTOCOMMIT" is deprecated; use "COMMIT_MODE" instead.', DeprecationWarning)
-        return 'auto' if RQ.get('AUTOCOMMIT', True) else 'request_finished'
+            return 'auto' if RQ.get('AUTOCOMMIT') else 'request_finished'
+        return 'on_db_commit'
 
     if commit_mode in VALID_COMMIT_MODES:
         return commit_mode
