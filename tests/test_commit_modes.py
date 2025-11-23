@@ -139,7 +139,9 @@ class OnDbCommitTest(TransactionTestCase):
         self.assertEqual(queue.count, 0)
 
         with transaction.atomic():
-            queue.enqueue(say_hello)
+            job = queue.enqueue(say_hello)
+            # Inside transaction, enqueue returns None (deferred via on_commit)
+            self.assertIsNone(job)
             # Job should not be in queue yet (transaction not committed)
             self.assertEqual(queue.count, 0)
 
@@ -168,17 +170,20 @@ class OnDbCommitTest(TransactionTestCase):
     def test_job_enqueued_immediately_without_transaction(self):
         """Job should be enqueued immediately when not in a transaction.
 
-        Django's on_commit() executes immediately when not in a transaction.
+        When not in an atomic block, enqueue() should return the Job object
+        and enqueue immediately (short-circuit optimization).
         """
         queue = get_queue()
         queue.empty()
         self.assertEqual(queue.count, 0)
 
-        # No transaction context - should enqueue immediately
-        queue.enqueue(say_hello)
+        # No transaction context - should enqueue immediately and return Job
+        job = queue.enqueue(say_hello)
 
-        # Job should be in queue immediately
+        # Job should be returned and in queue immediately
+        self.assertIsNotNone(job)
         self.assertEqual(queue.count, 1)
+        job.delete()
 
     def test_nested_atomic_blocks(self):
         """Jobs should be enqueued after the outermost transaction commits."""

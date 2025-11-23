@@ -3,7 +3,7 @@ from typing import Any, Callable, Optional, Union
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.db import transaction
+from django.db import connection, transaction
 from redis import Redis
 from rq.job import Job
 from rq.queue import Queue
@@ -100,7 +100,10 @@ class DjangoRQ(Queue):
         if self._commit_mode == 'auto':
             return self.original_enqueue_call(*args, **kwargs)
         elif self._commit_mode == 'on_db_commit':
-            transaction.on_commit(lambda: self.original_enqueue_call(*args, **kwargs))
+            if connection.in_atomic_block:
+                transaction.on_commit(lambda: self.original_enqueue_call(*args, **kwargs))
+            else:
+                return self.original_enqueue_call(*args, **kwargs)
         else:
             thread_queue.add(self, args, kwargs)
 
