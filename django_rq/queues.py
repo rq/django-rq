@@ -3,6 +3,7 @@ from typing import Any, Callable, Optional, Union
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.db import transaction
 from redis import Redis
 from rq.job import Job
 from rq.queue import Queue
@@ -16,6 +17,8 @@ from .connection_utils import (
 )
 from .jobs import get_job_class
 
+VALID_COMMIT_MODES = ('auto', 'request_finished', 'on_db_commit')
+
 
 def get_commit_mode():
     """
@@ -24,6 +27,7 @@ def get_commit_mode():
     COMMIT_MODE is preferred and supports:
     - "auto": enqueue immediately
     - "request_finished": enqueue when the request finishes (legacy behavior)
+    - "on_db_commit": enqueue when the database transaction commits
 
     If COMMIT_MODE isn't set, fall back to AUTOCOMMIT for backwards
     compatibility (True -> "auto", False -> "request_finished").
@@ -36,10 +40,10 @@ def get_commit_mode():
             warnings.warn('"AUTOCOMMIT" is deprecated; use "COMMIT_MODE" instead.', DeprecationWarning)
         return 'auto' if RQ.get('AUTOCOMMIT', True) else 'request_finished'
 
-    if commit_mode in ('auto', 'request_finished'):
+    if commit_mode in VALID_COMMIT_MODES:
         return commit_mode
     else:
-        raise ImproperlyConfigured('"COMMIT_MODE" must be "auto" or "request_finished".')
+        raise ImproperlyConfigured(f'"COMMIT_MODE" must be one of {VALID_COMMIT_MODES}.')
 
 
 def get_queue_class(config=None, queue_class=None):
@@ -74,8 +78,8 @@ class DjangoRQ(Queue):
         commit_mode = kwargs.pop('commit_mode', None)
 
         if commit_mode:
-            if commit_mode not in ('auto', 'request_finished'):
-                raise ImproperlyConfigured('commit_mode must be "auto" or "request_finished".')
+            if commit_mode not in VALID_COMMIT_MODES:
+                raise ImproperlyConfigured(f'commit_mode must be one of {VALID_COMMIT_MODES}.')
         elif autocommit is not None:
             warnings.warn('The "autocommit" argument is deprecated; use "commit_mode" instead.', DeprecationWarning)
             commit_mode = 'auto' if autocommit else 'request_finished'
@@ -95,6 +99,8 @@ class DjangoRQ(Queue):
     def enqueue_call(self, *args, **kwargs):
         if self._commit_mode == 'auto':
             return self.original_enqueue_call(*args, **kwargs)
+        elif self._commit_mode == 'on_db_commit':
+            transaction.on_commit(lambda: self.original_enqueue_call(*args, **kwargs))
         else:
             thread_queue.add(self, args, kwargs)
 

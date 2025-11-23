@@ -9,8 +9,9 @@ from uuid import uuid4
 import rq
 from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
+from django.db import transaction
 from django.core.management import call_command
-from django.test import TestCase, override_settings
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
 from django.utils.safestring import SafeString
 from rq import Queue
@@ -29,7 +30,7 @@ from django_rq.queues import DjangoRQ, get_commit_mode, get_queue, get_queues
 from django_rq.templatetags.django_rq import force_escape, to_localtime
 from django_rq.utils import get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
-from tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self
+from tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self, say_hello
 
 try:
     from rq_scheduler import Scheduler
@@ -88,6 +89,10 @@ class CommitModeTest(TestCase):
     @override_settings(RQ={'COMMIT_MODE': 'request_finished'})
     def test_commit_mode_request_finished(self):
         self.assertEqual(get_commit_mode(), 'request_finished')
+
+    @override_settings(RQ={'COMMIT_MODE': 'on_db_commit'})
+    def test_commit_mode_on_db_commit(self):
+        self.assertEqual(get_commit_mode(), 'on_db_commit')
 
     @override_settings(RQ={'AUTOCOMMIT': False})
     def test_autocommit_fallback_with_warning(self):
@@ -366,6 +371,8 @@ class QueuesTest(TestCase):
         self.assertEqual(queue._commit_mode, 'auto')
         queue = get_queue(commit_mode='request_finished')
         self.assertEqual(queue._commit_mode, 'request_finished')
+        queue = get_queue(commit_mode='on_db_commit')
+        self.assertEqual(queue._commit_mode, 'on_db_commit')
         with self.assertRaises(ImproperlyConfigured):
             get_queue(commit_mode='later')
 
@@ -613,6 +620,81 @@ class ThreadQueueTest(TestCase):
         url = reverse('error')
         self.assertRaises(ValueError, self.client.get, url)
         self.assertEqual(queue.count, 0)
+
+
+@override_settings(RQ={'COMMIT_MODE': 'on_db_commit'})
+class OnDbCommitTest(TransactionTestCase):
+    """Tests for the on_db_commit commit mode.
+
+    Uses TransactionTestCase because Django's TestCase wraps tests in a
+    transaction that never commits, which interferes with on_commit() behavior.
+    """
+
+    def test_job_enqueued_after_transaction_commits(self):
+        """Job should be enqueued only after the transaction commits."""
+        queue = get_queue()
+        queue.empty()
+        self.assertEqual(queue.count, 0)
+
+        with transaction.atomic():
+            queue.enqueue(say_hello)
+            # Job should not be in queue yet (transaction not committed)
+            self.assertEqual(queue.count, 0)
+
+        # After transaction commits, job should be in queue
+        self.assertEqual(queue.count, 1)
+
+    def test_job_discarded_on_rollback(self):
+        """Job should be discarded if the transaction rolls back."""
+        queue = get_queue()
+        queue.empty()
+        self.assertEqual(queue.count, 0)
+
+        try:
+            with transaction.atomic():
+                queue.enqueue(say_hello)
+                # Job should not be in queue yet
+                self.assertEqual(queue.count, 0)
+                # Force a rollback
+                raise Exception('Forcing rollback')
+        except Exception:
+            pass
+
+        # After rollback, job should NOT be in queue
+        self.assertEqual(queue.count, 0)
+
+    def test_job_enqueued_immediately_without_transaction(self):
+        """Job should be enqueued immediately when not in a transaction.
+
+        Django's on_commit() executes immediately when not in a transaction.
+        """
+        queue = get_queue()
+        queue.empty()
+        self.assertEqual(queue.count, 0)
+
+        # No transaction context - should enqueue immediately
+        queue.enqueue(say_hello)
+
+        # Job should be in queue immediately
+        self.assertEqual(queue.count, 1)
+
+    def test_nested_atomic_blocks(self):
+        """Jobs should be enqueued after the outermost transaction commits."""
+        queue = get_queue()
+        queue.empty()
+        self.assertEqual(queue.count, 0)
+
+        with transaction.atomic():
+            queue.enqueue(say_hello)
+            with transaction.atomic():
+                queue.enqueue(say_hello)
+                # Neither job should be in queue yet
+                self.assertEqual(queue.count, 0)
+            # Still not committed - outer transaction not done
+            self.assertEqual(queue.count, 0)
+
+        # After outermost transaction commits, both jobs should be in queue
+        self.assertEqual(queue.count, 2)
 
 
 @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
