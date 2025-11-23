@@ -106,10 +106,10 @@ queue = django_rq.get_queue('high')
 queue.enqueue(func, foo, bar=baz)
 ```
 
-In addition to `name` argument, `get_queue` also accepts `default_timeout`, `is_async`, `autocommit`, `connection` and `queue_class` arguments. For example:
+In addition to `name` argument, `get_queue` also accepts `default_timeout`, `is_async`, `commit_mode`, `connection` and `queue_class` arguments. For example:
 
 ```python
-queue = django_rq.get_queue('default', autocommit=True, is_async=True, default_timeout=360)
+queue = django_rq.get_queue('default', commit_mode='on_db_commit', is_async=True, default_timeout=360)
 queue.enqueue(func, foo, bar=baz)
 ```
 
@@ -457,6 +457,51 @@ if DEBUG or TESTING:
 ```
 
 Note that setting the `is_async` parameter explicitly when calling `get_queue` will override this setting.
+
+### Commit Modes
+
+*New in version 3.0 (not yet released)*
+
+By default, jobs are enqueued when the database transaction commits. This behavior is controlled by the `COMMIT_MODE` setting:
+
+```python
+RQ = {
+    'COMMIT_MODE': 'on_db_commit',  # or 'auto', 'request_finished'
+}
+```
+
+Available commit modes:
+
+| Mode | Behavior |
+|------|----------|
+| `on_db_commit` (default) | Jobs are enqueued when the current database transaction commits. If not in a transaction, jobs are enqueued immediately |
+| `auto` | Jobs are enqueued immediately when `enqueue()` is called |
+| `request_finished` | Jobs are enqueued when Django's `request_finished` signal fires. Jobs are discarded if an exception occurs during the request |
+
+The `on_db_commit` mode is recommended when your jobs depend on database state, as it ensures the job won't run until the data it depends on has been committed. This prevents race conditions where a job tries to access data that hasn't been committed.
+
+```python
+from django.db import transaction
+
+# With COMMIT_MODE='on_db_commit'
+with transaction.atomic():
+    user = User.objects.create(username='new_user')
+    queue.enqueue(send_welcome_email, user.id) # Job not enqueued yet, it waits for DB transaction to commit
+    
+# Transaction committed - now the job is enqueued
+```
+
+You can also explicitly set `commit_mode` when calling `get_queue()`:
+
+```python
+queue = django_rq.get_queue('default', commit_mode='auto')
+```
+
+**Note:** The `AUTOCOMMIT` setting is deprecated as of version 3.0. Use `COMMIT_MODE` instead:
+- `AUTOCOMMIT: True` → `COMMIT_MODE: 'auto'`
+- `AUTOCOMMIT: False` → `COMMIT_MODE: 'request_finished'`
+
+**Migrating from version 2.x:** The default behavior has changed in version 3.0. Previously, jobs were enqueued immediately (`auto` mode). Now, jobs are enqueued when the database transaction commits (`on_db_commit` mode). To restore the old behavior, set `COMMIT_MODE: 'auto'` in your `RQ` settings.
 
 ## Running Tests
 

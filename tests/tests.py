@@ -7,6 +7,7 @@ from unittest.mock import PropertyMock, patch
 from uuid import uuid4
 
 import rq
+from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase, override_settings
@@ -312,20 +313,33 @@ class QueuesTest(TestCase):
         """
         Checks whether autocommit is set properly.
         """
-        queue = get_queue(autocommit=True)
-        self.assertTrue(queue._autocommit)
-        queue = get_queue(autocommit=False)
-        self.assertFalse(queue._autocommit)
+        with self.assertWarns(DeprecationWarning):
+            queue = get_queue(autocommit=True)
+        self.assertEqual(queue._commit_mode, 'auto')
+        with self.assertWarns(DeprecationWarning):
+            queue = get_queue(autocommit=False)
+        self.assertEqual(queue._commit_mode, 'request_finished')
         # Falls back to default AUTOCOMMIT mode
         queue = get_queue()
-        self.assertFalse(queue._autocommit)
+        self.assertEqual(queue._commit_mode, 'request_finished')
 
-        queues = get_queues(autocommit=True)
-        self.assertTrue(queues[0]._autocommit)
-        queues = get_queues(autocommit=False)
-        self.assertFalse(queues[0]._autocommit)
+        queue = get_queue(commit_mode='auto')
+        self.assertEqual(queue._commit_mode, 'auto')
+        queue = get_queue(commit_mode='request_finished')
+        self.assertEqual(queue._commit_mode, 'request_finished')
+        queue = get_queue(commit_mode='on_db_commit')
+        self.assertEqual(queue._commit_mode, 'on_db_commit')
+        with self.assertRaises(ImproperlyConfigured):
+            get_queue(commit_mode='later')
+
+        with self.assertWarns(DeprecationWarning):
+            queues = get_queues(autocommit=True)
+        self.assertEqual(queues[0]._commit_mode, 'auto')
+        with self.assertWarns(DeprecationWarning):
+            queues = get_queues(autocommit=False)
+        self.assertEqual(queues[0]._commit_mode, 'request_finished')
         queues = get_queues()
-        self.assertFalse(queues[0]._autocommit)
+        self.assertEqual(queues[0]._commit_mode, 'request_finished')
 
     def test_default_timeout(self):
         """Ensure DEFAULT_TIMEOUT are properly parsed."""
@@ -490,78 +504,6 @@ class WorkersTest(TestCase):
             setup_loghandlers_mock.reset_mock()
             call_command('rqworker', verbosity=verbosity, burst=True)
             setup_loghandlers_mock.assert_called_once_with(expected_level[verbosity])
-
-
-class ThreadQueueTest(TestCase):
-    @override_settings(RQ={'AUTOCOMMIT': True})
-    def test_enqueue_autocommit_on(self):
-        """
-        Running ``enqueue`` when AUTOCOMMIT is on should
-        immediately persist job into Redis.
-        """
-        queue = get_queue()
-        job = queue.enqueue(divide, 1, 1)
-        self.assertTrue(job.id in queue.job_ids)
-        job.delete()
-
-    @override_settings(RQ={'AUTOCOMMIT': False})
-    def test_enqueue_autocommit_off(self):
-        """
-        Running ``enqueue`` when AUTOCOMMIT is off should
-        put the job in the delayed queue instead of enqueueing it right away.
-        """
-        queue = get_queue()
-        job = queue.enqueue(divide, 1, b=1)
-        self.assertTrue(job is None)
-        delayed_queue = thread_queue.get_queue()
-        self.assertEqual(delayed_queue[0][0], queue)
-        self.assertEqual(delayed_queue[0][1], ())
-        kwargs = delayed_queue[0][2]
-        self.assertEqual(kwargs['args'], (1,))
-        self.assertEqual(kwargs['result_ttl'], None)
-        self.assertEqual(kwargs['kwargs'], {'b': 1})
-        self.assertEqual(kwargs['func'], divide)
-        self.assertEqual(kwargs['timeout'], None)
-
-    def test_commit(self):
-        """
-        Ensure that commit_delayed_jobs properly enqueue jobs and clears
-        delayed_queue.
-        """
-        queue = get_queue()
-        delayed_queue = thread_queue.get_queue()
-        queue.empty()
-        self.assertEqual(queue.count, 0)
-        queue.enqueue_call(divide, args=(1,), kwargs={'b': 1})
-        thread_queue.commit()
-        self.assertEqual(queue.count, 1)
-        self.assertEqual(len(delayed_queue), 0)
-
-    def test_clear(self):
-        queue = get_queue()
-        delayed_queue = thread_queue.get_queue()
-        delayed_queue.append((queue, divide, (1,), {'b': 1}))
-        thread_queue.clear()
-        delayed_queue = thread_queue.get_queue()
-        self.assertEqual(delayed_queue, [])
-
-    @override_settings(RQ={'AUTOCOMMIT': False})
-    def test_success(self):
-        queue = get_queue()
-        queue.empty()
-        thread_queue.clear()
-        self.assertEqual(queue.count, 0)
-        self.client.get(reverse('success'))
-        self.assertEqual(queue.count, 1)
-
-    @override_settings(RQ={'AUTOCOMMIT': False})
-    def test_error(self):
-        queue = get_queue()
-        queue.empty()
-        self.assertEqual(queue.count, 0)
-        url = reverse('error')
-        self.assertRaises(ValueError, self.client.get, url)
-        self.assertEqual(queue.count, 0)
 
 
 @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
