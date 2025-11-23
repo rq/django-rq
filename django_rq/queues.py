@@ -22,7 +22,7 @@ def get_commit_mode():
     Returns the configured commit mode.
 
     COMMIT_MODE is preferred and supports:
-    - "auto" / "immediate": enqueue immediately
+    - "auto": enqueue immediately
     - "request_finished": enqueue when the request finishes (legacy behavior)
 
     If COMMIT_MODE isn't set, fall back to AUTOCOMMIT for backwards
@@ -36,13 +36,8 @@ def get_commit_mode():
             warnings.warn('"AUTOCOMMIT" is deprecated; use "COMMIT_MODE" instead.', DeprecationWarning)
         return 'auto' if RQ.get('AUTOCOMMIT', True) else 'request_finished'
 
-    if not isinstance(commit_mode, str):
-        raise ImproperlyConfigured('RQ["COMMIT_MODE"] must be "auto" or "request_finished".')
-
-    if commit_mode == 'auto':
-        return 'auto'
-    elif commit_mode == 'request_finished':
-        return 'request_finished'
+    if commit_mode in ('auto', 'request_finished'):
+        return commit_mode
     else:
         raise ImproperlyConfigured('"COMMIT_MODE" must be "auto" or "request_finished".')
 
