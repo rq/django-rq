@@ -478,7 +478,7 @@ Available commit modes:
 | `auto` | Jobs are enqueued immediately when `enqueue()` is called |
 | `request_finished` | Jobs are enqueued when Django's `request_finished` signal fires. Jobs are discarded if an exception occurs during the request |
 
-The `on_db_commit` mode is recommended when your jobs depend on database state, as it ensures the job won't run until the data it depends on has been committed. This prevents race conditions where a job tries to access data that hasn't been committed yet.
+The `on_db_commit` mode is recommended when your jobs depend on database state, as it ensures the job won't run until the data it depends on has been committed. This prevents race conditions where a job tries to access data that hasn't been committed.
 
 ```python
 from django.db import transaction
@@ -486,28 +486,12 @@ from django.db import transaction
 # With COMMIT_MODE='on_db_commit'
 with transaction.atomic():
     user = User.objects.create(username='new_user')
-    queue.enqueue(send_welcome_email, user.id)
-    # Job is NOT enqueued yet - it waits for the transaction to commit
-
+    queue.enqueue(send_welcome_email, user.id) # Job not enqueued yet, it waits for DB transaction to commit
+    
 # Transaction committed - now the job is enqueued
-# The worker can safely load the user from the database
 ```
 
-When using `on_db_commit` outside of a transaction, jobs are enqueued immediately and the `Job` object is returned:
-
-```python
-job = queue.enqueue(my_func)  # Enqueued immediately, returns Job
-print(job.id)  # You can access the job ID
-```
-
-Inside a transaction, `enqueue()` returns `None` since the job creation is deferred:
-
-```python
-with transaction.atomic():
-    job = queue.enqueue(my_func)  # Deferred, returns None
-```
-
-You can also set `commit_mode` per-queue when calling `get_queue()`:
+You can also explicitly set `commit_mode` when calling `get_queue()`:
 
 ```python
 queue = django_rq.get_queue('default', commit_mode='auto')
