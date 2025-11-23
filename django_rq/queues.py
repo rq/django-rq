@@ -19,17 +19,32 @@ from .jobs import get_job_class
 
 def get_commit_mode():
     """
-    Disabling AUTOCOMMIT causes enqueued jobs to be stored in a temporary queue.
-    Jobs in this queue are only enqueued after the request is completed and are
-    discarded if the request causes an exception (similar to db transactions).
+    Returns the configured commit mode.
 
-    To disable autocommit, put this in settings.py:
-    RQ = {
-        'AUTOCOMMIT': False,
-    }
+    COMMIT_MODE is preferred and supports:
+    - "auto" / "immediate": enqueue immediately
+    - "request_finished": enqueue when the request finishes (legacy behavior)
+
+    If COMMIT_MODE isn't set, fall back to AUTOCOMMIT for backwards
+    compatibility (True -> "auto", False -> "request_finished").
     """
     RQ = getattr(settings, 'RQ', {})
-    return RQ.get('AUTOCOMMIT', True)
+    commit_mode = RQ.get('COMMIT_MODE')
+
+    if not commit_mode:
+        if 'AUTOCOMMIT' in RQ:
+            warnings.warn('"AUTOCOMMIT" is deprecated; use "COMMIT_MODE" instead.', DeprecationWarning)
+        return 'auto' if RQ.get('AUTOCOMMIT', True) else 'request_finished'
+
+    if not isinstance(commit_mode, str):
+        raise ImproperlyConfigured('RQ["COMMIT_MODE"] must be "auto" or "request_finished".')
+
+    if commit_mode == 'auto':
+        return 'auto'
+    elif commit_mode == 'request_finished':
+        return 'request_finished'
+    else:
+        raise ImproperlyConfigured('"COMMIT_MODE" must be "auto" or "request_finished".')
 
 
 def get_queue_class(config=None, queue_class=None):
@@ -61,7 +76,18 @@ class DjangoRQ(Queue):
 
     def __init__(self, *args, **kwargs):
         autocommit = kwargs.pop('autocommit', None)
-        self._autocommit = get_commit_mode() if autocommit is None else autocommit
+        commit_mode = kwargs.pop('commit_mode', None)
+
+        if commit_mode:
+            if commit_mode not in ('auto', 'request_finished'):
+                raise ImproperlyConfigured('commit_mode must be "auto" or "request_finished".')
+        elif autocommit is not None:
+            warnings.warn('The "autocommit" argument is deprecated; use "commit_mode" instead.', DeprecationWarning)
+            commit_mode = 'auto' if autocommit else 'request_finished'
+        else:
+            commit_mode = get_commit_mode()
+
+        self._commit_mode = commit_mode
 
         super().__init__(*args, **kwargs)
 
@@ -72,7 +98,7 @@ class DjangoRQ(Queue):
         return super().enqueue_call(*args, **kwargs)
 
     def enqueue_call(self, *args, **kwargs):
-        if self._autocommit:
+        if self._commit_mode == 'auto':
             return self.original_enqueue_call(*args, **kwargs)
         else:
             thread_queue.add(self, args, kwargs)
@@ -83,6 +109,7 @@ def get_queue(
     default_timeout: Optional[int] = None,
     is_async: Optional[bool] = None,
     autocommit: Optional[bool] = None,
+    commit_mode: Optional[str] = None,
     connection: Optional[Redis] = None,
     queue_class: Optional[Union[str, type[DjangoRQ]]] = None,
     job_class: Optional[Union[str, type[Job]]] = None,
@@ -118,6 +145,7 @@ def get_queue(
         is_async=is_async,
         job_class=job_class,
         autocommit=autocommit,
+        commit_mode=commit_mode,
         serializer=serializer,
         **kwargs,
     )

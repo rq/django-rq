@@ -7,6 +7,7 @@ from unittest.mock import PropertyMock, patch
 from uuid import uuid4
 
 import rq
+from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase, override_settings
@@ -24,7 +25,7 @@ from django_rq.connection_utils import get_connection
 from django_rq.decorators import job
 from django_rq.jobs import get_job_class
 from django_rq.management.commands import rqworker
-from django_rq.queues import DjangoRQ, get_queue, get_queues
+from django_rq.queues import DjangoRQ, get_commit_mode, get_queue, get_queues
 from django_rq.templatetags.django_rq import force_escape, to_localtime
 from django_rq.utils import get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
@@ -73,6 +74,45 @@ class RqStatsTest(TestCase):
             call_command('rqstats')
             call_command('rqstats', '-j')
             call_command('rqstats', '-y')
+
+
+class CommitModeTest(TestCase):
+    @override_settings(RQ={})
+    def test_default_commit_mode_is_auto(self):
+        self.assertEqual(get_commit_mode(), 'auto')
+
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_commit_mode_auto_explicit(self):
+        self.assertEqual(get_commit_mode(), 'auto')
+
+    @override_settings(RQ={'COMMIT_MODE': 'request_finished'})
+    def test_commit_mode_request_finished(self):
+        self.assertEqual(get_commit_mode(), 'request_finished')
+
+    @override_settings(RQ={'AUTOCOMMIT': False})
+    def test_autocommit_fallback_with_warning(self):
+        with self.assertWarns(DeprecationWarning):
+            mode = get_commit_mode()
+        self.assertEqual(mode, 'request_finished')
+
+    @override_settings(RQ={'COMMIT_MODE': ''})
+    def test_commit_mode_empty_string_falls_back(self):
+        self.assertEqual(get_commit_mode(), 'auto')
+
+    @override_settings(RQ={'COMMIT_MODE': 123})
+    def test_commit_mode_invalid_type(self):
+        with self.assertRaises(ImproperlyConfigured):
+            get_commit_mode()
+
+    @override_settings(RQ={'COMMIT_MODE': True})
+    def test_commit_mode_invalid_bool(self):
+        with self.assertRaises(ImproperlyConfigured):
+            get_commit_mode()
+
+    @override_settings(RQ={'COMMIT_MODE': 'later'})
+    def test_commit_mode_invalid_value(self):
+        with self.assertRaises(ImproperlyConfigured):
+            get_commit_mode()
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
@@ -312,20 +352,31 @@ class QueuesTest(TestCase):
         """
         Checks whether autocommit is set properly.
         """
-        queue = get_queue(autocommit=True)
-        self.assertTrue(queue._autocommit)
-        queue = get_queue(autocommit=False)
-        self.assertFalse(queue._autocommit)
+        with self.assertWarns(DeprecationWarning):
+            queue = get_queue(autocommit=True)
+        self.assertEqual(queue._commit_mode, 'auto')
+        with self.assertWarns(DeprecationWarning):
+            queue = get_queue(autocommit=False)
+        self.assertEqual(queue._commit_mode, 'request_finished')
         # Falls back to default AUTOCOMMIT mode
         queue = get_queue()
-        self.assertFalse(queue._autocommit)
+        self.assertEqual(queue._commit_mode, 'request_finished')
 
-        queues = get_queues(autocommit=True)
-        self.assertTrue(queues[0]._autocommit)
-        queues = get_queues(autocommit=False)
-        self.assertFalse(queues[0]._autocommit)
+        queue = get_queue(commit_mode='auto')
+        self.assertEqual(queue._commit_mode, 'auto')
+        queue = get_queue(commit_mode='request_finished')
+        self.assertEqual(queue._commit_mode, 'request_finished')
+        with self.assertRaises(ImproperlyConfigured):
+            get_queue(commit_mode='later')
+
+        with self.assertWarns(DeprecationWarning):
+            queues = get_queues(autocommit=True)
+        self.assertEqual(queues[0]._commit_mode, 'auto')
+        with self.assertWarns(DeprecationWarning):
+            queues = get_queues(autocommit=False)
+        self.assertEqual(queues[0]._commit_mode, 'request_finished')
         queues = get_queues()
-        self.assertFalse(queues[0]._autocommit)
+        self.assertEqual(queues[0]._commit_mode, 'request_finished')
 
     def test_default_timeout(self):
         """Ensure DEFAULT_TIMEOUT are properly parsed."""
