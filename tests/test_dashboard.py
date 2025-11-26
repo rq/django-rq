@@ -130,3 +130,49 @@ class TestMainArgParser(unittest.TestCase):
                                 mock_load.return_value = {'RQ_QUEUES': {}}
                                 main()
                                 mock_run.assert_called_once_with('0.0.0.0', 9000)
+
+
+class TestURLConfiguration(unittest.TestCase):
+    """Tests for the dashboard URL configuration."""
+
+    def test_url_namespace_registration(self):
+        """Test that django_rq_dashboard namespace is properly registered in dashboard URLs."""
+        from django.test import override_settings
+        from django.urls import clear_url_caches, reverse
+
+        # Test with dashboard_urls (which uses include() with explicit namespace)
+        with override_settings(ROOT_URLCONF='django_rq.dashboard_urls'):
+            clear_url_caches()
+
+            # Test that namespaced URLs can be reversed with django_rq_dashboard namespace
+            url = reverse('django_rq_dashboard:rq_home')
+            self.assertEqual(url, '/')
+
+            url = reverse('django_rq_dashboard:rq_jobs', kwargs={'queue_index': 0})
+            self.assertEqual(url, '/queues/0/')
+
+            url = reverse('django_rq_dashboard:rq_failed_jobs', kwargs={'queue_index': 0})
+            self.assertEqual(url, '/queues/0/failed/')
+
+            # Test admin namespace
+            url = reverse('admin:index')
+            self.assertEqual(url, '/admin/')
+
+    def test_url_resolution(self):
+        """Test that URLs resolve correctly in dashboard URLs."""
+        from django.test import override_settings
+        from django.urls import clear_url_caches, resolve
+
+        # Test with dashboard_urls
+        with override_settings(ROOT_URLCONF='django_rq.dashboard_urls'):
+            clear_url_caches()
+
+            # Test URL resolution uses django_rq_dashboard namespace
+            match = resolve('/')
+            self.assertEqual(match.view_name, 'django_rq_dashboard:rq_home')
+
+            match = resolve('/queues/0/')
+            self.assertEqual(match.view_name, 'django_rq_dashboard:rq_jobs')
+
+            match = resolve('/admin/')
+            self.assertEqual(match.view_name, 'admin:index')
