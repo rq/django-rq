@@ -48,7 +48,7 @@ RQ_QUEUES = {
     }
 }
 RQ = {
-    'AUTOCOMMIT': True,
+    'COMMIT_MODE': 'auto',
 }
 SECRET_KEY = 'my-secret-key'
 """)
@@ -58,7 +58,7 @@ SECRET_KEY = 'my-secret-key'
         try:
             config = load_config(config_path)
             self.assertIn('RQ', config)
-            self.assertEqual(config['RQ']['AUTOCOMMIT'], True)
+            self.assertEqual(config['RQ']['COMMIT_MODE'], 'auto')
             self.assertEqual(config['SECRET_KEY'], 'my-secret-key')
         finally:
             os.unlink(config_path)
