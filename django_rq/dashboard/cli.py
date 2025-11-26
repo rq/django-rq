@@ -120,6 +120,7 @@ def configure_django(config: dict[str, Any]) -> None:
             },
         ],
         STATIC_URL='/static/',
+        STATIC_ROOT=str(DASHBOARD_DIR / 'staticfiles'),
         RQ_QUEUES=config['RQ_QUEUES'],
         RQ=config.get('RQ', {}),
         DEFAULT_AUTO_FIELD='django.db.models.BigAutoField',
@@ -171,14 +172,32 @@ def check_or_create_superuser() -> None:
         sys.exit(1)
 
 
+def collect_static_files() -> None:
+    """Collect static files if not in DEBUG mode."""
+    from django.conf import settings
+    from django.core.management import call_command
+
+    if not settings.DEBUG:
+        # Collect static files for production use
+        call_command('collectstatic', '--no-input', '--clear', verbosity=0)
+
+
 def run_server(host: str, port: int) -> None:
     """Run the Django development server."""
+    from django.conf import settings
     from django.core.management import call_command
+
     print(f"Starting RQ Dashboard at http://{host}:{port}/")
     print("Log in with your superuser credentials.")
     print("Press Ctrl+C to stop.")
     print()
-    call_command('runserver', f'{host}:{port}', use_reloader=False)
+
+    # Use --insecure flag to serve static files even when DEBUG=False
+    # This is acceptable for a standalone dashboard tool
+    if settings.DEBUG:
+        call_command('runserver', f'{host}:{port}', use_reloader=False)
+    else:
+        call_command('runserver', f'{host}:{port}', '--insecure', use_reloader=False)
 
 
 def main() -> None:
@@ -233,6 +252,9 @@ Example config file (my_config.py):
 
     # Run migrations
     run_migrations()
+
+    # Collect static files if DEBUG=False
+    collect_static_files()
 
     # Check/create superuser
     check_or_create_superuser()

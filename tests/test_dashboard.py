@@ -127,11 +127,12 @@ class TestMainArgParser(unittest.TestCase):
             with patch('django_rq.dashboard.cli.load_config') as mock_load:
                 with patch('django_rq.dashboard.cli.configure_django'):
                     with patch('django_rq.dashboard.cli.run_migrations'):
-                        with patch('django_rq.dashboard.cli.check_or_create_superuser'):
-                            with patch('django_rq.dashboard.cli.run_server') as mock_run:
-                                mock_load.return_value = {'RQ_QUEUES': {}}
-                                main()
-                                mock_run.assert_called_once_with('0.0.0.0', 9000)
+                        with patch('django_rq.dashboard.cli.collect_static_files'):
+                            with patch('django_rq.dashboard.cli.check_or_create_superuser'):
+                                with patch('django_rq.dashboard.cli.run_server') as mock_run:
+                                    mock_load.return_value = {'RQ_QUEUES': {}}
+                                    main()
+                                    mock_run.assert_called_once_with('0.0.0.0', 9000)
 
 
 class TestURLConfiguration(unittest.TestCase):
