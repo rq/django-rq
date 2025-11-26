@@ -12,7 +12,7 @@ class TestLoadConfig(unittest.TestCase):
     def test_load_valid_config(self):
         """Test loading a valid config file."""
         # Import here to avoid Django setup issues
-        from django_rq.dashboard import load_config
+        from django_rq.dashboard.cli import load_config
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write("""
@@ -36,7 +36,7 @@ RQ_QUEUES = {
 
     def test_load_config_with_optional_settings(self):
         """Test loading a config file with optional RQ settings."""
-        from django_rq.dashboard import load_config
+        from django_rq.dashboard.cli import load_config
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write("""
@@ -65,14 +65,14 @@ SECRET_KEY = 'my-secret-key'
 
     def test_load_config_missing_file(self):
         """Test loading a non-existent config file."""
-        from django_rq.dashboard import load_config
+        from django_rq.dashboard.cli import load_config
 
         with self.assertRaises(SystemExit):
             load_config('/nonexistent/path/config.py')
 
     def test_load_config_missing_rq_queues(self):
         """Test loading a config file without RQ_QUEUES."""
-        from django_rq.dashboard import load_config
+        from django_rq.dashboard.cli import load_config
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write("FOO = 'bar'\n")
@@ -91,10 +91,10 @@ class TestSecretKey(unittest.TestCase):
 
     def test_get_or_create_secret_key_creates_new(self):
         """Test that a new secret key is created if none exists."""
-        from django_rq.dashboard import get_or_create_secret_key, DASHBOARD_DIR
+        from django_rq.dashboard.cli import get_or_create_secret_key, DASHBOARD_DIR
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch('django_rq.dashboard.DASHBOARD_DIR', Path(tmpdir) / '.rqdashboard'):
+            with patch('django_rq.dashboard.cli.DASHBOARD_DIR', Path(tmpdir) / '.rqdashboard'):
                 secret_key = get_or_create_secret_key()
                 self.assertTrue(len(secret_key) > 20)
 
@@ -108,7 +108,7 @@ class TestMainArgParser(unittest.TestCase):
 
     def test_argparser_requires_config(self):
         """Test that --config is required."""
-        from django_rq.dashboard import main
+        from django_rq.dashboard.cli import main
 
         with patch('sys.argv', ['rqdashboard']):
             with self.assertRaises(SystemExit):
@@ -117,16 +117,16 @@ class TestMainArgParser(unittest.TestCase):
     def test_argparser_accepts_all_options(self):
         """Test that all options are accepted."""
         import argparse
-        from django_rq.dashboard import main
+        from django_rq.dashboard.cli import main
 
         # We can't easily test the full main() without mocking everything,
         # but we can at least verify the argparser accepts the options
         with patch('sys.argv', ['rqdashboard', '--config', 'test.py', '--host', '0.0.0.0', '--port', '9000']):
-            with patch('django_rq.dashboard.load_config') as mock_load:
-                with patch('django_rq.dashboard.configure_django'):
-                    with patch('django_rq.dashboard.run_migrations'):
-                        with patch('django_rq.dashboard.check_or_create_superuser'):
-                            with patch('django_rq.dashboard.run_server') as mock_run:
+            with patch('django_rq.dashboard.cli.load_config') as mock_load:
+                with patch('django_rq.dashboard.cli.configure_django'):
+                    with patch('django_rq.dashboard.cli.run_migrations'):
+                        with patch('django_rq.dashboard.cli.check_or_create_superuser'):
+                            with patch('django_rq.dashboard.cli.run_server') as mock_run:
                                 mock_load.return_value = {'RQ_QUEUES': {}}
                                 main()
                                 mock_run.assert_called_once_with('0.0.0.0', 9000)
@@ -141,7 +141,7 @@ class TestURLConfiguration(unittest.TestCase):
         from django.urls import clear_url_caches, reverse
 
         # Test with dashboard_urls (which uses include() with explicit namespace)
-        with override_settings(ROOT_URLCONF='django_rq.dashboard_urls'):
+        with override_settings(ROOT_URLCONF='django_rq.dashboard.urls'):
             clear_url_caches()
 
             # Test that namespaced URLs can be reversed with django_rq_dashboard namespace
@@ -164,7 +164,7 @@ class TestURLConfiguration(unittest.TestCase):
         from django.urls import clear_url_caches, resolve
 
         # Test with dashboard_urls
-        with override_settings(ROOT_URLCONF='django_rq.dashboard_urls'):
+        with override_settings(ROOT_URLCONF='django_rq.dashboard.urls'):
             clear_url_caches()
 
             # Test URL resolution uses django_rq_dashboard namespace

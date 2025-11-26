@@ -80,7 +80,7 @@ def configure_django(config: dict[str, Any]) -> None:
         DEBUG=config.get('DEBUG', True),
         ALLOWED_HOSTS=config.get('ALLOWED_HOSTS', ['*']),
         SECRET_KEY=secret_key,
-        ROOT_URLCONF='django_rq.dashboard_urls',
+        ROOT_URLCONF='django_rq.dashboard.urls',
         INSTALLED_APPS=[
             'django.contrib.contenttypes',
             'django.contrib.admin',
