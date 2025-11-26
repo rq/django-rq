@@ -5,7 +5,6 @@ Standalone RQ Dashboard CLI.
 Usage:
     rqdashboard --config my_config.py
     rqdashboard --config my_config.py --host 0.0.0.0 --port 8080
-    rqdashboard --config my_config.py --create-user admin
 """
 import argparse
 import importlib.util
@@ -46,6 +45,10 @@ def load_config(config_path: str) -> dict[str, Any]:
         config['RQ'] = config_module.RQ
     if hasattr(config_module, 'SECRET_KEY'):
         config['SECRET_KEY'] = config_module.SECRET_KEY
+    if hasattr(config_module, 'DEBUG'):
+        config['DEBUG'] = config_module.DEBUG
+    if hasattr(config_module, 'ALLOWED_HOSTS'):
+        config['ALLOWED_HOSTS'] = config_module.ALLOWED_HOSTS
 
     return config
 
@@ -74,7 +77,8 @@ def configure_django(config: dict[str, Any]) -> None:
     secret_key = config.get('SECRET_KEY') or get_or_create_secret_key()
 
     settings.configure(
-        DEBUG=True,
+        DEBUG=config.get('DEBUG', True),
+        ALLOWED_HOSTS=config.get('ALLOWED_HOSTS', ['*']),
         SECRET_KEY=secret_key,
         ROOT_URLCONF='django_rq.dashboard_urls',
         INSTALLED_APPS=[
@@ -131,36 +135,40 @@ def run_migrations() -> None:
     call_command('migrate', '--run-syncdb', verbosity=0)
 
 
-def check_or_create_superuser(create_user: str | None = None, password: str | None = None) -> None:
+def check_or_create_superuser() -> None:
     """Check if superuser exists, prompt to create one if not."""
     from django.contrib.auth import get_user_model
     from django.core.management import call_command
+    from django.core.management.base import CommandError
     User = get_user_model()
-
-    if create_user:
-        # Create user with specified username
-        if User.objects.filter(username=create_user).exists():
-            print(f"User '{create_user}' already exists.")
-            return
-
-        if password:
-            # Non-interactive mode using environment variable
-            os.environ['DJANGO_SUPERUSER_PASSWORD'] = password
-            call_command('createsuperuser', username=create_user, email='', interactive=False, verbosity=1)
-            return
-
-        # Interactive mode - let Django handle password prompts
-        call_command('createsuperuser', username=create_user, email='', interactive=True)
-        return
 
     # Check if any superuser exists
     if User.objects.filter(is_superuser=True).exists():
         return
 
     # Prompt to create superuser
-    print("No superuser found. Let's create one to access the dashboard.")
+    print("=" * 70)
+    print("No superuser found. You need to create one to access the dashboard.")
+    print("=" * 70)
     print()
-    call_command('createsuperuser')
+
+    try:
+        call_command('createsuperuser', interactive=True)
+        print()
+        print("✓ Superuser created successfully!")
+        print()
+    except KeyboardInterrupt:
+        print("\n\nSuperuser creation cancelled.")
+        print("You need a superuser account to access the dashboard.")
+        sys.exit(1)
+    except CommandError as e:
+        print(f"\n✗ Error creating superuser: {e}")
+        print("\nPlease run the command again to retry.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n✗ Unexpected error: {e}")
+        print("\nPlease run the command again to retry.")
+        sys.exit(1)
 
 
 def run_server(host: str, port: int) -> None:
@@ -191,6 +199,11 @@ Example config file (my_config.py):
             'URL': 'redis://localhost:6379/1',
         }
     }
+
+    # Optional settings:
+    DEBUG = True  # Default: True
+    ALLOWED_HOSTS = ['*']  # Default: ['*']
+    SECRET_KEY = 'your-secret-key'  # Default: auto-generated and persisted
 """,
     )
     parser.add_argument(
@@ -209,15 +222,6 @@ Example config file (my_config.py):
         default=8000,
         help='Port to bind the server to (default: 8000)',
     )
-    parser.add_argument(
-        '--create-user',
-        metavar='USERNAME',
-        help='Create a superuser with the specified username',
-    )
-    parser.add_argument(
-        '--password',
-        help='Password for the superuser (use with --create-user for non-interactive setup)',
-    )
 
     args = parser.parse_args()
 
@@ -231,7 +235,7 @@ Example config file (my_config.py):
     run_migrations()
 
     # Check/create superuser
-    check_or_create_superuser(args.create_user, args.password)
+    check_or_create_superuser()
 
     # Run server
     run_server(args.host, args.port)
