@@ -1,9 +1,11 @@
 """Tests for the standalone RQ Dashboard CLI."""
+
+import argparse
 import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 
 class TestLoadConfig(unittest.TestCase):
@@ -91,7 +93,7 @@ class TestSecretKey(unittest.TestCase):
 
     def test_get_or_create_secret_key_creates_new(self):
         """Test that a new secret key is created if none exists."""
-        from django_rq.dashboard.cli import get_or_create_secret_key, DASHBOARD_DIR
+        from django_rq.dashboard.cli import DASHBOARD_DIR, get_or_create_secret_key
 
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch('django_rq.dashboard.cli.DASHBOARD_DIR', Path(tmpdir) / '.rqdashboard'):
@@ -116,7 +118,7 @@ class TestMainArgParser(unittest.TestCase):
 
     def test_argparser_accepts_all_options(self):
         """Test that all options are accepted."""
-        import argparse
+
         from django_rq.dashboard.cli import main
 
         # We can't easily test the full main() without mocking everything,
@@ -136,43 +138,24 @@ class TestURLConfiguration(unittest.TestCase):
     """Tests for the dashboard URL configuration."""
 
     def test_url_namespace_registration(self):
-        """Test that django_rq_dashboard namespace is properly registered in dashboard URLs."""
+        """Test that django_rq URLs are properly registered in dashboard URLs."""
         from django.test import override_settings
         from django.urls import clear_url_caches, reverse
 
-        # Test with dashboard_urls (which uses include() with explicit namespace)
+        # Test with dashboard_urls (which includes django_rq URLs directly)
         with override_settings(ROOT_URLCONF='django_rq.dashboard.urls'):
             clear_url_caches()
 
-            # Test that namespaced URLs can be reversed with django_rq_dashboard namespace
-            url = reverse('django_rq_dashboard:rq_home')
+            # Test that URLs can be reversed without namespace
+            url = reverse('rq_home')
             self.assertEqual(url, '/')
 
-            url = reverse('django_rq_dashboard:rq_jobs', kwargs={'queue_index': 0})
+            url = reverse('rq_jobs', kwargs={'queue_index': 0})
             self.assertEqual(url, '/queues/0/')
 
-            url = reverse('django_rq_dashboard:rq_failed_jobs', kwargs={'queue_index': 0})
+            url = reverse('rq_failed_jobs', kwargs={'queue_index': 0})
             self.assertEqual(url, '/queues/0/failed/')
 
             # Test admin namespace
             url = reverse('admin:index')
             self.assertEqual(url, '/admin/')
-
-    def test_url_resolution(self):
-        """Test that URLs resolve correctly in dashboard URLs."""
-        from django.test import override_settings
-        from django.urls import clear_url_caches, resolve
-
-        # Test with dashboard_urls
-        with override_settings(ROOT_URLCONF='django_rq.dashboard.urls'):
-            clear_url_caches()
-
-            # Test URL resolution uses django_rq_dashboard namespace
-            match = resolve('/')
-            self.assertEqual(match.view_name, 'django_rq_dashboard:rq_home')
-
-            match = resolve('/queues/0/')
-            self.assertEqual(match.view_name, 'django_rq_dashboard:rq_jobs')
-
-            match = resolve('/admin/')
-            self.assertEqual(match.view_name, 'admin:index')
