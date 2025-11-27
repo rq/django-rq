@@ -29,6 +29,7 @@ from django_rq.queues import DjangoRQ, get_queue, get_queues
 from django_rq.templatetags.django_rq import force_escape, to_localtime
 from django_rq.utils import get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
+from tests.base import DjangoRQTestCase
 from tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self
 
 try:
@@ -66,7 +67,7 @@ class RqStatsTest(TestCase):
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
-class QueuesTest(TestCase):
+class QueuesTest(DjangoRQTestCase):
     def setUp(self):
         """Used to test with / without sentry_sdk available."""
         self.mock_sdk = mock.MagicMock()
@@ -83,11 +84,8 @@ class QueuesTest(TestCase):
         """
         config = QUEUES['default']
         queue = get_queue('default')
-        connection_kwargs = queue.connection.connection_pool.connection_kwargs
         self.assertEqual(queue.name, 'default')
-        self.assertEqual(connection_kwargs['host'], config['HOST'])
-        self.assertEqual(connection_kwargs['port'], config['PORT'])
-        self.assertEqual(connection_kwargs['db'], config['DB'])
+        self.assert_connection_kwargs(queue.connection, config)
 
     def test_get_queue_url(self):
         """
@@ -95,12 +93,13 @@ class QueuesTest(TestCase):
         connection.
         """
         queue = get_queue('url')
-        connection_kwargs = queue.connection.connection_pool.connection_kwargs
         self.assertEqual(queue.name, 'url')
-        self.assertEqual(connection_kwargs['host'], 'host')
-        self.assertEqual(connection_kwargs['port'], 1234)
-        self.assertEqual(connection_kwargs['db'], 4)
-        self.assertEqual(connection_kwargs['password'], 'password')
+        self.assert_connection_kwargs(queue.connection, {
+            'host': 'host',
+            'port': 1234,
+            'db': 4,
+            'password': 'password'
+        })
 
     def test_get_queue_url_with_db(self):
         """
@@ -109,12 +108,13 @@ class QueuesTest(TestCase):
         or path segment).
         """
         queue = get_queue('url_with_db')
-        connection_kwargs = queue.connection.connection_pool.connection_kwargs
         self.assertEqual(queue.name, 'url_with_db')
-        self.assertEqual(connection_kwargs['host'], 'host')
-        self.assertEqual(connection_kwargs['port'], 1234)
-        self.assertEqual(connection_kwargs['db'], 5)
-        self.assertEqual(connection_kwargs['password'], 'password')
+        self.assert_connection_kwargs(queue.connection, {
+            'host': 'host',
+            'port': 1234,
+            'db': 5,
+            'password': 'password'
+        })
 
     def test_get_queue_url_with_db_default(self):
         """
@@ -123,12 +123,13 @@ class QueuesTest(TestCase):
         (redis-py defaults to 0, should not break).
         """
         queue = get_queue('url_default_db')
-        connection_kwargs = queue.connection.connection_pool.connection_kwargs
         self.assertEqual(queue.name, 'url_default_db')
-        self.assertEqual(connection_kwargs['host'], 'host')
-        self.assertEqual(connection_kwargs['port'], 1234)
-        self.assertEqual(connection_kwargs['db'], None)
-        self.assertEqual(connection_kwargs['password'], 'password')
+        self.assert_connection_kwargs(queue.connection, {
+            'host': 'host',
+            'port': 1234,
+            'db': None,
+            'password': 'password'
+        })
 
     def test_get_queue_test(self):
         """
@@ -137,11 +138,8 @@ class QueuesTest(TestCase):
         """
         config = QUEUES['test']
         queue = get_queue('test')
-        connection_kwargs = queue.connection.connection_pool.connection_kwargs
         self.assertEqual(queue.name, 'test')
-        self.assertEqual(connection_kwargs['host'], config['HOST'])
-        self.assertEqual(connection_kwargs['port'], config['PORT'])
-        self.assertEqual(connection_kwargs['db'], config['DB'])
+        self.assert_connection_kwargs(queue.connection, config)
 
     def test_get_queues_same_connection(self):
         """
@@ -504,11 +502,8 @@ class SchedulerTest(TestCase):
         """
         config = QUEUES['test']
         scheduler = get_scheduler('test')
-        connection_kwargs = scheduler.connection.connection_pool.connection_kwargs
         self.assertEqual(scheduler.queue_name, 'test')
-        self.assertEqual(connection_kwargs['host'], config['HOST'])
-        self.assertEqual(connection_kwargs['port'], config['PORT'])
-        self.assertEqual(connection_kwargs['db'], config['DB'])
+        self.assert_connection_kwargs(scheduler.connection, config)
 
     def test_get_scheduler_custom_connection(self):
         """
