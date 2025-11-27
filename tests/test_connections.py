@@ -20,15 +20,6 @@ QUEUES = settings.RQ_QUEUES
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class ConnectionTest(DjangoRQTestCase):
-    def setUp(self):
-        """Used to test with / without sentry_sdk available."""
-        self.mock_sdk = mock.MagicMock()
-        self.mock_sdk.Hub.current.client.options = {}
-        sys.modules["sentry_sdk"] = self.mock_sdk
-
-    def tearDown(self):
-        del sys.modules["sentry_sdk"]
-
     def test_get_connection_default(self):
         """
         Test that get_connection returns the right connection based for

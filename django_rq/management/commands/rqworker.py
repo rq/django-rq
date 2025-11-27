@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from redis.exceptions import ConnectionError
 from rq.logutils import setup_loghandlers
 
-from ...utils import configure_sentry, reset_db_connections
+from ...utils import reset_db_connections
 from ...workers import get_worker
 
 
@@ -47,19 +47,6 @@ class Command(BaseCommand):
             help='Default worker timeout to be used',
         )
         parser.add_argument(
-            '--sentry-dsn', action='store', default=None, dest='sentry_dsn', help='Report exceptions to this Sentry DSN'
-        )
-        parser.add_argument(
-            '--sentry-ca-certs',
-            action='store',
-            default=None,
-            dest='sentry_ca_certs',
-            help='A path to an alternative CA bundle file in PEM-format',
-        )
-        parser.add_argument(
-            '--sentry-debug', action='store', default=False, dest='sentry_debug', help='Turns debug mode on or off.'
-        )
-        parser.add_argument(
             '--max-jobs',
             action='store',
             default=None,
@@ -99,14 +86,6 @@ class Command(BaseCommand):
         else:
             level = 'INFO'
         setup_loghandlers(level)
-
-        sentry_dsn = options.pop('sentry_dsn')
-        if sentry_dsn:
-            try:
-                configure_sentry(sentry_dsn, **options)
-            except ImportError:
-                self.stderr.write("Please install sentry-sdk using `pip install sentry-sdk`")
-                sys.exit(1)
 
         try:
             # Instantiate a worker

@@ -212,32 +212,3 @@ def stop_jobs(queue, job_ids):
 def reset_db_connections() -> None:
     for c in connections.all():
         c.close()
-
-
-def configure_sentry(sentry_dsn: str, **options: Any) -> None:
-    """
-    Configure the Sentry client.
-
-    The **options kwargs are passed straight from the command
-    invocation - options relevant to Sentry configuration are
-    extracted.
-
-    In addition to the 'debug' and 'ca_certs' options, which can
-    be passed in as command options, we add the RqIntegration and
-    DjangoIntegration to the config.
-
-    Raises ImportError if the sentry_sdk is not available.
-
-    """
-    import sentry_sdk
-
-    sentry_options = {
-        'debug': options.get('sentry_debug', False),
-        'ca_certs': options.get('sentry_ca_certs', None),
-        'integrations': [
-            sentry_sdk.integrations.redis.RedisIntegration(),
-            sentry_sdk.integrations.rq.RqIntegration(),
-            sentry_sdk.integrations.django.DjangoIntegration(),
-        ],
-    }
-    sentry_sdk.init(sentry_dsn, **sentry_options)
