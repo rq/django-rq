@@ -54,16 +54,15 @@ def long_running_job(timeout=10):
 
 
 class RqStatsTest(TestCase):
+    @override_settings(RQ_QUEUES={'default': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}})
     def test_get_connection_default(self):
         """
         Test that rqstats returns the right statistics
         """
-        # Override testing RQ_QUEUES
-        with override_settings(RQ_QUEUES={'default': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}}):
-            # Only to make sure it doesn't crash
-            call_command('rqstats')
-            call_command('rqstats', '-j')
-            call_command('rqstats', '-y')
+        # Only to make sure it doesn't crash
+        call_command('rqstats')
+        call_command('rqstats', '-j')
+        call_command('rqstats', '-y')
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
@@ -651,54 +650,46 @@ class TemplateTagTest(TestCase):
 
 class SchedulerPIDTest(TestCase):
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    @override_settings(RQ_QUEUES={'scheduler_scheduler_active_test': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}})
     def test_scheduler_scheduler_pid_active(self):
         test_queue = 'scheduler_scheduler_active_test'
-        with override_settings(
-            RQ_QUEUES={test_queue: {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}}
-        ):
-            scheduler = get_scheduler(test_queue)
-            scheduler.register_birth()
-            self.assertIs(get_scheduler_pid(get_queue(scheduler.queue_name)), False)
-            scheduler.register_death()
+        scheduler = get_scheduler(test_queue)
+        scheduler.register_birth()
+        self.assertIs(get_scheduler_pid(get_queue(scheduler.queue_name)), False)
+        scheduler.register_death()
 
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
+    @override_settings(RQ_QUEUES={'scheduler_scheduler_inactive_test': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}})
     def test_scheduler_scheduler_pid_inactive(self):
         test_queue = 'scheduler_scheduler_inactive_test'
-        with override_settings(
-            RQ_QUEUES={test_queue: {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}}
-        ):
-            connection = get_connection(test_queue)
-            connection.flushall()  # flush is needed to isolate from other tests
-            scheduler = get_scheduler(test_queue)
-            scheduler.remove_lock()
-            scheduler.register_death()  # will mark the scheduler as death so get_scheduler_pid will return None
-            self.assertIs(get_scheduler_pid(get_queue(scheduler.queue_name)), False)
+        connection = get_connection(test_queue)
+        connection.flushall()  # flush is needed to isolate from other tests
+        scheduler = get_scheduler(test_queue)
+        scheduler.remove_lock()
+        scheduler.register_death()  # will mark the scheduler as death so get_scheduler_pid will return None
+        self.assertIs(get_scheduler_pid(get_queue(scheduler.queue_name)), False)
 
     @skipIf(RQ_SCHEDULER_INSTALLED is True, 'RQ Scheduler installed (no worker--with-scheduler)')
-    def test_worker_scheduler_pid_active(self):
+    @patch('rq.scheduler.RQScheduler.release_locks')
+    @override_settings(RQ_QUEUES={'worker_scheduler_active_test': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}})
+    def test_worker_scheduler_pid_active(self, mock_release_locks):
         '''The worker works as scheduler too if RQ Scheduler not installed, and the pid scheduler_pid is correct'''
         test_queue = 'worker_scheduler_active_test'
-        with patch('rq.scheduler.RQScheduler.release_locks'):
-            with override_settings(
-                RQ_QUEUES={test_queue: {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}}
-            ):
-                queue = get_queue(test_queue)
-                worker = get_worker(test_queue, name=uuid4().hex)
-                worker.work(with_scheduler=True, burst=True)  # force the worker to acquire a scheduler lock
-                pid = get_scheduler_pid(queue)
-                self.assertIsNotNone(pid)
-                self.assertIsNot(pid, False)
-                self.assertIsInstance(pid, int)
+        queue = get_queue(test_queue)
+        worker = get_worker(test_queue, name=uuid4().hex)
+        worker.work(with_scheduler=True, burst=True)  # force the worker to acquire a scheduler lock
+        pid = get_scheduler_pid(queue)
+        self.assertIsNotNone(pid)
+        self.assertIsNot(pid, False)
+        self.assertIsInstance(pid, int)
 
     @skipIf(RQ_SCHEDULER_INSTALLED is True, 'RQ Scheduler installed (no worker--with-scheduler)')
+    @override_settings(RQ_QUEUES={'worker_scheduler_inactive_test': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}})
     def test_worker_scheduler_pid_inactive(self):
         '''The worker works as scheduler too if RQ Scheduler not installed, and the pid scheduler_pid is correct'''
         test_queue = 'worker_scheduler_inactive_test'
-        with override_settings(
-            RQ_QUEUES={test_queue: {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}}
-        ):
-            worker = get_worker(test_queue, name=uuid4().hex)
-            worker.work(
-                with_scheduler=False, burst=True
-            )  # worker will not acquire lock, scheduler_pid should return None
-            self.assertIsNone(get_scheduler_pid(worker.queues[0]))
+        worker = get_worker(test_queue, name=uuid4().hex)
+        worker.work(
+            with_scheduler=False, burst=True
+        )  # worker will not acquire lock, scheduler_pid should return None
+        self.assertIsNone(get_scheduler_pid(worker.queues[0]))
