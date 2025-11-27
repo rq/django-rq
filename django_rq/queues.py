@@ -21,7 +21,7 @@ from .settings import get_queues_list
 VALID_COMMIT_MODES = ('auto', 'request_finished', 'on_db_commit')
 
 
-def get_commit_mode():
+def get_commit_mode() -> str:
     """
     Returns the configured commit mode.
 
@@ -157,7 +157,7 @@ def get_queue(
     )
 
 
-def get_queue_by_index(index):
+def get_queue_by_index(index: int) -> DjangoRQ:
     """
     Returns an rq Queue using parameters defined in ``QUEUES_LIST``
     """
@@ -170,7 +170,7 @@ def get_queue_by_index(index):
     )
 
 
-def get_scheduler_by_index(index):
+def get_scheduler_by_index(index: int) -> 'DjangoScheduler':
     """
     Returns an rq-scheduler Scheduler using parameters defined in ``QUEUES_LIST``
     """
@@ -222,7 +222,7 @@ def enqueue(func: Callable, *args, **kwargs) -> Job:
     return get_queue().enqueue(func, *args, **kwargs)
 
 
-def get_result_ttl(name: str = 'default'):
+def get_result_ttl(name: str = 'default') -> Optional[int]:
     """
     Returns the result ttl from RQ_QUEUES if found, otherwise from RQ
     """
