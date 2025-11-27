@@ -1,8 +1,10 @@
 from secrets import compare_digest
 
+from typing import Optional
+
 from django.contrib import admin
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 
@@ -19,14 +21,15 @@ except ImportError:
 registry = None
 
 
-def is_authorized(request):
+def is_authorized(request: HttpRequest) -> bool:
     auth_header = request.headers.get("Authorization", "")
     token = None
 
     if auth_header.startswith("Bearer "):
         token = auth_header.removeprefix("Bearer ").strip()
 
-    return request.user.is_staff or (API_TOKEN and token and compare_digest(API_TOKEN, token))
+    is_staff = getattr(request.user, 'is_staff', False)
+    return bool(is_staff or (API_TOKEN and token and compare_digest(API_TOKEN, token)))
 
 
 @never_cache
@@ -57,7 +60,7 @@ def prometheus_metrics(request):
 
 @never_cache
 @staff_member_required
-def stats(request):
+def stats(request: HttpRequest) -> HttpResponse:
     context_data = {
         **admin.site.each_context(request),
         **get_statistics(run_maintenance_tasks=True),
@@ -69,7 +72,7 @@ def stats(request):
 
 
 @never_cache
-def stats_json(request, token=None):
+def stats_json(request: HttpRequest, token: Optional[str] = None) -> JsonResponse:
     if not is_authorized(request):
         if token and token == API_TOKEN:
             return JsonResponse(get_statistics())

@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connections
@@ -209,12 +209,12 @@ def stop_jobs(queue, job_ids):
     return stopped_job_ids, failed_to_stop_job_ids
 
 
-def reset_db_connections():
+def reset_db_connections() -> None:
     for c in connections.all():
         c.close()
 
 
-def configure_sentry(sentry_dsn, **options):
+def configure_sentry(sentry_dsn: str, **options: Any) -> None:
     """
     Configure the Sentry client.
 
