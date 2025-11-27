@@ -19,12 +19,12 @@ from rq.worker_registration import clean_worker_registry
 
 from .connection_utils import get_connection, get_redis_connection, get_unique_connection_configs
 from .cron import DjangoCronScheduler
-from .queues import get_queue_by_index, get_scheduler
+from .queues import DjangoRQ, get_queue_by_index, get_scheduler
 from .settings import get_queues_list
 from .templatetags.django_rq import to_localtime
 
 
-def get_scheduler_pid(queue):
+def get_scheduler_pid(queue: DjangoRQ) -> Union[bool, int, None]:
     '''Checks whether there's a scheduler-lock on a particular queue, and returns the PID.
     It Only works with RQ's Built-in RQScheduler.
     When RQ-Scheduler is available returns False
@@ -47,7 +47,7 @@ def get_scheduler_pid(queue):
     return None
 
 
-def get_statistics(run_maintenance_tasks=False):
+def get_statistics(run_maintenance_tasks: bool = False) -> dict[str, list[dict[str, Any]]]:
     queues = []
     for index, config in enumerate(get_queues_list()):
         queue = get_queue_by_index(index)
