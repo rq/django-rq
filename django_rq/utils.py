@@ -20,7 +20,7 @@ from rq.worker_registration import clean_worker_registry
 from .connection_utils import get_connection, get_redis_connection, get_unique_connection_configs
 from .cron import DjangoCronScheduler
 from .queues import get_queue_by_index, get_scheduler
-from .settings import QUEUES_LIST
+from .settings import get_queues_list
 from .templatetags.django_rq import to_localtime
 
 
@@ -49,7 +49,7 @@ def get_scheduler_pid(queue):
 
 def get_statistics(run_maintenance_tasks=False):
     queues = []
-    for index, config in enumerate(QUEUES_LIST):
+    for index, config in enumerate(get_queues_list()):
         queue = get_queue_by_index(index)
         connection = queue.connection
         connection_kwargs = connection.connection_pool.connection_kwargs
@@ -105,7 +105,7 @@ def get_statistics(run_maintenance_tasks=False):
 
 def get_scheduler_statistics():
     schedulers = {}
-    for index, config in enumerate(QUEUES_LIST):
+    for index, config in enumerate(get_queues_list()):
         # there is only one scheduler per redis connection, so we use the connection as key
         # to handle the possibility of a configuration with multiple redis connections and scheduled
         # jobs in more than one of them

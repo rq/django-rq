@@ -334,17 +334,7 @@ class ViewTest(TestCase):
         """
 
         # Override testing RQ_QUEUES
-        queues = [
-            {
-                'connection_config': {
-                    'DB': 0,
-                    'HOST': 'localhost',
-                    'PORT': 6379,
-                },
-                'name': 'default',
-            }
-        ]
-        with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
+        with override_settings(RQ_QUEUES={'default': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}}):
             response = self.client.get(reverse('rq_home'))
             self.assertEqual(response.status_code, 200)
 

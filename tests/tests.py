@@ -59,17 +59,7 @@ class RqStatsTest(TestCase):
         Test that rqstats returns the right statistics
         """
         # Override testing RQ_QUEUES
-        queues = [
-            {
-                'connection_config': {
-                    'DB': 0,
-                    'HOST': 'localhost',
-                    'PORT': 6379,
-                },
-                'name': 'default',
-            }
-        ]
-        with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
+        with override_settings(RQ_QUEUES={'default': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}}):
             # Only to make sure it doesn't crash
             call_command('rqstats')
             call_command('rqstats', '-j')
@@ -663,17 +653,9 @@ class SchedulerPIDTest(TestCase):
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     def test_scheduler_scheduler_pid_active(self):
         test_queue = 'scheduler_scheduler_active_test'
-        queues = [
-            {
-                'connection_config': {
-                    'DB': 0,
-                    'HOST': 'localhost',
-                    'PORT': 6379,
-                },
-                'name': test_queue,
-            }
-        ]
-        with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
+        with override_settings(
+            RQ_QUEUES={test_queue: {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}}
+        ):
             scheduler = get_scheduler(test_queue)
             scheduler.register_birth()
             self.assertIs(get_scheduler_pid(get_queue(scheduler.queue_name)), False)
@@ -682,17 +664,9 @@ class SchedulerPIDTest(TestCase):
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     def test_scheduler_scheduler_pid_inactive(self):
         test_queue = 'scheduler_scheduler_inactive_test'
-        queues = [
-            {
-                'connection_config': {
-                    'DB': 0,
-                    'HOST': 'localhost',
-                    'PORT': 6379,
-                },
-                'name': test_queue,
-            }
-        ]
-        with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
+        with override_settings(
+            RQ_QUEUES={test_queue: {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}}
+        ):
             connection = get_connection(test_queue)
             connection.flushall()  # flush is needed to isolate from other tests
             scheduler = get_scheduler(test_queue)
@@ -704,18 +678,10 @@ class SchedulerPIDTest(TestCase):
     def test_worker_scheduler_pid_active(self):
         '''The worker works as scheduler too if RQ Scheduler not installed, and the pid scheduler_pid is correct'''
         test_queue = 'worker_scheduler_active_test'
-        queues = [
-            {
-                'connection_config': {
-                    'DB': 0,
-                    'HOST': 'localhost',
-                    'PORT': 6379,
-                },
-                'name': test_queue,
-            }
-        ]
         with patch('rq.scheduler.RQScheduler.release_locks'):
-            with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
+            with override_settings(
+                RQ_QUEUES={test_queue: {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}}
+            ):
                 queue = get_queue(test_queue)
                 worker = get_worker(test_queue, name=uuid4().hex)
                 worker.work(with_scheduler=True, burst=True)  # force the worker to acquire a scheduler lock
@@ -728,17 +694,9 @@ class SchedulerPIDTest(TestCase):
     def test_worker_scheduler_pid_inactive(self):
         '''The worker works as scheduler too if RQ Scheduler not installed, and the pid scheduler_pid is correct'''
         test_queue = 'worker_scheduler_inactive_test'
-        queues = [
-            {
-                'connection_config': {
-                    'DB': 0,
-                    'HOST': 'localhost',
-                    'PORT': 6379,
-                },
-                'name': test_queue,
-            }
-        ]
-        with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
+        with override_settings(
+            RQ_QUEUES={test_queue: {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}}
+        ):
             worker = get_worker(test_queue, name=uuid4().hex)
             worker.work(
                 with_scheduler=False, burst=True

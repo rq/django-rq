@@ -16,6 +16,7 @@ from .connection_utils import (
     get_redis_connection,
 )
 from .jobs import get_job_class
+from .settings import get_queues_list
 
 VALID_COMMIT_MODES = ('auto', 'request_finished', 'on_db_commit')
 
@@ -160,9 +161,7 @@ def get_queue_by_index(index):
     """
     Returns an rq Queue using parameters defined in ``QUEUES_LIST``
     """
-    from .settings import QUEUES_LIST
-
-    config = QUEUES_LIST[int(index)]
+    config = get_queues_list()[int(index)]
     return get_queue_class(config)(
         config['name'],
         connection=get_redis_connection(config['connection_config']),
@@ -175,9 +174,7 @@ def get_scheduler_by_index(index):
     """
     Returns an rq-scheduler Scheduler using parameters defined in ``QUEUES_LIST``
     """
-    from .settings import QUEUES_LIST
-
-    config = QUEUES_LIST[int(index)]
+    config = get_queues_list()[int(index)]
     return get_scheduler(config['name'])
 
 
