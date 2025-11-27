@@ -6,6 +6,7 @@ from redis.sentinel import SentinelConnectionPool
 from rq.command import send_stop_job_command
 from rq.executions import Execution
 from rq.job import Job
+from rq.queue import Queue
 from rq.registry import (
     DeferredJobRegistry,
     FailedJobRegistry,
@@ -19,12 +20,12 @@ from rq.worker_registration import clean_worker_registry
 
 from .connection_utils import get_connection, get_redis_connection, get_unique_connection_configs
 from .cron import DjangoCronScheduler
-from .queues import DjangoRQ, get_queue_by_index, get_scheduler
+from .queues import get_queue_by_index, get_scheduler
 from .settings import get_queues_list
 from .templatetags.django_rq import to_localtime
 
 
-def get_scheduler_pid(queue: DjangoRQ) -> Union[bool, int, None]:
+def get_scheduler_pid(queue: Queue) -> Union[bool, int, None]:
     '''Checks whether there's a scheduler-lock on a particular queue, and returns the PID.
     It Only works with RQ's Built-in RQScheduler.
     When RQ-Scheduler is available returns False
@@ -103,7 +104,7 @@ def get_statistics(run_maintenance_tasks: bool = False) -> dict[str, list[dict[s
     return {'queues': queues}
 
 
-def get_scheduler_statistics():
+def get_scheduler_statistics() -> dict[str, dict[str, Any]]:
     schedulers = {}
     for index, config in enumerate(get_queues_list()):
         # there is only one scheduler per redis connection, so we use the connection as key
@@ -195,7 +196,7 @@ def get_executions(queue, composite_keys: list[tuple[str, str]]) -> list[Executi
     return executions
 
 
-def stop_jobs(queue, job_ids):
+def stop_jobs(queue: Queue, job_ids: Union[str, list[str], tuple[str, ...]]) -> tuple[list[str], list[str]]:
     job_ids = job_ids if isinstance(job_ids, (list, tuple)) else [job_ids]
     stopped_job_ids = []
     failed_to_stop_job_ids = []

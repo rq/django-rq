@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union, cast
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -48,7 +48,10 @@ def get_commit_mode() -> str:
         raise ImproperlyConfigured(f'"COMMIT_MODE" must be one of {VALID_COMMIT_MODES}.')
 
 
-def get_queue_class(config=None, queue_class=None):
+def get_queue_class(
+    config: Optional[dict[str, Any]] = None,
+    queue_class: Optional[Union[str, type[Queue]]] = None,
+) -> type[Queue]:
     """
     Return queue class from config or from RQ settings, otherwise return DjangoRQ.
     If ``queue_class`` is provided, it takes priority.
@@ -65,7 +68,7 @@ def get_queue_class(config=None, queue_class=None):
             queue_class = config.get('QUEUE_CLASS', queue_class)
 
     if isinstance(queue_class, str):
-        queue_class = import_attribute(queue_class)
+        queue_class = cast(type[Queue], import_attribute(queue_class))
     return queue_class
 
 
@@ -117,11 +120,11 @@ def get_queue(
     autocommit: Optional[bool] = None,
     commit_mode: Optional[str] = None,
     connection: Optional[Redis] = None,
-    queue_class: Optional[Union[str, type[DjangoRQ]]] = None,
+    queue_class: Optional[Union[str, type[Queue]]] = None,
     job_class: Optional[Union[str, type[Job]]] = None,
     serializer: Any = None,
     **kwargs: Any,
-) -> DjangoRQ:
+) -> Queue:
     """
     Returns an rq Queue using parameters defined in ``RQ_QUEUES``
     """
@@ -157,7 +160,7 @@ def get_queue(
     )
 
 
-def get_queue_by_index(index: int) -> DjangoRQ:
+def get_queue_by_index(index: int) -> Queue:
     """
     Returns an rq Queue using parameters defined in ``QUEUES_LIST``
     """
@@ -260,7 +263,7 @@ try:
 
     def get_scheduler(
         name: str = 'default',
-        queue: Optional[DjangoRQ] = None,
+        queue: Optional[Queue] = None,
         interval: int = 60,
         connection: Optional[Redis] = None,
     ) -> DjangoScheduler:
