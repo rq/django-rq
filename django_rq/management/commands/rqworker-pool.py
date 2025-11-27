@@ -8,7 +8,6 @@ from rq.worker_pool import WorkerPool
 
 from ...jobs import get_job_class
 from ...queues import get_queues
-from ...utils import configure_sentry
 from ...workers import get_worker_class
 
 
@@ -55,21 +54,6 @@ class Command(BaseCommand):
         # parser.add_argument('--with-scheduler', action='store_true', dest='with_scheduler',
         #                     default=False, help='Run worker with scheduler enabled')
 
-        # Sentry arguments
-        parser.add_argument(
-            '--sentry-dsn', action='store', default=None, dest='sentry_dsn', help='Report exceptions to this Sentry DSN'
-        )
-        parser.add_argument(
-            '--sentry-ca-certs',
-            action='store',
-            default=None,
-            dest='sentry_ca_certs',
-            help='A path to an alternative CA bundle file in PEM-format',
-        )
-        parser.add_argument(
-            '--sentry-debug', action='store', default=False, dest='sentry_debug', help='Turns debug mode on or off.'
-        )
-
     def handle(self, *args, **options):
         pid = options.get('pid')
         if pid:
@@ -85,14 +69,6 @@ class Command(BaseCommand):
         else:
             logging_level = 'INFO'
         setup_loghandlers(logging_level)
-
-        sentry_dsn = options.pop('sentry_dsn')
-        if sentry_dsn:
-            try:
-                configure_sentry(sentry_dsn, **options)
-            except ImportError:
-                self.stderr.write("Please install sentry-sdk using `pip install sentry-sdk`")
-                sys.exit(1)
 
         job_class = get_job_class(options['job_class'])
         queues = get_queues(*args, **{'job_class': job_class, 'queue_class': options['queue_class']})

@@ -1,4 +1,8 @@
 import threading
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .queues import DjangoRQ
 
 _thread_data = threading.local()
 
@@ -20,11 +24,11 @@ def get_queue():
     return _thread_data.__dict__.setdefault("job_queue", [])
 
 
-def add(queue, args, kwargs):
+def add(queue: 'DjangoRQ', args: tuple, kwargs: dict) -> None:
     get_queue().append((queue, args, kwargs))
 
 
-def commit(*args, **kwargs):
+def commit(*args: Any, **kwargs: Any) -> None:
     """
     Processes all jobs in the delayed queue.
     """
@@ -37,7 +41,7 @@ def commit(*args, **kwargs):
         clear()
 
 
-def clear(*args, **kwargs):
+def clear(*args: Any, **kwargs: Any) -> None:
     try:
         del _thread_data.job_queue
     except AttributeError:

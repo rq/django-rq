@@ -85,7 +85,7 @@ def get_connection(
     return get_redis_connection(QUEUES[name], use_strict_redis)
 
 
-def filter_connection_params(queue_params):
+def filter_connection_params(queue_params: dict[str, Any]) -> dict[str, Any]:
     """
     Filters the queue params to keep only the connection related params.
     """

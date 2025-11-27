@@ -41,7 +41,6 @@ classifiers = [
 
 [project.optional-dependencies]
 prometheus = ["prometheus_client >= 0.4.0"]
-Sentry = ["sentry-sdk >= 1.0.0"]
 testing = ["pytest>=7.0", "pytest-django>=4.5"]
 
 [project.scripts]
@@ -86,10 +85,6 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "rq.cron"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "sentry_sdk.*"
 ignore_missing_imports = true
 
 [tool.ruff]
