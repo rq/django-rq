@@ -1,8 +1,9 @@
 import datetime
-from unittest import TestCase
+from unittest import TestCase, skip
 from unittest.mock import PropertyMock, patch
 from uuid import uuid4
 
+from django.test import override_settings
 from rq.registry import ScheduledJobRegistry
 
 from django_rq.cron import DjangoCronScheduler
@@ -50,27 +51,16 @@ class UtilsTest(TestCase):
             # Clean up
             test_scheduler.register_death()
 
+    @override_settings(RQ_QUEUES={'async': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379, 'ASYNC': False}})
     def test_get_statistics(self):
         """get_statistics() returns the right number of workers"""
-        queues = [
-            {
-                'connection_config': {
-                    'DB': 0,
-                    'HOST': 'localhost',
-                    'PORT': 6379,
-                },
-                'name': 'async',
-            }
-        ]
-
-        with patch('django_rq.utils.QUEUES_LIST', new_callable=PropertyMock(return_value=queues)):
-            worker = get_worker('async', name=uuid4().hex)
-            worker.register_birth()
-            statistics = get_statistics()
-            data = statistics['queues'][0]
-            self.assertEqual(data['name'], 'async')
-            self.assertEqual(data['workers'], 1)
-            worker.register_death()
+        worker = get_worker('async', name=uuid4().hex)
+        worker.register_birth()
+        statistics = get_statistics()
+        data = statistics['queues'][0]
+        self.assertEqual(data['name'], 'async')
+        self.assertEqual(data['workers'], 1)
+        worker.register_death()
 
     def test_get_jobs(self):
         """get_jobs() works properly"""

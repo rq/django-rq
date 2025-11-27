@@ -12,13 +12,14 @@ from django_rq.connection_utils import (
     get_unique_connection_configs,
 )
 from django_rq.queues import get_queue
+from tests.base import DjangoRQTestCase
 from tests.fixtures import access_self
 
 QUEUES = settings.RQ_QUEUES
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
-class ConnectionTest(TestCase):
+class ConnectionTest(DjangoRQTestCase):
     def setUp(self):
         """Used to test with / without sentry_sdk available."""
         self.mock_sdk = mock.MagicMock()
@@ -35,10 +36,7 @@ class ConnectionTest(TestCase):
         """
         config = QUEUES['default']
         connection = get_connection()
-        connection_kwargs = connection.connection_pool.connection_kwargs
-        self.assertEqual(connection_kwargs['host'], config['HOST'])
-        self.assertEqual(connection_kwargs['port'], config['PORT'])
-        self.assertEqual(connection_kwargs['db'], config['DB'])
+        self.assert_connection_kwargs(connection, config)
 
     def test_get_connection_test(self):
         """
@@ -47,10 +45,7 @@ class ConnectionTest(TestCase):
         """
         config = QUEUES['test']
         connection = get_connection('test')
-        connection_kwargs = connection.connection_pool.connection_kwargs
-        self.assertEqual(connection_kwargs['host'], config['HOST'])
-        self.assertEqual(connection_kwargs['port'], config['PORT'])
-        self.assertEqual(connection_kwargs['db'], config['DB'])
+        self.assert_connection_kwargs(connection, config)
 
     @patch('django_rq.connection_utils.Sentinel')
     def test_get_connection_sentinel(self, sentinel_class_mock):
@@ -221,17 +216,14 @@ class ConnectionTest(TestCase):
 
             connection = get_connection_by_index(i)
 
-            connection_kwargs = connection.connection_pool.connection_kwargs
-
             # Verify connection matches expected config
             if 'HOST' in expected_config:
                 # Regular HOST/PORT/DB config
-                self.assertEqual(connection_kwargs['host'], expected_config['HOST'])
-                self.assertEqual(connection_kwargs['port'], expected_config['PORT'])
-                self.assertEqual(connection_kwargs['db'], expected_config.get('DB', 0))
+                self.assert_connection_kwargs(connection, expected_config)
             elif 'URL' in expected_config:
                 # URL-based config - verify DB if specified
                 if 'DB' in expected_config:
+                    connection_kwargs = connection.connection_pool.connection_kwargs
                     self.assertEqual(connection_kwargs['db'], expected_config['DB'])
             elif 'SENTINELS' in expected_config:
                 # Sentinel config - connection pool type is different
@@ -259,14 +251,15 @@ class RedisCacheTest(TestCase):
         """
         queueName = 'django-redis-cache'
         queue = get_queue(queueName)
-        connection_kwargs = queue.connection.connection_pool.connection_kwargs
         self.assertEqual(queue.name, queueName)
 
         cacheHost = settings.CACHES[queueName]['LOCATION'].split(':')[0]
         cachePort = settings.CACHES[queueName]['LOCATION'].split(':')[1]
         cacheDBNum = settings.CACHES[queueName]['OPTIONS']['DB']
 
-        self.assertEqual(connection_kwargs['host'], cacheHost)
-        self.assertEqual(connection_kwargs['port'], int(cachePort))
-        self.assertEqual(connection_kwargs['db'], int(cacheDBNum))
-        self.assertEqual(connection_kwargs['password'], None)
+        self.assert_connection_kwargs(queue.connection, {
+            'host': cacheHost,
+            'port': int(cachePort),
+            'db': int(cacheDBNum),
+            'password': None
+        })

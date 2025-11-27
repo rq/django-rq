@@ -22,7 +22,7 @@ from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
 from .queues import get_queue_by_index, get_scheduler_by_index
-from .settings import QUEUES_MAP
+from .settings import get_queues_map
 from .utils import get_executions, get_jobs, stop_jobs
 
 
@@ -605,7 +605,7 @@ def scheduler_jobs(request: HttpRequest, scheduler_index: int) -> HttpResponse:
         jobs_times = scheduler.get_jobs(with_times=True, offset=offset, length=items_per_page)
         for job, time in jobs_times:
             job.next_run = time
-            job.queue_index = QUEUES_MAP.get(job.origin, 0)
+            job.queue_index = get_queues_map().get(job.origin, 0)
             if 'cron_string' in job.meta:
                 job.schedule = f"cron: '{job.meta['cron_string']}'"
             elif 'interval' in job.meta:
