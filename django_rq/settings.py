@@ -10,7 +10,7 @@ NAME = getattr(settings, 'RQ_NAME', 'default')
 BURST: bool = getattr(settings, 'RQ_BURST', False)
 
 
-def get_queues_list():
+def get_queues_list() -> list[dict[str, Any]]:
     """
     Build QUEUES_LIST from current RQ_QUEUES setting.
 
@@ -21,7 +21,7 @@ def get_queues_list():
     return [{'name': queue_name, 'connection_config': config} for queue_name, config in sorted(queues.items())]
 
 
-def get_queues_map():
+def get_queues_map() -> dict[str, int]:
     """
     Build QUEUES_MAP from current RQ_QUEUES setting.
 
