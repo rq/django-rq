@@ -6,12 +6,18 @@ Usage:
     rqdashboard --config my_config.py
     rqdashboard --config my_config.py --host 0.0.0.0 --port 8080
 """
+
 import argparse
 import importlib.util
 import os
 import sys
 from pathlib import Path
 from typing import Any
+
+import django
+from django.conf import settings
+from django.core.management import call_command
+from django.core.management.utils import get_random_secret_key
 
 # Dashboard data directory
 DASHBOARD_DIR = Path.home() / '.rqdashboard'
@@ -59,17 +65,16 @@ def get_or_create_secret_key() -> str:
     if secret_key_file.exists():
         return secret_key_file.read_text().strip()
 
-    from django.core.management.utils import get_random_secret_key
     secret_key = get_random_secret_key()
     DASHBOARD_DIR.mkdir(parents=True, exist_ok=True)
-    secret_key_file.write_text(secret_key)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    with os.fdopen(os.open(secret_key_file, flags, 0o600), 'w') as fh:
+        fh.write(secret_key)
     return secret_key
 
 
 def configure_django(config: dict[str, Any]) -> None:
     """Configure Django settings programmatically."""
-    import django
-    from django.conf import settings
 
     DASHBOARD_DIR.mkdir(parents=True, exist_ok=True)
     db_path = DASHBOARD_DIR / 'db.sqlite3'
@@ -130,17 +135,12 @@ def configure_django(config: dict[str, Any]) -> None:
     django.setup()
 
 
-def run_migrations() -> None:
-    """Run database migrations."""
-    from django.core.management import call_command
-    call_command('migrate', '--run-syncdb', verbosity=0)
-
-
 def check_or_create_superuser() -> None:
     """Check if superuser exists, prompt to create one if not."""
     from django.contrib.auth import get_user_model
     from django.core.management import call_command
     from django.core.management.base import CommandError
+
     User = get_user_model()
 
     # Check if any superuser exists
@@ -225,7 +225,8 @@ Example config file (my_config.py):
 """,
     )
     parser.add_argument(
-        '--config', '-c',
+        '--config',
+        '-c',
         required=True,
         help='Path to Python config file containing RQ_QUEUES',
     )
@@ -235,7 +236,8 @@ Example config file (my_config.py):
         help='Host to bind the server to (default: 127.0.0.1)',
     )
     parser.add_argument(
-        '--port', '-p',
+        '--port',
+        '-p',
         type=int,
         default=8000,
         help='Port to bind the server to (default: 8000)',
@@ -250,7 +252,7 @@ Example config file (my_config.py):
     configure_django(config)
 
     # Run migrations
-    run_migrations()
+    call_command('migrate', '--run-syncdb', verbosity=0)
 
     # Collect static files if DEBUG=False
     collect_static_files()
