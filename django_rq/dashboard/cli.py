@@ -178,8 +178,7 @@ def collect_static_files() -> None:
     from django.core.management import call_command
 
     if not settings.DEBUG:
-        # Collect static files for production use
-        call_command('collectstatic', '--no-input', '--clear', verbosity=0)
+        call_command('collectstatic', '--no-input', verbosity=0)
 
 
 def run_server(host: str, port: int) -> None:
