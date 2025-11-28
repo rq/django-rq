@@ -309,7 +309,7 @@ python manage.py rqresume
 
 `django_rq` also provides a dashboard to monitor the status of your queues at `/django-rq/` (or whatever URL you set in your `urls.py` during installation).
 
-You can also add a link to this dashboard in `/admin` by adding `RQ_SHOW_ADMIN_LINK = True` in `settings.py`. Be careful though, this will override the default admin template so it may interfere with other apps that modify the default admin template.
+A link to the RQ dashboard is displayed in `/admin` by default under "Django-RQ". If you want to disable this link, add `RQ_SHOW_ADMIN_LINK = False` in `settings.py`.
 
 These statistics are also available in JSON format via `/django-rq/stats.json`, which is accessible to staff members. If you need to access this view via other HTTP clients (for monitoring purposes), you can define `RQ_API_TOKEN`. Then, include the token in the Authorization header as a Bearer token: `Authorization: Bearer <token>` and access it via `/django-rq/stats.json`.
 

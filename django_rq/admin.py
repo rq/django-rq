@@ -35,5 +35,6 @@ class QueueAdmin(admin.ModelAdmin):
         return stats_views.stats(request)
 
 
+# Register the Queue model with admin if enabled.
 if settings.SHOW_ADMIN_LINK:
     admin.site.register(models.Queue, QueueAdmin)

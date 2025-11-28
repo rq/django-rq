@@ -11,10 +11,13 @@ if get_commit_mode() == 'request_finished':
 
 
 class Queue(models.Model):
-    """Placeholder model with no database table, but with django admin page
-    and contenttype permission"""
+    """
+    Admin-only model for Django-RQ dashboard integration.
+    """
 
     class Meta:
-        managed = False  # not in Django's database
+        managed = False  # No database table - admin integration only
         default_permissions = ()
         permissions = [['view', 'Access admin page']]
+        verbose_name = 'Django-RQ'
+        verbose_name_plural = 'Django-RQ'

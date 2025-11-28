@@ -4,7 +4,7 @@ from typing import Any, cast
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
-SHOW_ADMIN_LINK = getattr(settings, 'RQ_SHOW_ADMIN_LINK', False)
+SHOW_ADMIN_LINK = getattr(settings, 'RQ_SHOW_ADMIN_LINK', True)
 
 NAME = getattr(settings, 'RQ_NAME', 'default')
 BURST: bool = getattr(settings, 'RQ_BURST', False)
