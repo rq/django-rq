@@ -1,4 +1,3 @@
-import os
 from unittest import skipIf
 from unittest.mock import patch
 
@@ -11,6 +10,7 @@ from django_rq import get_queue, thread_queue
 from django_rq.workers import get_worker
 
 from .fixtures import access_self, failing_job
+from .redis_config import REDIS_CONFIG_1
 
 try:
     import prometheus_client
@@ -19,9 +19,9 @@ except ImportError:
 
 RQ_QUEUES = {
     'default': {
-        'HOST': os.environ.get('REDIS_HOST', 'localhost'),
-        'PORT': 6379,
-        'DB': 0,
+        'HOST': REDIS_CONFIG_1.host,
+        'PORT': REDIS_CONFIG_1.port,
+        'DB': REDIS_CONFIG_1.db,
     },
 }
 
@@ -36,7 +36,7 @@ class PrometheusTest(TestCase):
         self.user.save()
         self.client = Client()
         self.client.force_login(self.user)
-        get_queue('default').connection.flushall()
+        get_queue('default').connection.flushdb()
         # Clear thread_queue to prevent test pollution from tests with AUTOCOMMIT=False
         thread_queue.clear()
 

@@ -13,16 +13,17 @@ from django.urls import reverse
 from django_rq import get_queue
 
 from .fixtures import say_hello
+from .redis_config import REDIS_CONFIG_1
 from .utils import get_queue_index
 
 
 @override_settings(
     RQ={'AUTOCOMMIT': True},
-    RQ_QUEUES={
-        'default': {
-            'HOST': 'localhost',
-            'PORT': 6379,
-            'DB': 0,
+        RQ_QUEUES={
+            'default': {
+            'HOST': REDIS_CONFIG_1.host,
+            'PORT': REDIS_CONFIG_1.port,
+            'DB': REDIS_CONFIG_1.db,
             'DEFAULT_TIMEOUT': 500,
         }
     },
@@ -108,11 +109,11 @@ class AuthenticatedAdminURLTest(TestCase):
 
 @override_settings(
     RQ={'AUTOCOMMIT': True},
-    RQ_QUEUES={
-        'default': {
-            'HOST': 'localhost',
-            'PORT': 6379,
-            'DB': 0,
+        RQ_QUEUES={
+            'default': {
+            'HOST': REDIS_CONFIG_1.host,
+            'PORT': REDIS_CONFIG_1.port,
+            'DB': REDIS_CONFIG_1.db,
             'DEFAULT_TIMEOUT': 500,
         }
     },
