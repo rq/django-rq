@@ -54,7 +54,7 @@ class ViewTest(TestCase):
         queue.connection.hset(job.key, 'data', 'unpickleable data')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('DeserializationError', response.content.decode())
+        self.assertContains(response, 'DeserializationError')
 
     def test_job_details_with_results(self):
         """Job with results is displayed properly"""
@@ -80,7 +80,7 @@ class ViewTest(TestCase):
         url = reverse('rq_job_detail', args=[queue_index, second_job.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(second_job._dependency_id, response.content.decode())
+        self.assertContains(response, second_job._dependency_id)
 
     def test_requeue_job(self):
         """
@@ -353,8 +353,10 @@ class ViewTest(TestCase):
         with self.settings(RQ_API_TOKEN=token):
             response = self.client.get(reverse('rq_home_json', args=[token]))
             self.assertEqual(response.status_code, 200)
-            self.assertIn("name", response.content.decode('utf-8'))
-            self.assertNotIn('"error": true', response.content.decode('utf-8'))
+            data = response.json()
+            self.assertIn("queues", data)
+            self.assertGreaterEqual(len(data["queues"]), 1)
+            self.assertFalse(data.get("error"))
 
             # Wrong token
             response = self.client.get(reverse('rq_home_json', args=["wrong_token"]))
