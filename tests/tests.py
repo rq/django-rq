@@ -31,6 +31,7 @@ from django_rq.utils import get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
 from tests.base import DjangoRQTestCase
 from tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self
+from tests.redis_config import REDIS_CONFIG_1
 
 try:
     from rq_scheduler import Scheduler
@@ -55,7 +56,15 @@ def long_running_job(timeout=10):
 
 
 class RqStatsTest(TestCase):
-    @override_settings(RQ_QUEUES={'default': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}})
+    @override_settings(
+        RQ_QUEUES={
+            'default': {
+                'DB': REDIS_CONFIG_1.db,
+                'HOST': REDIS_CONFIG_1.host,
+                'PORT': REDIS_CONFIG_1.port,
+            }
+        }
+    )
     def test_get_connection_default(self):
         """
         Test that rqstats returns the right statistics
@@ -570,7 +579,15 @@ class TemplateTagTest(TestCase):
 
 class SchedulerPIDTest(TestCase):
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
-    @override_settings(RQ_QUEUES={'scheduler_scheduler_active_test': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}})
+    @override_settings(
+        RQ_QUEUES={
+            'scheduler_scheduler_active_test': {
+                'DB': REDIS_CONFIG_1.db,
+                'HOST': REDIS_CONFIG_1.host,
+                'PORT': REDIS_CONFIG_1.port,
+            }
+        }
+    )
     def test_scheduler_scheduler_pid_active(self):
         test_queue = 'scheduler_scheduler_active_test'
         scheduler = get_scheduler(test_queue)
@@ -579,11 +596,19 @@ class SchedulerPIDTest(TestCase):
         scheduler.register_death()
 
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
-    @override_settings(RQ_QUEUES={'scheduler_scheduler_inactive_test': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}})
+    @override_settings(
+        RQ_QUEUES={
+            'scheduler_scheduler_inactive_test': {
+                'DB': REDIS_CONFIG_1.db,
+                'HOST': REDIS_CONFIG_1.host,
+                'PORT': REDIS_CONFIG_1.port,
+            }
+        }
+    )
     def test_scheduler_scheduler_pid_inactive(self):
         test_queue = 'scheduler_scheduler_inactive_test'
         connection = get_connection(test_queue)
-        connection.flushall()  # flush is needed to isolate from other tests
+        connection.flushdb()  # flush is needed to isolate from other tests
         scheduler = get_scheduler(test_queue)
         scheduler.remove_lock()
         scheduler.register_death()  # will mark the scheduler as death so get_scheduler_pid will return None
@@ -591,7 +616,15 @@ class SchedulerPIDTest(TestCase):
 
     @skipIf(RQ_SCHEDULER_INSTALLED is True, 'RQ Scheduler installed (no worker--with-scheduler)')
     @patch('rq.scheduler.RQScheduler.release_locks')
-    @override_settings(RQ_QUEUES={'worker_scheduler_active_test': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}})
+    @override_settings(
+        RQ_QUEUES={
+            'worker_scheduler_active_test': {
+                'DB': REDIS_CONFIG_1.db,
+                'HOST': REDIS_CONFIG_1.host,
+                'PORT': REDIS_CONFIG_1.port,
+            }
+        }
+    )
     def test_worker_scheduler_pid_active(self, mock_release_locks):
         '''The worker works as scheduler too if RQ Scheduler not installed, and the pid scheduler_pid is correct'''
         test_queue = 'worker_scheduler_active_test'
@@ -604,7 +637,15 @@ class SchedulerPIDTest(TestCase):
         self.assertIsInstance(pid, int)
 
     @skipIf(RQ_SCHEDULER_INSTALLED is True, 'RQ Scheduler installed (no worker--with-scheduler)')
-    @override_settings(RQ_QUEUES={'worker_scheduler_inactive_test': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}})
+    @override_settings(
+        RQ_QUEUES={
+            'worker_scheduler_inactive_test': {
+                'DB': REDIS_CONFIG_1.db,
+                'HOST': REDIS_CONFIG_1.host,
+                'PORT': REDIS_CONFIG_1.port,
+            }
+        }
+    )
     def test_worker_scheduler_pid_inactive(self):
         '''The worker works as scheduler too if RQ Scheduler not installed, and the pid scheduler_pid is correct'''
         test_queue = 'worker_scheduler_inactive_test'

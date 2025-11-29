@@ -18,6 +18,7 @@ from django_rq import get_queue
 from django_rq.workers import get_worker
 
 from .fixtures import access_self, failing_job
+from .redis_config import REDIS_CONFIG_1
 from .utils import get_queue_index
 
 
@@ -30,7 +31,7 @@ class ViewTest(TestCase):
         self.user.save()
         self.client = Client()
         self.client.login(username=self.user.username, password='pass')
-        get_queue('django_rq_test').connection.flushall()
+        get_queue('django_rq_test').connection.flushdb()
 
     def test_jobs(self):
         """Jobs in queue are displayed properly"""
@@ -327,7 +328,15 @@ class ViewTest(TestCase):
         response = self.client.get(reverse('rq_worker_details', args=[queue_index, worker.key]))
         self.assertEqual(response.context['worker'], worker)
 
-    @override_settings(RQ_QUEUES={'default': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}})
+    @override_settings(
+        RQ_QUEUES={
+            'default': {
+                'DB': REDIS_CONFIG_1.db,
+                'HOST': REDIS_CONFIG_1.host,
+                'PORT': REDIS_CONFIG_1.port,
+            }
+        }
+    )
     def test_statistics_json_view(self):
         """
         Django-RQ's statistic as JSON only viewable by staff or with API_TOKEN

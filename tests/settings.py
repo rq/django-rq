@@ -1,6 +1,6 @@
 import os
 
-REDIS_HOST = os.environ.get("REDIS_HOST", 'localhost')
+from tests.redis_config import REDIS_CONFIG_1, REDIS_CONFIG_2
 
 SECRET_KEY = 'a'
 
@@ -40,7 +40,7 @@ if REDIS_CACHE_TYPE == 'django-redis':
     CACHES = {
         'default': {
             'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': "redis://127.0.0.1:6379/0",
+            'LOCATION': f"redis://{REDIS_CONFIG_1.host}:{REDIS_CONFIG_1.port}/{REDIS_CONFIG_1.db}",
             'OPTIONS': {
                 'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             },
@@ -50,10 +50,10 @@ elif REDIS_CACHE_TYPE == 'django-redis-cache':
     CACHES = {
         'default': {
             'BACKEND': 'redis_cache.cache.RedisCache',
-            'LOCATION': f'{REDIS_HOST}:6379',
+            'LOCATION': f'{REDIS_CONFIG_1.host}:{REDIS_CONFIG_1.port}',
             'KEY_PREFIX': 'django-rq-tests',
             'OPTIONS': {
-                'DB': 2,
+                'DB': REDIS_CONFIG_2.db,
                 'MAX_ENTRIES': 5000,
             },
         },
@@ -89,48 +89,48 @@ LOGGING = {
 
 RQ_QUEUES = {
     'default': {
-        'HOST': REDIS_HOST,
-        'PORT': 6379,
-        'DB': 0,
+        'HOST': REDIS_CONFIG_1.host,
+        'PORT': REDIS_CONFIG_1.port,
+        'DB': REDIS_CONFIG_1.db,
         'DEFAULT_TIMEOUT': 500,
         'DEFAULT_RESULT_TTL': 500,
     },
     'test': {
-        'HOST': REDIS_HOST,
-        'PORT': 1,
-        'DB': 1,
+        'HOST': REDIS_CONFIG_2.host,
+        'PORT': REDIS_CONFIG_2.port,
+        'DB': REDIS_CONFIG_2.db,
     },
     'sentinel': {
-        'SENTINELS': [(REDIS_HOST, 26736), (REDIS_HOST, 26737)],
+        'SENTINELS': [(REDIS_CONFIG_1.host, 26736), (REDIS_CONFIG_1.host, 26737)],
         'MASTER_NAME': 'testmaster',
-        'DB': 1,
+        'DB': REDIS_CONFIG_2.db,
         'USERNAME': 'redis-user',
         'PASSWORD': 'secret',
         'SOCKET_TIMEOUT': 10,
         'SENTINEL_KWARGS': {},
     },
     'test1': {
-        'HOST': REDIS_HOST,
-        'PORT': 1,
-        'DB': 1,
+        'HOST': REDIS_CONFIG_2.host,
+        'PORT': REDIS_CONFIG_2.port,
+        'DB': REDIS_CONFIG_2.db,
         'DEFAULT_TIMEOUT': 400,
         'QUEUE_CLASS': 'tests.fixtures.DummyQueue',
     },
     'test2': {
-        'HOST': REDIS_HOST,
-        'PORT': 1,
-        'DB': 1,
+        'HOST': REDIS_CONFIG_2.host,
+        'PORT': REDIS_CONFIG_2.port,
+        'DB': REDIS_CONFIG_2.db,
     },
     'test3': {
-        'HOST': REDIS_HOST,
-        'PORT': 6379,
-        'DB': 1,
+        'HOST': REDIS_CONFIG_2.host,
+        'PORT': REDIS_CONFIG_2.port,
+        'DB': REDIS_CONFIG_2.db,
         'DEFAULT_RESULT_TTL': 800,
     },
     'async': {
-        'HOST': REDIS_HOST,
-        'PORT': 6379,
-        'DB': 1,
+        'HOST': REDIS_CONFIG_2.host,
+        'PORT': REDIS_CONFIG_2.port,
+        'DB': REDIS_CONFIG_2.db,
         'ASYNC': False,
     },
     'url': {
@@ -144,52 +144,52 @@ RQ_QUEUES = {
         'URL': 'redis://username:password@host:1234',
     },
     'django_rq_test': {
-        'HOST': REDIS_HOST,
-        'PORT': 6379,
-        'DB': 0,
+        'HOST': REDIS_CONFIG_1.host,
+        'PORT': REDIS_CONFIG_1.port,
+        'DB': REDIS_CONFIG_1.db,
     },
     'scheduler_scheduler_active_test': {
-        'HOST': REDIS_HOST,
-        'PORT': 6379,
-        'DB': 0,
+        'HOST': REDIS_CONFIG_1.host,
+        'PORT': REDIS_CONFIG_1.port,
+        'DB': REDIS_CONFIG_1.db,
         'ASYNC': False,
     },
     'scheduler_scheduler_inactive_test': {
-        'HOST': REDIS_HOST,
-        'PORT': 6379,
-        'DB': 0,
+        'HOST': REDIS_CONFIG_1.host,
+        'PORT': REDIS_CONFIG_1.port,
+        'DB': REDIS_CONFIG_1.db,
         'ASYNC': False,
     },
     'worker_scheduler_active_test': {
-        'HOST': REDIS_HOST,
-        'PORT': 6379,
-        'DB': 0,
+        'HOST': REDIS_CONFIG_1.host,
+        'PORT': REDIS_CONFIG_1.port,
+        'DB': REDIS_CONFIG_1.db,
         'ASYNC': False,
     },
     'worker_scheduler_inactive_test': {
-        'HOST': REDIS_HOST,
-        'PORT': 6379,
-        'DB': 0,
+        'HOST': REDIS_CONFIG_1.host,
+        'PORT': REDIS_CONFIG_1.port,
+        'DB': REDIS_CONFIG_1.db,
         'ASYNC': False,
     },
     'django-redis': {
         'USE_REDIS_CACHE': 'default',
     },
     'django_rq_test2': {
-        'HOST': REDIS_HOST,
-        'PORT': 6379,
-        'DB': 0,
+        'HOST': REDIS_CONFIG_1.host,
+        'PORT': REDIS_CONFIG_1.port,
+        'DB': REDIS_CONFIG_1.db,
     },
     'test_scheduler': {
-        'HOST': REDIS_HOST,
-        'PORT': 6379,
-        'DB': 0,
+        'HOST': REDIS_CONFIG_1.host,
+        'PORT': REDIS_CONFIG_1.port,
+        'DB': REDIS_CONFIG_1.db,
         'DEFAULT_TIMEOUT': 400,
     },
     'test_serializer': {
-        'HOST': REDIS_HOST,
-        'PORT': 6379,
-        'DB': 0,
+        'HOST': REDIS_CONFIG_1.host,
+        'PORT': REDIS_CONFIG_1.port,
+        'DB': REDIS_CONFIG_1.db,
         'SERIALIZER': 'rq.serializers.JSONSerializer',
     },
 }
