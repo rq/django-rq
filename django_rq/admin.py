@@ -1,3 +1,4 @@
+from functools import wraps
 from typing import Any, Optional
 
 from django.contrib import admin
@@ -34,6 +35,37 @@ class QueueAdmin(admin.ModelAdmin):
         # proxy request to stats view
         return stats_views.stats(request)
 
+    def get_urls(self):
+        """
+        Register Django-RQ views within Django admin.
 
+        URLs will be available at /admin/django_rq/dashboard/<pattern>/
+        This provides automatic integration without requiring users to edit urls.py.
+
+        Uses two sets of URL patterns:
+        - API patterns (stats_json, prometheus_metrics): NOT wrapped, support API token auth
+        - Admin patterns (all other views): Wrapped with admin_view for session auth
+        """
+        # Import inside method to avoid circular imports
+        from .urls import get_admin_urlpatterns, get_api_urlpatterns
+
+        def wrap(view):
+            """Wrap view with admin_site.admin_view for permission checking"""
+
+            @wraps(view)
+            def wrapper(*args, **kwargs):
+                return self.admin_site.admin_view(view)(*args, **kwargs)
+
+            return wrapper
+
+        # Get both sets of URL patterns
+        api_urls = get_api_urlpatterns()  # Not wrapped - have their own auth
+        admin_urls = get_admin_urlpatterns(view_wrapper=wrap)  # Wrapped with admin auth
+
+        # Combine and add to standard ModelAdmin URLs
+        return api_urls + admin_urls + super().get_urls()
+
+
+# Register the Dashboard model with admin if enabled.
 if settings.SHOW_ADMIN_LINK:
-    admin.site.register(models.Queue, QueueAdmin)
+    admin.site.register(models.Dashboard, QueueAdmin)
