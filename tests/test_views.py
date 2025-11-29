@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from unittest.mock import PropertyMock, patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
@@ -353,7 +352,7 @@ class ViewTest(TestCase):
 
         # With token,
         token = '12345abcde'
-        with patch('django_rq.stats_views.API_TOKEN', new_callable=PropertyMock(return_value=token)):
+        with self.settings(RQ_API_TOKEN=token):
             response = self.client.get(reverse('rq_home_json', args=[token]))
             self.assertEqual(response.status_code, 200)
             self.assertIn("name", response.content.decode('utf-8'))
