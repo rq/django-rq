@@ -40,7 +40,8 @@ def prometheus_metrics(request):
             {
                 "error": True,
                 "description": "Missing bearer token. Set token in headers and configure RQ_API_TOKEN in settings.py",
-            }
+            },
+            status=401,
         )
 
     global registry
@@ -83,7 +84,8 @@ def stats_json(request: HttpRequest, token: Optional[str] = None) -> JsonRespons
                 {
                     "error": True,
                     "description": "Missing bearer token. Set token in headers and configure RQ_API_TOKEN in settings.py",
-                }
+                },
+                status=401,
             )
 
     return JsonResponse(get_statistics())
