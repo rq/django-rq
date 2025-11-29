@@ -77,17 +77,16 @@ RQ_QUEUES = {
 RQ_EXCEPTION_HANDLERS = ['path.to.my.handler']  # If you need custom exception handlers
 ```
 
-## Django Integration
+## Admin Integration
 
-### Admin Interface (Recommended)
-
+_Changed in Version 3.0_
 Django-RQ automatically integrates with Django's admin interface. Once installed, navigate to `/admin/django_rq/dashboard/` to access:
 - Queue statistics and monitoring dashboard
 - Job registry browsers (scheduled, started, finished, failed, deferred)
 - Worker management
 - Prometheus metrics endpoint (if `prometheus_client` is installed)
 
-**No additional URL configuration needed!** The views are automatically registered when you access the Django admin.
+The views are automatically registered in Django admin and a link to the dashboard is added to the admin interface's sidebar. If you want to disable this link, add `RQ_SHOW_ADMIN_LINK = False` in `settings.py`.
 
 ### Standalone URLs (Alternative)
 
@@ -324,10 +323,7 @@ python manage.py rqresume
 
 ### Queue Statistics
 
-`django_rq` also provides a dashboard to monitor the status of your queues at `/django-rq/` (or whatever URL you set in your `urls.py` during installation).
-
-_ New in Version 3.0_
-A link to the RQ dashboard is displayed in `/admin` by default under "Django-RQ". If you want to disable this link, add `RQ_SHOW_ADMIN_LINK = False` in `settings.py`.
+_Changed in Version 3.0_
 
 Various queue statistics are also available in JSON format via `/django-rq/stats.json`, which is accessible via a bearer token authentication scheme (defined in `settings.py` as `RQ_API_TOKEN`). Then, include the token in the Authorization header as a Bearer token: `Authorization: Bearer <token>` and access it via `/django-rq/stats.json`.
 
