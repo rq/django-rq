@@ -345,10 +345,8 @@ class ViewTest(TestCase):
         response = self.client.get(reverse('rq_home'))
         self.assertEqual(response.status_code, 302)
 
-        # Error, but with 200 code
         response = self.client.get(reverse('rq_home_json'))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("error", response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 401)
 
         # With token,
         token = '12345abcde'
@@ -360,9 +358,7 @@ class ViewTest(TestCase):
 
             # Wrong token
             response = self.client.get(reverse('rq_home_json', args=["wrong_token"]))
-            self.assertEqual(response.status_code, 200)
-            self.assertNotIn("name", response.content.decode('utf-8'))
-            self.assertIn('"error": true', response.content.decode('utf-8'))
+            self.assertEqual(response.status_code, 401)
 
     def test_action_stop_jobs(self):
         queue = get_queue('django_rq_test')
