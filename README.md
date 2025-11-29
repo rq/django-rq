@@ -81,7 +81,7 @@ RQ_EXCEPTION_HANDLERS = ['path.to.my.handler']  # If you need custom exception h
 
 ### Admin Interface (Recommended)
 
-Django-RQ automatically integrates with Django's admin interface. Once installed, navigate to `/admin/django_rq/queue/` to access:
+Django-RQ automatically integrates with Django's admin interface. Once installed, navigate to `/admin/django_rq/dashboard/` to access:
 - Queue statistics and monitoring dashboard
 - Job registry browsers (scheduled, started, finished, failed, deferred)
 - Worker management
@@ -100,7 +100,7 @@ urlpatterns += [
 ]
 ```
 
-This makes views accessible at `/django-rq/` instead of within the admin interface at `/admin/django_rq/queue/`.
+This makes views accessible at `/django-rq/` instead of within the admin interface at `/admin/django_rq/dashboard/`.
 
 ## Usage
 

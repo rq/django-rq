@@ -39,7 +39,7 @@ class QueueAdmin(admin.ModelAdmin):
         """
         Register Django-RQ views within Django admin.
 
-        URLs will be available at /admin/django_rq/queue/<pattern>/
+        URLs will be available at /admin/django_rq/dashboard/<pattern>/
         This provides automatic integration without requiring users to edit urls.py.
 
         Uses two sets of URL patterns:
@@ -66,6 +66,6 @@ class QueueAdmin(admin.ModelAdmin):
         return api_urls + admin_urls + super().get_urls()
 
 
-# Register the Queue model with admin if enabled.
+# Register the Dashboard model with admin if enabled.
 if settings.SHOW_ADMIN_LINK:
-    admin.site.register(models.Queue, QueueAdmin)
+    admin.site.register(models.Dashboard, QueueAdmin)

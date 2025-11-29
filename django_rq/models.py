@@ -10,7 +10,7 @@ if get_commit_mode() == 'request_finished':
     got_request_exception.connect(thread_queue.clear)
 
 
-class Queue(models.Model):
+class Dashboard(models.Model):
     """
     Admin-only model for Django-RQ dashboard integration.
     """

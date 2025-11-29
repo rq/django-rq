@@ -41,7 +41,7 @@ class AuthenticatedAdminURLTest(TestCase):
     def test_dashboard_url(self):
         """Verify dashboard accessible via admin URLs"""
         # Use admin changelist URL which proxies to stats view
-        response = self.client.get(reverse('admin:django_rq_queue_changelist'))
+        response = self.client.get(reverse('admin:django_rq_dashboard_changelist'))
         self.assertEqual(response.status_code, 200)
         # Should render the stats template
         self.assertTemplateUsed(response, 'django_rq/stats.html')
@@ -125,7 +125,7 @@ class UnauthenticatedAdminURLTest(TestCase):
 
     def test_requires_staff_authentication(self):
         """Verify admin views require staff user authentication"""
-        url = reverse('admin:django_rq_queue_changelist')
+        url = reverse('admin:django_rq_dashboard_changelist')
 
         # Test 1: Unauthenticated access should redirect to login
         response = self.client.get(url)
