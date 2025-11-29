@@ -67,5 +67,7 @@ def __getattr__(name):
 # Get exception handlers
 EXCEPTION_HANDLERS: list[str] = getattr(settings, 'RQ_EXCEPTION_HANDLERS', [])
 
-# Token for querying statistics
-API_TOKEN: str = getattr(settings, 'RQ_API_TOKEN', '')
+
+def get_api_token() -> str:
+    """Return the API token from Django settings."""
+    return getattr(settings, 'RQ_API_TOKEN', '')
