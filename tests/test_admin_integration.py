@@ -155,14 +155,8 @@ class UnauthenticatedAdminURLTest(TestCase):
 
         # Test 2: Missing token should fail
         response = self.client.get(reverse('rq_home_json'))
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertIn('error', data)
-        self.assertTrue(data['error'])
+        self.assertEqual(response.status_code, 401)
 
         # Test 3: Invalid token should fail
         response = self.client.get(reverse('rq_home_json'), HTTP_AUTHORIZATION='Bearer wrong_token')
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertIn('error', data)
-        self.assertTrue(data['error'])
+        self.assertEqual(response.status_code, 401)
