@@ -118,8 +118,6 @@ class AdminURLIntegrationTest(TestCase):
 
     def test_url_names_still_work(self):
         """Verify reverse() with URL names still resolves correctly"""
-        queue_index = get_queue_index('default')
-
         # Test that URL names can be resolved
         # Note: When accessed via admin, URLs may need admin namespace
         try:
