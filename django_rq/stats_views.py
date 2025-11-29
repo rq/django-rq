@@ -8,7 +8,7 @@ from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 
-from .settings import API_TOKEN
+from . import settings as django_rq_settings
 from .utils import get_cron_schedulers, get_scheduler_statistics, get_statistics
 
 try:
@@ -22,6 +22,7 @@ registry = None
 
 
 def is_authorized(request: HttpRequest) -> bool:
+    api_token = django_rq_settings.get_api_token()
     auth_header = request.headers.get("Authorization", "")
     token = None
 
@@ -29,7 +30,7 @@ def is_authorized(request: HttpRequest) -> bool:
         token = auth_header.removeprefix("Bearer ").strip()
 
     is_staff = getattr(request.user, 'is_staff', False)
-    return bool(is_staff or (API_TOKEN and token and compare_digest(API_TOKEN, token)))
+    return bool(is_staff or (api_token and token and compare_digest(api_token, token)))
 
 
 @never_cache
@@ -74,7 +75,8 @@ def stats(request: HttpRequest) -> HttpResponse:
 @never_cache
 def stats_json(request: HttpRequest, token: Optional[str] = None) -> JsonResponse:
     if not is_authorized(request):
-        if token and token == API_TOKEN:
+        api_token = django_rq_settings.get_api_token()
+        if token and token == api_token:
             return JsonResponse(get_statistics())
         else:
             return JsonResponse(
