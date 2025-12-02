@@ -102,6 +102,7 @@ def filter_connection_params(queue_params: dict[str, Any]) -> dict[str, Any]:
         'SOCKET_TIMEOUT',
         'SSL',
         'CONNECTION_KWARGS',
+        'SSL_CERT_REQS',
     )
 
     # return {p:v for p,v in queue_params.items() if p in CONNECTION_PARAMS}
