@@ -11,6 +11,7 @@ from django_rq.queues import get_queue
 from django_rq.utils import get_cron_schedulers, get_jobs, get_statistics
 from django_rq.workers import get_worker
 from tests.fixtures import access_self
+from tests.redis_config import REDIS_CONFIG_1
 from tests.utils import flush_registry
 
 
@@ -51,7 +52,16 @@ class UtilsTest(TestCase):
             # Clean up
             test_scheduler.register_death()
 
-    @override_settings(RQ_QUEUES={'async': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379, 'ASYNC': False}})
+    @override_settings(
+        RQ_QUEUES={
+            'async': {
+                'DB': REDIS_CONFIG_1.db,
+                'HOST': REDIS_CONFIG_1.host,
+                'PORT': REDIS_CONFIG_1.port,
+                'ASYNC': False,
+            }
+        }
+    )
     def test_get_statistics(self):
         """get_statistics() returns the right number of workers"""
         worker = get_worker('async', name=uuid4().hex)

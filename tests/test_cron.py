@@ -43,7 +43,7 @@ class CronTest(TestCase):
 
     def test_connection_validation(self):
         """Test connection validation for same, compatible, and incompatible queues."""
-        # Start with test3 queue (localhost:6379, DB=1)
+        # Start with test3 queue (secondary Redis DB configured for tests)
         scheduler = DjangoCronScheduler()
 
         # Same queue multiple times should work
@@ -55,13 +55,12 @@ class CronTest(TestCase):
         self.assertEqual(job2.queue_name, "test3")
 
         # Compatible queues (same Redis connection) should work
-        # Both 'test3' and 'async' use localhost:6379 with DB=1
+        # Both 'test3' and 'async' share the same Redis connection settings
         job3 = scheduler.register(say_hello, "async", interval=180)
         self.assertEqual(len(scheduler.get_jobs()), 3)
         self.assertEqual(job3.queue_name, "async")
 
         # Queues having different Redis connections should fail
-        # 'default' uses DB=0 while test3/async use DB=1
         with self.assertRaises(ValueError):
             scheduler.register(say_hello, "default", interval=240)
 
@@ -79,7 +78,7 @@ class CronTest(TestCase):
         with self.assertRaises(ValueError):
             _ = scheduler.connection_index
 
-        # Register a job with 'test3' queue (localhost:6379, DB=1)
+        # Register a job with 'test3' queue (secondary Redis DB configured for tests)
         scheduler.register(say_hello, "test3", interval=60)
 
         # Now connection_index should return a valid index

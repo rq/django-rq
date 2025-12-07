@@ -77,13 +77,29 @@ RQ_QUEUES = {
 RQ_EXCEPTION_HANDLERS = ['path.to.my.handler']  # If you need custom exception handlers
 ```
 
-- Include `django_rq.urls` in your `urls.py`:
+## Admin Integration
+
+_Changed in Version 3.0_
+Django-RQ automatically integrates with Django's admin interface. Once installed, navigate to `/admin/django_rq/dashboard/` to access:
+- Queue statistics and monitoring dashboard
+- Job registry browsers (scheduled, started, finished, failed, deferred)
+- Worker management
+- Prometheus metrics endpoint (if `prometheus_client` is installed)
+
+The views are automatically registered in Django admin and a link to the dashboard is added to the admin interface's sidebar. If you want to disable this link, add `RQ_SHOW_ADMIN_LINK = False` in `settings.py`.
+
+### Standalone URLs (Alternative)
+
+For advanced use cases, you can also include Django-RQ views at a custom URL prefix:
 
 ```python
+# urls.py
 urlpatterns += [
     path('django-rq/', include('django_rq.urls'))
 ]
 ```
+
+This makes views accessible at `/django-rq/` instead of within the admin interface at `/admin/django_rq/dashboard/`.
 
 ## Usage
 
@@ -307,11 +323,9 @@ python manage.py rqresume
 
 ### Queue Statistics
 
-`django_rq` also provides a dashboard to monitor the status of your queues at `/django-rq/` (or whatever URL you set in your `urls.py` during installation).
+_Changed in Version 3.0_
 
-You can also add a link to this dashboard in `/admin` by adding `RQ_SHOW_ADMIN_LINK = True` in `settings.py`. Be careful though, this will override the default admin template so it may interfere with other apps that modify the default admin template.
-
-These statistics are also available in JSON format via `/django-rq/stats.json`, which is accessible to staff members. If you need to access this view via other HTTP clients (for monitoring purposes), you can define `RQ_API_TOKEN`. Then, include the token in the Authorization header as a Bearer token: `Authorization: Bearer <token>` and access it via `/django-rq/stats.json`.
+Various queue statistics are also available in JSON format via `/django-rq/stats.json`, which is accessible via a bearer token authentication scheme (defined in `settings.py` as `RQ_API_TOKEN`). Then, include the token in the Authorization header as a Bearer token: `Authorization: Bearer <token>` and access it via `/django-rq/stats.json`.
 
 ![Django RQ JSON dashboard](demo-django-rq-json-dashboard.png)
 

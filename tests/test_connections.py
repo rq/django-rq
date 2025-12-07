@@ -14,6 +14,7 @@ from django_rq.connection_utils import (
 from django_rq.queues import get_queue
 from tests.base import DjangoRQTestCase
 from tests.fixtures import access_self
+from tests.redis_config import REDIS_CONFIG_1, REDIS_CONFIG_2, REDIS_CONFIG_3
 
 QUEUES = settings.RQ_QUEUES
 
@@ -92,14 +93,14 @@ class ConnectionTest(DjangoRQTestCase):
 
     def test_get_unique_connection_configs(self):
         connection_params_1 = {
-            'HOST': 'localhost',
-            'PORT': 6379,
-            'DB': 0,
+            'HOST': REDIS_CONFIG_1.host,
+            'PORT': REDIS_CONFIG_1.port,
+            'DB': REDIS_CONFIG_1.db,
         }
         connection_params_2 = {
-            'HOST': 'localhost',
-            'PORT': 6379,
-            'DB': 1,
+            'HOST': REDIS_CONFIG_2.host,
+            'PORT': REDIS_CONFIG_2.port,
+            'DB': REDIS_CONFIG_2.db,
         }
         config = {'default': connection_params_1, 'test': connection_params_2}
         unique_configs = get_unique_connection_configs(config)
@@ -115,14 +116,14 @@ class ConnectionTest(DjangoRQTestCase):
 
     def test_get_unique_connection_configs_with_different_timeout(self):
         connection_params_1 = {
-            'HOST': 'localhost',
-            'PORT': 6379,
-            'DB': 0,
+            'HOST': REDIS_CONFIG_1.host,
+            'PORT': REDIS_CONFIG_1.port,
+            'DB': REDIS_CONFIG_1.db,
         }
         connection_params_2 = {
-            'HOST': 'localhost',
-            'PORT': 6379,
-            'DB': 1,
+            'HOST': REDIS_CONFIG_2.host,
+            'PORT': REDIS_CONFIG_2.port,
+            'DB': REDIS_CONFIG_2.db,
         }
         queue_params_a = dict(connection_params_1)
         queue_params_b = dict(connection_params_2)
@@ -147,19 +148,19 @@ class ConnectionTest(DjangoRQTestCase):
         import random
 
         connection_params_1 = {
-            'HOST': 'localhost',
-            'PORT': 6379,
-            'DB': 0,
+            'HOST': REDIS_CONFIG_1.host,
+            'PORT': REDIS_CONFIG_1.port,
+            'DB': REDIS_CONFIG_1.db,
         }
         connection_params_2 = {
-            'HOST': 'localhost',
-            'PORT': 6379,
-            'DB': 1,
+            'HOST': REDIS_CONFIG_2.host,
+            'PORT': REDIS_CONFIG_2.port,
+            'DB': REDIS_CONFIG_2.db,
         }
         connection_params_3 = {
-            'HOST': 'localhost',
-            'PORT': 6379,
-            'DB': 2,
+            'HOST': REDIS_CONFIG_3.host,
+            'PORT': REDIS_CONFIG_3.port,
+            'DB': REDIS_CONFIG_3.db,
         }
 
         # Test with duplicates: zebra and alpha share connection_params_1

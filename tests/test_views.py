@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from unittest.mock import PropertyMock, patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
@@ -19,6 +18,7 @@ from django_rq import get_queue
 from django_rq.workers import get_worker
 
 from .fixtures import access_self, failing_job
+from .redis_config import REDIS_CONFIG_1
 from .utils import get_queue_index
 
 
@@ -31,7 +31,7 @@ class ViewTest(TestCase):
         self.user.save()
         self.client = Client()
         self.client.login(username=self.user.username, password='pass')
-        get_queue('django_rq_test').connection.flushall()
+        get_queue('django_rq_test').connection.flushdb()
 
     def test_jobs(self):
         """Jobs in queue are displayed properly"""
@@ -55,7 +55,7 @@ class ViewTest(TestCase):
         queue.connection.hset(job.key, 'data', 'unpickleable data')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('DeserializationError', response.content.decode())
+        self.assertContains(response, 'DeserializationError')
 
     def test_job_details_with_results(self):
         """Job with results is displayed properly"""
@@ -81,7 +81,7 @@ class ViewTest(TestCase):
         url = reverse('rq_job_detail', args=[queue_index, second_job.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(second_job._dependency_id, response.content.decode())
+        self.assertContains(response, second_job._dependency_id)
 
     def test_requeue_job(self):
         """
@@ -328,7 +328,15 @@ class ViewTest(TestCase):
         response = self.client.get(reverse('rq_worker_details', args=[queue_index, worker.key]))
         self.assertEqual(response.context['worker'], worker)
 
-    @override_settings(RQ_QUEUES={'default': {'DB': 0, 'HOST': 'localhost', 'PORT': 6379}})
+    @override_settings(
+        RQ_QUEUES={
+            'default': {
+                'DB': REDIS_CONFIG_1.db,
+                'HOST': REDIS_CONFIG_1.host,
+                'PORT': REDIS_CONFIG_1.port,
+            }
+        }
+    )
     def test_statistics_json_view(self):
         """
         Django-RQ's statistic as JSON only viewable by staff or with API_TOKEN
@@ -346,24 +354,22 @@ class ViewTest(TestCase):
         response = self.client.get(reverse('rq_home'))
         self.assertEqual(response.status_code, 302)
 
-        # Error, but with 200 code
         response = self.client.get(reverse('rq_home_json'))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("error", response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 401)
 
         # With token,
         token = '12345abcde'
-        with patch('django_rq.stats_views.API_TOKEN', new_callable=PropertyMock(return_value=token)):
+        with self.settings(RQ_API_TOKEN=token):
             response = self.client.get(reverse('rq_home_json', args=[token]))
             self.assertEqual(response.status_code, 200)
-            self.assertIn("name", response.content.decode('utf-8'))
-            self.assertNotIn('"error": true', response.content.decode('utf-8'))
+            data = response.json()
+            self.assertIn("queues", data)
+            self.assertGreaterEqual(len(data["queues"]), 1)
+            self.assertFalse(data.get("error"))
 
             # Wrong token
             response = self.client.get(reverse('rq_home_json', args=["wrong_token"]))
-            self.assertEqual(response.status_code, 200)
-            self.assertNotIn("name", response.content.decode('utf-8'))
-            self.assertIn('"error": true', response.content.decode('utf-8'))
+            self.assertEqual(response.status_code, 401)
 
     def test_action_stop_jobs(self):
         queue = get_queue('django_rq_test')

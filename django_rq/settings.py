@@ -4,7 +4,7 @@ from typing import Any, cast
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
-SHOW_ADMIN_LINK = getattr(settings, 'RQ_SHOW_ADMIN_LINK', False)
+SHOW_ADMIN_LINK = getattr(settings, 'RQ_SHOW_ADMIN_LINK', True)
 
 NAME = getattr(settings, 'RQ_NAME', 'default')
 BURST: bool = getattr(settings, 'RQ_BURST', False)
@@ -67,5 +67,7 @@ def __getattr__(name):
 # Get exception handlers
 EXCEPTION_HANDLERS: list[str] = getattr(settings, 'RQ_EXCEPTION_HANDLERS', [])
 
-# Token for querying statistics
-API_TOKEN: str = getattr(settings, 'RQ_API_TOKEN', '')
+
+def get_api_token() -> str:
+    """Return the API token from Django settings."""
+    return getattr(settings, 'RQ_API_TOKEN', '')
