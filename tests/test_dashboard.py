@@ -104,34 +104,43 @@ class TestSecretKey(unittest.TestCase):
                 self.assertEqual(secret_key, secret_key2)
 
 
-class TestMainArgParser(unittest.TestCase):
-    """Tests for the main argument parser."""
+class TestParseArgs(unittest.TestCase):
+    """Tests for the argument parser."""
 
-    def test_argparser_requires_config(self):
+    def test_config_is_required(self):
         """Test that --config is required."""
-        from django_rq.dashboard.cli import main
+        from django_rq.dashboard.cli import parse_args
 
-        with patch('sys.argv', ['rqdashboard']):
-            with self.assertRaises(SystemExit):
-                main()
+        with self.assertRaises(SystemExit):
+            parse_args([])
 
-    def test_argparser_accepts_all_options(self):
-        """Test that all options are accepted."""
+    def test_parse_args_with_all_options(self):
+        """Test that all options are correctly parsed."""
+        from django_rq.dashboard.cli import parse_args
 
-        from django_rq.dashboard.cli import main
+        args = parse_args(['--config', 'test.py', '--host', '0.0.0.0', '--port', '9000'])
 
-        # We can't easily test the full main() without mocking everything,
-        # but we can at least verify the argparser accepts the options
-        with patch('sys.argv', ['rqdashboard', '--config', 'test.py', '--host', '0.0.0.0', '--port', '9000']):
-            with patch('django_rq.dashboard.cli.load_config') as mock_load:
-                with patch('django_rq.dashboard.cli.configure_django'):
-                    with patch('django_rq.dashboard.cli.call_command'):
-                        with patch('django_rq.dashboard.cli.collect_static_files'):
-                            with patch('django_rq.dashboard.cli.check_or_create_superuser'):
-                                with patch('django_rq.dashboard.cli.run_server') as mock_run:
-                                    mock_load.return_value = {'RQ_QUEUES': {}}
-                                    main()
-                                    mock_run.assert_called_once_with('0.0.0.0', 9000)
+        self.assertEqual(args.config, 'test.py')
+        self.assertEqual(args.host, '0.0.0.0')
+        self.assertEqual(args.port, 9000)
+
+    def test_parse_args_with_short_options(self):
+        """Test that short options (-c, -p) work correctly."""
+        from django_rq.dashboard.cli import parse_args
+
+        args = parse_args(['-c', 'config.py', '-p', '8080'])
+
+        self.assertEqual(args.config, 'config.py')
+        self.assertEqual(args.port, 8080)
+
+    def test_parse_args_defaults(self):
+        """Test default values for host and port."""
+        from django_rq.dashboard.cli import parse_args
+
+        args = parse_args(['--config', 'test.py'])
+
+        self.assertEqual(args.host, '127.0.0.1')
+        self.assertEqual(args.port, 8000)
 
 
 class TestURLConfiguration(unittest.TestCase):

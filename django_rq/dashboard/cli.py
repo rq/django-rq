@@ -204,8 +204,8 @@ def run_server(host: str, port: int) -> None:
         call_command('runserver', f'{host}:{port}', '--insecure', use_reloader=False)
 
 
-def main() -> None:
-    """Main entry point for the rqdashboard CLI."""
+def parse_args(args: list[str] | None = None) -> argparse.Namespace:
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description='Run a standalone RQ Dashboard',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -250,8 +250,12 @@ Example config file (my_config.py):
         default=8000,
         help='Port to bind the server to (default: 8000)',
     )
+    return parser.parse_args(args)
 
-    args = parser.parse_args()
+
+def main() -> None:
+    """Main entry point for the rqdashboard CLI."""
+    args = parse_args()
 
     # Load config
     config = load_config(args.config)
