@@ -21,10 +21,6 @@ def _find_empty_databases(host: str, port: int, *, required: int) -> Sequence[in
     Raises RuntimeError if we cannot connect or if we cannot find the requested
     number of empty databases. Sentinel ports are intentionally not probed.
     """
-    # try:
-    #     redis = Redis(host=host, port=port, db=0)
-    # except Exception as exc:  # pragma: no cover - defensive guard
-    #     raise RuntimeError(f"Refusing to run tests: cannot connect to Redis at {host}:{port}") from exc
 
     empty_databases: list[int] = []
 
