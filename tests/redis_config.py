@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import os
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from redis import Redis
 from redis.exceptions import RedisError
