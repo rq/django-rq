@@ -1,6 +1,5 @@
 """Tests for the standalone RQ Dashboard CLI."""
 
-import argparse
 import os
 import tempfile
 import unittest
@@ -93,7 +92,7 @@ class TestSecretKey(unittest.TestCase):
 
     def test_get_or_create_secret_key_creates_new(self):
         """Test that a new secret key is created if none exists."""
-        from django_rq.dashboard.cli import DASHBOARD_DIR, get_or_create_secret_key
+        from django_rq.dashboard.cli import get_or_create_secret_key
 
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch('django_rq.dashboard.cli.DASHBOARD_DIR', Path(tmpdir) / '.rqdashboard'):
@@ -126,7 +125,7 @@ class TestMainArgParser(unittest.TestCase):
         with patch('sys.argv', ['rqdashboard', '--config', 'test.py', '--host', '0.0.0.0', '--port', '9000']):
             with patch('django_rq.dashboard.cli.load_config') as mock_load:
                 with patch('django_rq.dashboard.cli.configure_django'):
-                    with patch('django_rq.dashboard.cli.run_migrations'):
+                    with patch('django_rq.dashboard.cli.call_command'):
                         with patch('django_rq.dashboard.cli.collect_static_files'):
                             with patch('django_rq.dashboard.cli.check_or_create_superuser'):
                                 with patch('django_rq.dashboard.cli.run_server') as mock_run:
