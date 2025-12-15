@@ -27,8 +27,8 @@
 {% block breadcrumbs %}
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
-        <a href="{% url 'rq_home' %}">Django RQ</a> &rsaquo;
-        <a href="{% url 'rq_jobs' queue_index %}">{{ queue.name }}</a>
+        <a href="{% url url_prefix|add:'home' %}">Django RQ</a> &rsaquo;
+        <a href="{% url url_prefix|add:'jobs' queue_index %}">{{ queue.name }}</a>
     </div>
 {% endblock %}
 
@@ -39,15 +39,15 @@
 <div id="content-main">
     <ul class="object-tools">
         {% if job_status == 'Failed' %}
-            <li><a href="{% url 'rq_requeue_all' queue_index %}" class="requeuelink">Requeue All</a></li>
-            <li><a href="{% url 'rq_delete_failed_jobs' queue_index %}" class="requeuelink">Delete All</a></li>
+            <li><a href="{% url url_prefix|add:'requeue_all' queue_index %}" class="requeuelink">Requeue All</a></li>
+            <li><a href="{% url url_prefix|add:'delete_failed_jobs' queue_index %}" class="requeuelink">Delete All</a></li>
         {% elif job_status == 'Queued' %}
-            <li><a href="{% url 'rq_clear' queue_index %}" class="deletelink">Empty Queue</a></li>
+            <li><a href="{% url url_prefix|add:'clear' queue_index %}" class="deletelink">Empty Queue</a></li>
         {% endif %}
     </ul>
     <div class="module" id="changelist">
         <div class="changelist-form-container">
-            <form id="changelist-form" action="{% url 'rq_confirm_action' queue_index %}" method="post">
+            <form id="changelist-form" action="{% url url_prefix|add:'confirm_action' queue_index %}" method="post">
                 {% csrf_token %}
                 <div class="actions">
                     <label>Actions:
@@ -115,7 +115,7 @@
                                         <input class="action-select" name="_selected_action" type="checkbox" value="{{ job.id }}">
                                     </td>
                                     <th>
-                                        <a href="{% url 'rq_job_detail' queue_index job.id %}">
+                                        <a href="{% url url_prefix|add:'job_detail' queue_index job.id %}">
                                             {{ job.id }}
                                         </a>
                                     </th>

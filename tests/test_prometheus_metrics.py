@@ -27,7 +27,10 @@ RQ_QUEUES = {
 
 
 @skipIf(prometheus_client is None, 'prometheus_client is required')
-@override_settings(RQ={'AUTOCOMMIT': True})
+@override_settings(
+    ROOT_URLCONF='tests.default_with_custom_mount_urls',
+    RQ={'AUTOCOMMIT': True}
+)
 class PrometheusTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user('foo', password='pass')
@@ -41,9 +44,10 @@ class PrometheusTest(TestCase):
         thread_queue.clear()
 
     def assertMetricsContain(self, lines):
-        response = self.client.get(reverse('rq_metrics'))
-        self.assertEqual(response.status_code, 200)
-        self.assertLessEqual(lines, set(response.content.decode('utf-8').splitlines()))
+        for prefix in ('admin:django_rq_', 'django_rq:'):
+            response = self.client.get(reverse(f'{prefix}metrics'))
+            self.assertEqual(response.status_code, 200)
+            self.assertLessEqual(lines, set(response.content.decode('utf-8').splitlines()))
 
     @patch('django_rq.settings.QUEUES', RQ_QUEUES)
     def test_metrics_default(self):
@@ -129,7 +133,11 @@ class PrometheusTest(TestCase):
 
 
 @skipIf(prometheus_client is not None, 'prometheus_client is installed')
+@override_settings(ROOT_URLCONF='tests.default_with_custom_mount_urls')
 class NoPrometheusTest(TestCase):
     def test_no_metrics_without_prometheus_client(self):
         with self.assertRaises(NoReverseMatch):
-            reverse('rq_metrics')
+            reverse('admin:django_rq_metrics')
+
+        with self.assertRaises(NoReverseMatch):
+            reverse('django_rq:metrics')

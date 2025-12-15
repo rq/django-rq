@@ -18,7 +18,7 @@
 {% block breadcrumbs %}
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
-        <a href="{% url 'rq_home' %}">Django RQ</a>
+        <a href="{% url url_prefix|add:'home' %}">Django RQ</a>
     </div>
 {% endblock %}
 
@@ -93,42 +93,42 @@
                             {% for queue in queues %}
                             <tr class="{% cycle 'row1' 'row2' %}">
                                 <th>
-                                    <a href="{% url 'rq_jobs' queue.index %}">
+                                    <a href="{% url url_prefix|add:'jobs' queue.index %}">
                                         {{ queue.name }}
                                     </a>
                                 </th>
                                 <th>
-                                    <a href="{% url 'rq_jobs' queue.index %}">
+                                    <a href="{% url url_prefix|add:'jobs' queue.index %}">
                                         {{ queue.jobs }}
                                     </a>
                                 </th>
                                 <td>{{ queue.oldest_job_timestamp }}</td>
                                 <th>
-                                    <a href="{% url 'rq_started_jobs' queue.index %}">
+                                    <a href="{% url url_prefix|add:'started_jobs' queue.index %}">
                                         {{ queue.started_jobs }}
                                     </a>
                                 </th>
                                 <th>
-                                    <a href="{% url 'rq_deferred_jobs' queue.index %}">
+                                    <a href="{% url url_prefix|add:'deferred_jobs' queue.index %}">
                                         {{ queue.deferred_jobs }}
                                     </a>
                                 </th>
                                 <th>
-                                    <a href="{% url 'rq_finished_jobs' queue.index %}">
+                                    <a href="{% url url_prefix|add:'finished_jobs' queue.index %}">
                                         {{ queue.finished_jobs }}
                                     </a>
                                 </th>
                                 <th>
-                                    <a href="{% url 'rq_failed_jobs' queue.index %}">
+                                    <a href="{% url url_prefix|add:'failed_jobs' queue.index %}">
                                         {{ queue.failed_jobs }}
                                     </a>
                                 </th>
                                 <th>
-                                    <a href="{% url 'rq_scheduled_jobs' queue.index %}">
+                                    <a href="{% url url_prefix|add:'scheduled_jobs' queue.index %}">
                                         {{ queue.scheduled_jobs }}
                                     </a>
                                 </th>
-                                <th><a href="{% url 'rq_workers' queue.index %}">
+                                <th><a href="{% url url_prefix|add:'workers' queue.index %}">
                                         {{ queue.workers }}
                                     </a>
                                 </th>
@@ -144,9 +144,9 @@
                     </table>
                 </div>
                 <p class="paginator">
-                    <a href="{% url 'rq_home_json' %}" class="showall">View as JSON</a>
+                    <a href="{% url url_prefix|add:'home_json' %}" class="showall">View as JSON</a>
                 {% if view_metrics %}
-                    <a href="{% url 'rq_metrics' %}" class="showall">View Metrics</a>
+                    <a href="{% url url_prefix|add:'metrics' %}" class="showall">View Metrics</a>
                 {% endif %}
                 </p>
             </form>
@@ -171,7 +171,7 @@
                 <tbody>
                     {% for cron_scheduler in cron_schedulers %}
                     <tr class="{% cycle 'row1' 'row2' %}">
-                        <td><a href="{% url 'rq_cron_scheduler_detail' cron_scheduler.connection_index cron_scheduler.name %}">{{ cron_scheduler.name }}</a></td>
+                        <td><a href="{% url url_prefix|add:'cron_scheduler_detail' cron_scheduler.connection_index cron_scheduler.name %}">{{ cron_scheduler.name }}</a></td>
                         <td>{{ cron_scheduler.connection.connection_pool.connection_kwargs.host }}</td>
                         <td>{{ cron_scheduler.connection.connection_pool.connection_kwargs.port }}</td>
                         <td>{{ cron_scheduler.connection.connection_pool.connection_kwargs.db }}</td>
@@ -196,8 +196,8 @@
         </thead>
         {% for connection, scheduler in schedulers.items %}
         <tr class="{% cycle 'row1' 'row2' %}">
-            <td><a href="{% url 'rq_scheduler_jobs' scheduler.index %}">{{ connection }}</a></td>
-            <td><a href="{% url 'rq_scheduler_jobs' scheduler.index %}">{{ scheduler.count }}</a></td>
+            <td><a href="{% url url_prefix|add:'scheduler_jobs' scheduler.index %}">{{ connection }}</a></td>
+            <td><a href="{% url url_prefix|add:'scheduler_jobs' scheduler.index %}">{{ scheduler.count }}</a></td>
         </tr>
         {% endfor %}
     </table>

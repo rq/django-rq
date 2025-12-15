@@ -27,8 +27,8 @@
 {% block breadcrumbs %}
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
-        <a href="{% url 'rq_home' %}">Django RQ</a> &rsaquo;
-        <a href = "{% url 'rq_jobs' queue_index %}">{{ queue.name }} Workers</a>
+        <a href="{% url url_prefix|add:'home' %}">Django RQ</a> &rsaquo;
+        <a href = "{% url url_prefix|add:'jobs' queue_index %}">{{ queue.name }} Workers</a>
     </div>
 {% endblock %}
 
@@ -38,7 +38,7 @@
 
 <div id="content-main">
     <div class="module" id="changelist">
-        <form id="changelist-form" action="{% url 'rq_confirm_action' queue_index %}" method="post">
+        <form id="changelist-form" action="{% url url_prefix|add:'confirm_action' queue_index %}" method="post">
             {% csrf_token %}
             <div class="results">
                 <table id="result_list">
@@ -54,7 +54,7 @@
                         {% for worker in workers %}
                             <tr class = "{% cycle 'row1' 'row2' %}">
                                 <th>
-                                    <a href = '{% url 'rq_worker_details' queue_index worker.key %}'>
+                                    <a href = '{% url url_prefix|add:'worker_details' queue_index worker.key %}'>
                                         {{ worker.name }}
                                     </a>
                                 </th>
