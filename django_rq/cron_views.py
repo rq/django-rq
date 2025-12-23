@@ -1,4 +1,3 @@
-from django.contrib import admin
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404
 from django.shortcuts import render
@@ -6,6 +5,7 @@ from django.views.decorators.cache import never_cache
 
 from .connection_utils import get_connection_by_index
 from .cron import DjangoCronScheduler
+from .views import each_context
 
 
 @never_cache
@@ -37,7 +37,7 @@ def cron_scheduler_detail(request, connection_index: int, scheduler_name: str):
             raise Http404(f"Scheduler '{scheduler_name}' not found")
 
         context_data = {
-            **admin.site.each_context(request),
+            **each_context(request),
             "scheduler": scheduler,
         }
 

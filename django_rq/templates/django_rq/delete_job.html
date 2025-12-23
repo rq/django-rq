@@ -17,9 +17,9 @@
 {% block breadcrumbs %}
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
-        <a href="{% url 'rq_home' %}">Django RQ</a> &rsaquo;
-        <a href = "{% url 'rq_jobs' queue_index %}">{{ queue.name }}</a> &rsaquo;
-        <a href = "{% url 'rq_job_detail' queue_index job.id %}">{{ job.id }}</a> &rsaquo;
+        <a href="{% url url_prefix|add:'home' %}">Django RQ</a> &rsaquo;
+        <a href = "{% url url_prefix|add:'jobs' queue_index %}">{{ queue.name }}</a> &rsaquo;
+        <a href = "{% url url_prefix|add:'job_detail' queue_index job.id %}">{{ job.id }}</a> &rsaquo;
         Delete
     </div>
 {% endblock %}
@@ -30,7 +30,7 @@
 
 <div id="content-main">
     <p>
-        Are you sure you want to delete <a href = "{% url 'rq_job_detail' queue_index job.id %}">{{ job.id }}</a> from <a href = "{% url 'rq_jobs' queue_index %}">{{ queue.name }}</a>?
+        Are you sure you want to delete <a href = "{% url url_prefix|add:'job_detail' queue_index job.id %}">{{ job.id }}</a> from <a href = "{% url url_prefix|add:'jobs' queue_index %}">{{ queue.name }}</a>?
         This action can not be undone.
     </p>
     <form action="" method="post">

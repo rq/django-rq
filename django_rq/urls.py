@@ -6,7 +6,7 @@ from . import cron_views, stats_views, views
 from .contrib.prometheus import RQCollector
 
 
-def get_api_urlpatterns() -> list[URLPattern]:
+def get_api_urlpatterns(name_prefix: str = '') -> list[URLPattern]:
     """
     Get URL patterns for views that have their own authentication (API tokens).
 
@@ -19,7 +19,7 @@ def get_api_urlpatterns() -> list[URLPattern]:
     # Conditional metrics view (only if prometheus_client is installed)
     metrics_view = (
         [
-            re_path(r'^metrics/?$', stats_views.prometheus_metrics, name='rq_metrics'),
+            re_path(r'^metrics/?$', stats_views.prometheus_metrics, name=f'{name_prefix}metrics'),
         ]
         if RQCollector is not None
         else []
@@ -27,14 +27,14 @@ def get_api_urlpatterns() -> list[URLPattern]:
 
     return [
         # Stats JSON (supports API token authentication)
-        re_path(r'^stats.json/?$', stats_views.stats_json, name='rq_home_json'),
-        re_path(r'^stats.json/(?P<token>[\w]+)?/?$', stats_views.stats_json, name='rq_home_json'),
+        re_path(r'^stats.json/?$', stats_views.stats_json, name=f'{name_prefix}home_json'),
+        re_path(r'^stats.json/(?P<token>[\w]+)?/?$', stats_views.stats_json, name=f'{name_prefix}home_json'),
         # Prometheus metrics (supports API token authentication)
         *metrics_view,
     ]
 
 
-def get_admin_urlpatterns(view_wrapper: Optional[Callable] = None) -> list[URLPattern]:
+def get_admin_urlpatterns(name_prefix: str = '', view_wrapper: Optional[Callable] = None) -> list[URLPattern]:
     """
     Get URL patterns for views that should be wrapped with admin authentication.
 
@@ -51,39 +51,40 @@ def get_admin_urlpatterns(view_wrapper: Optional[Callable] = None) -> list[URLPa
 
     return [
         # Dashboard
-        path('', maybe_wrap(stats_views.stats), name='rq_home'),
+        path('', maybe_wrap(stats_views.stats), name=f'{name_prefix}home'),
         # Queue views
-        path('queues/<int:queue_index>/', maybe_wrap(views.jobs), name='rq_jobs'),
-        path('queues/<int:queue_index>/finished/', maybe_wrap(views.finished_jobs), name='rq_finished_jobs'),
-        path('queues/<int:queue_index>/failed/', maybe_wrap(views.failed_jobs), name='rq_failed_jobs'),
-        path('queues/<int:queue_index>/failed/clear/', maybe_wrap(views.delete_failed_jobs), name='rq_delete_failed_jobs'),
-        path('queues/<int:queue_index>/scheduled/', maybe_wrap(views.scheduled_jobs), name='rq_scheduled_jobs'),
-        path('queues/<int:queue_index>/started/', maybe_wrap(views.started_jobs), name='rq_started_jobs'),
-        path('queues/<int:queue_index>/deferred/', maybe_wrap(views.deferred_jobs), name='rq_deferred_jobs'),
-        path('queues/<int:queue_index>/empty/', maybe_wrap(views.clear_queue), name='rq_clear'),
-        path('queues/<int:queue_index>/requeue-all/', maybe_wrap(views.requeue_all), name='rq_requeue_all'),
+        path('queues/<int:queue_index>/', maybe_wrap(views.jobs), name=f'{name_prefix}jobs'),
+        path('queues/<int:queue_index>/finished/', maybe_wrap(views.finished_jobs), name=f'{name_prefix}finished_jobs'),
+        path('queues/<int:queue_index>/failed/', maybe_wrap(views.failed_jobs), name=f'{name_prefix}failed_jobs'),
+        path('queues/<int:queue_index>/failed/clear/', maybe_wrap(views.delete_failed_jobs), name=f'{name_prefix}delete_failed_jobs'),
+        path('queues/<int:queue_index>/scheduled/', maybe_wrap(views.scheduled_jobs), name=f'{name_prefix}scheduled_jobs'),
+        path('queues/<int:queue_index>/started/', maybe_wrap(views.started_jobs), name=f'{name_prefix}started_jobs'),
+        path('queues/<int:queue_index>/deferred/', maybe_wrap(views.deferred_jobs), name=f'{name_prefix}deferred_jobs'),
+        path('queues/<int:queue_index>/empty/', maybe_wrap(views.clear_queue), name=f'{name_prefix}clear'),
+        path('queues/<int:queue_index>/requeue-all/', maybe_wrap(views.requeue_all), name=f'{name_prefix}requeue_all'),
         # Job detail and actions
-        path('queues/<int:queue_index>/<str:job_id>/', maybe_wrap(views.job_detail), name='rq_job_detail'),
-        path('queues/<int:queue_index>/<str:job_id>/delete/', maybe_wrap(views.delete_job), name='rq_delete_job'),
-        path('queues/<int:queue_index>/<str:job_id>/requeue/', maybe_wrap(views.requeue_job_view), name='rq_requeue_job'),
-        path('queues/<int:queue_index>/<str:job_id>/enqueue/', maybe_wrap(views.enqueue_job), name='rq_enqueue_job'),
-        path('queues/<int:queue_index>/<str:job_id>/stop/', maybe_wrap(views.stop_job), name='rq_stop_job'),
+        path('queues/<int:queue_index>/<str:job_id>/', maybe_wrap(views.job_detail), name=f'{name_prefix}job_detail'),
+        path('queues/<int:queue_index>/<str:job_id>/delete/', maybe_wrap(views.delete_job), name=f'{name_prefix}delete_job'),
+        path('queues/<int:queue_index>/<str:job_id>/requeue/', maybe_wrap(views.requeue_job_view), name=f'{name_prefix}requeue_job'),
+        path('queues/<int:queue_index>/<str:job_id>/enqueue/', maybe_wrap(views.enqueue_job), name=f'{name_prefix}enqueue_job'),
+        path('queues/<int:queue_index>/<str:job_id>/stop/', maybe_wrap(views.stop_job), name=f'{name_prefix}stop_job'),
         # Bulk actions
-        path('queues/confirm-action/<int:queue_index>/', maybe_wrap(views.confirm_action), name='rq_confirm_action'),
-        path('queues/actions/<int:queue_index>/', maybe_wrap(views.actions), name='rq_actions'),
+        path('queues/confirm-action/<int:queue_index>/', maybe_wrap(views.confirm_action), name=f'{name_prefix}confirm_action'),
+        path('queues/actions/<int:queue_index>/', maybe_wrap(views.actions), name=f'{name_prefix}actions'),
         # Workers
-        path('workers/<int:queue_index>/', maybe_wrap(views.workers), name='rq_workers'),
-        path('workers/<int:queue_index>/<str:key>/', maybe_wrap(views.worker_details), name='rq_worker_details'),
+        path('workers/<int:queue_index>/', maybe_wrap(views.workers), name=f'{name_prefix}workers'),
+        path('workers/<int:queue_index>/<str:key>/', maybe_wrap(views.worker_details), name=f'{name_prefix}worker_details'),
         # Schedulers
-        path('schedulers/<int:scheduler_index>/', maybe_wrap(views.scheduler_jobs), name='rq_scheduler_jobs'),
+        path('schedulers/<int:scheduler_index>/', maybe_wrap(views.scheduler_jobs), name=f'{name_prefix}scheduler_jobs'),
         path(
             'cron-schedulers/<int:connection_index>/<str:scheduler_name>/',
             maybe_wrap(cron_views.cron_scheduler_detail),
-            name='rq_cron_scheduler_detail',
+            name=f'{name_prefix}cron_scheduler_detail',
         ),
     ]
 
 
 # Standalone URL patterns (for use with include('django_rq.urls'))
 # Combines both API and admin patterns without wrapping
+app_name = "django_rq"
 urlpatterns = get_api_urlpatterns() + get_admin_urlpatterns()

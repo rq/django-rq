@@ -49,21 +49,21 @@ class AuthenticatedAdminURLTest(TestCase):
 
     def test_stats_json_url(self):
         """Verify stats JSON endpoint accessible via admin URLs"""
-        response = self.client.get(reverse('rq_home_json'))
+        response = self.client.get(reverse('admin:django_rq_home_json'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/json')
 
     def test_queue_jobs_url(self):
         """Verify queue jobs view accessible via admin URLs"""
         queue_index = get_queue_index('default')
-        response = self.client.get(reverse('rq_jobs', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_jobs', args=[queue_index]))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'django_rq/jobs.html')
 
     def test_workers_url(self):
         """Verify workers view accessible via admin URLs"""
         queue_index = get_queue_index('default')
-        response = self.client.get(reverse('rq_workers', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_workers', args=[queue_index]))
         self.assertEqual(response.status_code, 200)
 
     def test_job_detail_url(self):
@@ -72,39 +72,38 @@ class AuthenticatedAdminURLTest(TestCase):
         job = queue.enqueue(say_hello)
         queue_index = get_queue_index('default')
 
-        response = self.client.get(reverse('rq_job_detail', args=[queue_index, job.id]))
+        response = self.client.get(reverse('admin:django_rq_job_detail', args=[queue_index, job.id]))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'django_rq/job_detail.html')
 
     def test_failed_jobs_url(self):
         """Verify failed jobs registry accessible via admin URLs"""
         queue_index = get_queue_index('default')
-        response = self.client.get(reverse('rq_failed_jobs', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_failed_jobs', args=[queue_index]))
         self.assertEqual(response.status_code, 200)
 
     def test_finished_jobs_url(self):
         """Verify finished jobs registry accessible via admin URLs"""
         queue_index = get_queue_index('default')
-        response = self.client.get(reverse('rq_finished_jobs', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_finished_jobs', args=[queue_index]))
         self.assertEqual(response.status_code, 200)
 
     def test_scheduled_jobs_url(self):
         """Verify scheduled jobs registry accessible via admin URLs"""
         queue_index = get_queue_index('default')
-        response = self.client.get(reverse('rq_scheduled_jobs', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_scheduled_jobs', args=[queue_index]))
         self.assertEqual(response.status_code, 200)
 
+    @override_settings(ROOT_URLCONF='tests.default_with_custom_mount_urls')
     def test_url_names_still_work(self):
         """Verify reverse() with URL names still resolves correctly"""
-        # Test that URL names can be resolved
-        # Note: When accessed via admin, URLs may need admin namespace
-        try:
-            url = reverse('rq_home')
-            self.assertTrue(url.startswith('/'))
-        except Exception:
-            # If standard reverse fails, try with admin namespace
-            url = reverse('admin:rq_home')
-            self.assertTrue(url.startswith('/admin/'))
+        # Test that the admin integration names can be resolved
+        url = reverse('admin:django_rq_home')
+        self.assertTrue(url.startswith('/admin'))
+
+        # Test that a custom mount can be resolved
+        url = reverse('django_rq:home')
+        self.assertEqual(url, '/django-rq')
 
 
 @override_settings(
@@ -148,16 +147,16 @@ class UnauthenticatedAdminURLTest(TestCase):
         """Verify API token authentication works through admin URLs"""
         token = '12345abcde'
         # Test 1: Valid token should succeed
-        response = self.client.get(reverse('rq_home_json'), HTTP_AUTHORIZATION=f'Bearer {token}')
+        response = self.client.get(reverse('admin:django_rq_home_json'), HTTP_AUTHORIZATION=f'Bearer {token}')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/json')
         data = response.json()
         self.assertIn('queues', data)
 
         # Test 2: Missing token should fail
-        response = self.client.get(reverse('rq_home_json'))
+        response = self.client.get(reverse('admin:django_rq_home_json'))
         self.assertEqual(response.status_code, 401)
 
         # Test 3: Invalid token should fail
-        response = self.client.get(reverse('rq_home_json'), HTTP_AUTHORIZATION='Bearer wrong_token')
+        response = self.client.get(reverse('admin:django_rq_home_json'), HTTP_AUTHORIZATION='Bearer wrong_token')
         self.assertEqual(response.status_code, 401)
