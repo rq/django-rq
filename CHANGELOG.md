@@ -1,3 +1,9 @@
+### Version 3.2.2 (2025-12-24)
+* `get_statistics()` should not mutate `connection_kwargs`. Thanks @selwin!
+
+### Version 3.2.1 (2025-11-24)
+* Changed `CronJob` argument from `timeout` to `job_timeout` to match RQ's implementation. Thanks @selwin!
+
 ### Version 3.2 (2025-11-22)
 * Added support for RQ's new `CronScheduler`. Thanks @selwin!
 * You can now run tests using pytest. Thanks @selwin!
