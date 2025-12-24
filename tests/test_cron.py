@@ -39,7 +39,7 @@ class CronTest(TestCase):
         # Verify cron expression is set correctly
         self.assertEqual(cron_job.cron, "* * * * *")
         self.assertIsNone(cron_job.interval)
-        self.assertIsNotNone(cron_job.next_run_time)
+        self.assertIsNotNone(cron_job.next_enqueue_time)
 
     def test_connection_validation(self):
         """Test connection validation for same, compatible, and incompatible queues."""
@@ -189,6 +189,11 @@ class CronViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['scheduler'].name, 'test-scheduler')
         self.assertContains(response, 'test-scheduler')
+
+        # Verify cron jobs table is rendered with job info
+        self.assertContains(response, 'Registered Cron Jobs')
+        self.assertContains(response, 'tests.fixtures.say_hello')
+        self.assertContains(response, 'Every 60s')
 
         # Test 2: Non-existent scheduler returns 404
         url = reverse('rq_cron_scheduler_detail', args=[connection_index, 'nonexistent-scheduler'])
