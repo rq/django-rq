@@ -1,6 +1,7 @@
 import datetime
 
 from django import template
+from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.utils.html import escape
 
@@ -37,3 +38,17 @@ def items(dictionary):
     to avoid django from accessing the key `items` if any.
     """
     return dictionary.items()
+
+
+@register.simple_tag(takes_context=True)
+def rq_url(context, viewname, *args, **kwargs):
+    """
+    Reverse django-rq URLs with namespace detection.
+    """
+    request = context.get("request")
+    current_app = getattr(request, "current_app", None) if request else None
+    if current_app:
+        prefix = f"{current_app}:django_rq_"
+    else:
+        prefix = "django_rq:"
+    return reverse(f"{prefix}{viewname}", args=args, kwargs=kwargs)
