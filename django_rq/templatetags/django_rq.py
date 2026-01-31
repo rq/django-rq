@@ -1,7 +1,7 @@
 import datetime
 
 from django import template
-from django.urls import NoReverseMatch, reverse
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import escape
 
@@ -43,7 +43,13 @@ def items(dictionary):
 @register.simple_tag(takes_context=True)
 def rq_url(context, viewname, *args, **kwargs):
     """
-    Reverse django-rq URLs with namespace detection.
+    Reverse django-rq URLs for both admin integration and standalone URLs.
+
+    The django-rq views live under different namespaces depending on how they
+    are wired: admin integration uses the admin site's namespace (e.g.
+    "admin:django_rq_*"), while standalone URLs use the "django_rq:" namespace.
+    This tag detects the current admin namespace from request.current_app and
+    builds the correct namespaced view name.
     """
     request = context.get("request")
     current_app = getattr(request, "current_app", None) if request else None
