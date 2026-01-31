@@ -19,9 +19,9 @@
 {% block breadcrumbs %}
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
-        <a href="{% url url_prefix|add:'home' %}">Django RQ</a> &rsaquo;
-        <a href = "{% url url_prefix|add:'workers' queue_index %}">{{ queue.name }} Workers</a> &rsaquo;
-        <a href = "{% url url_prefix|add:'worker_details' queue_index worker.name %}">{{ worker.name }}</a>
+        <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
+        <a href = "{% rq_url 'workers' queue_index %}">{{ queue.name }} Workers</a> &rsaquo;
+        <a href = "{% rq_url 'worker_details' queue_index worker.name %}">{{ worker.name }}</a>
     </div>
 {% endblock %}
 
@@ -74,7 +74,7 @@
                 <label class="required">Current Job:</label>
                 <div class="data">
                     {{ job.func_name }}
-                    (<a href = "{% url url_prefix|add:'job_detail' queue_index job.id %}">{{ job.id }}</a>)
+                    (<a href = "{% rq_url 'job_detail' queue_index job.id %}">{{ job.id }}</a>)
                 </div>
             </div>
         </div>

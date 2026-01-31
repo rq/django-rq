@@ -21,9 +21,9 @@
 {% block breadcrumbs %}
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
-        <a href="{% url url_prefix|add:'home' %}">Django RQ</a> &rsaquo;
-        <a href = "{% url url_prefix|add:'jobs' queue_index %}">{{ queue.name }}</a> &rsaquo;
-        <a href = "{% url url_prefix|add:'job_detail' queue_index job.id %}">{{ job.id }}</a>
+        <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
+        <a href = "{% rq_url 'jobs' queue_index %}">{{ queue.name }}</a> &rsaquo;
+        <a href = "{% rq_url 'job_detail' queue_index job.id %}">{{ job.id }}</a>
     </div>
 {% endblock %}
 
@@ -190,7 +190,7 @@
                             {% if not forloop.first %}
                                 <br>
                             {% endif %}
-                            <a href = "{% url url_prefix|add:'job_detail' queue_index dependency.0 %}">
+                            <a href = "{% rq_url 'job_detail' queue_index dependency.0 %}">
                                 {% if dependency.1 %}
                                     {{ dependency.1.func_name }}
                                 {% else %}
@@ -232,19 +232,19 @@
     <div class="submit-row">
         <div class="deletelink-box"><a href="delete/" class="deletelink">Delete</a></div>
         {% if job.is_started %}
-            <form method = 'POST' action = "{% url url_prefix|add:'stop_job' queue_index job.id %}">
+            <form method = 'POST' action = "{% rq_url 'stop_job' queue_index job.id %}">
                 {% csrf_token %}
                 <input type="submit" value="Stop" class="deletelink" name="stop">
             </form>
         {% endif %}
         {% if job.is_failed %}
-            <form method = 'POST' action = "{% url url_prefix|add:'requeue_job' queue_index job.id %}">
+            <form method = 'POST' action = "{% rq_url 'requeue_job' queue_index job.id %}">
                 {% csrf_token %}
                 <input type="submit" value="Requeue" class="default" name="requeue">
             </form>
         {% endif %}
         {% if not job.is_queued and not job.is_failed %}
-            <form method = 'POST' action = "{% url url_prefix|add:'enqueue_job' queue_index job.id %}">
+            <form method = 'POST' action = "{% rq_url 'enqueue_job' queue_index job.id %}">
                 {% csrf_token %}
                 <input type="submit" value="Enqueue" class="default" name="Enqueue">
             </form>

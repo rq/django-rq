@@ -101,6 +101,17 @@ urlpatterns += [
 
 This makes views accessible at `/django-rq/` instead of within the admin interface at `/admin/django_rq/dashboard/`.
 
+### Template URL Resolution
+
+Templates in django-rq use a custom `{% rq_url %}` tag to resolve view names inside either the admin integration or standalone URLs. The tag detects the current admin namespace (when present) and falls back to the `django_rq:` namespace, avoiding hard-coded prefixes and keeping links working in both modes.
+
+If you copy or override django-rq templates, load the tag library and use `rq_url` instead of `url` for django-rq views:
+
+```django
+{% load django_rq %}
+<a href="{% rq_url 'home' %}">Django RQ</a>
+```
+
 ## Usage
 
 ### Putting jobs in the queue

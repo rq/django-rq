@@ -27,7 +27,7 @@
 {% block breadcrumbs %}
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
-        <a href="{% url url_prefix|add:'home' %}">Django RQ</a> &rsaquo;
+        <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
     </div>
 {% endblock %}
 
@@ -78,7 +78,7 @@
                                     <input class="action-select" name="_selected_action" type="checkbox" value="{{ job.id }}">
                                 </td>
                                 <td>
-                                    <a href = "{% url url_prefix|add:'job_detail' job.queue_index job.id %}">
+                                    <a href = "{% rq_url 'job_detail' job.queue_index job.id %}">
                                         {{ job.id }}
                                     </a>
                                 </td>
