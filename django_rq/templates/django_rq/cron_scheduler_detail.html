@@ -5,6 +5,7 @@
 {% block extrastyle %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'admin/css/forms.css' %}">
+    <link rel="stylesheet" href="{% static 'admin/css/changelists.css' %}">
 {% endblock %}
 
 {% block title %}Cron Scheduler: {{ scheduler.name }}{% endblock %}
@@ -93,6 +94,64 @@
         {% endif %}
 
     </fieldset>
+
+    <div class="module" id="changelist">
+        <h2>Cron Jobs</h2>
+        <div class="results">
+            {% if cron_jobs %}
+            <table id="result_list">
+                <thead>
+                    <tr>
+                        <th><div class="text"><span>Callable</span></div></th>
+                        <th><div class="text"><span>Queue</span></div></th>
+                        <th><div class="text"><span>Schedule</span></div></th>
+                        <th><div class="text"><span>Next Enqueue</span></div></th>
+                        <th><div class="text"><span>Latest Enqueue</span></div></th>
+                        <th><div class="text"><span>Args</span></div></th>
+                        <th><div class="text"><span>Kwargs</span></div></th>
+                        <th><div class="text"><span>Meta</span></div></th>
+                        <th><div class="text"><span>Options</span></div></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cron_job in cron_jobs %}
+                    <tr class="{% cycle 'row1' 'row2' %}">
+                        <td>{{ cron_job.func_name|default:"-" }}</td>
+                        <td>{{ cron_job.queue_name|default:"-" }}</td>
+                        <td>{{ cron_job.schedule }}</td>
+                        <td>
+                            {% if cron_job.next_enqueue_time %}
+                                {{ cron_job.next_enqueue_time|to_localtime|date:"Y-m-d, H:i:s" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if cron_job.latest_enqueue_time %}
+                                {{ cron_job.latest_enqueue_time|to_localtime|date:"Y-m-d, H:i:s" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ cron_job.args|default_if_none:"-" }}</td>
+                        <td>{{ cron_job.kwargs|default_if_none:"-" }}</td>
+                        <td>{{ cron_job.meta|default_if_none:"-" }}</td>
+                        <td>
+                            {% for option in cron_job.options %}
+                                {{ option }}{% if not forloop.last %}<br>{% endif %}
+                            {% empty %}
+                                -
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="paginator">No persisted cron jobs found</p>
+            {% endif %}
+        </div>
+    </div>
 
 </div>
 {% endblock %}
