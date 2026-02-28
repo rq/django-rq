@@ -39,6 +39,7 @@ def cron_scheduler_detail(request, connection_index: int, scheduler_name: str):
         context_data = {
             **each_context(request),
             "scheduler": scheduler,
+            "cron_jobs": scheduler.get_jobs_data(),
         }
 
         return render(request, 'django_rq/cron_scheduler_detail.html', context_data)
