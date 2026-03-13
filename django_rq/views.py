@@ -301,11 +301,7 @@ def deferred_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
         page_range = list(range(1, last_page + 1))
         offset = items_per_page * (page - 1)
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=sort_direction == 'descending')
-        for job_id in job_ids:
-            try:
-                jobs.append(Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer))
-            except NoSuchJobError:
-                pass
+        jobs = get_jobs(queue, job_ids, registry)
 
     else:
         page_range = []
