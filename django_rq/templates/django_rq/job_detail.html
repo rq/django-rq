@@ -190,13 +190,40 @@
                             {% if not forloop.first %}
                                 <br>
                             {% endif %}
+                            {% if dependency.1 %}
+                                {{ dependency.1.func_name }}
+                            {% else %}
+                                Deleted
+                            {% endif %}
                             <a href = "{% rq_url 'job_detail' queue_index dependency.0 %}">
-                                {% if dependency.1 %}
-                                    {{ dependency.1.func_name }}
-                                {% else %}
-                                    Deleted
-                                {% endif %}
                                 ({{ dependency.0 }})
+                            </a>
+                        {% endfor %}
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if dependents %}
+        <div class="form-row">
+            <div>
+                <div class = "flex-container">
+                    <label>Dependents:</label>
+                    <div class="readonly">
+
+                        {% for dependent in dependents %}
+                            {% if not forloop.first %}
+                                <br>
+                            {% endif %}
+                            {% if dependent.1 %}
+                                {{ dependent.1.func_name }}
+                            {% else %}
+                                Deleted
+                            {% endif %}
+                            <a href = "{% rq_url 'job_detail' queue_index dependent.0 %}">
+                                ({{ dependent.0 }})
                             </a>
                         {% endfor %}
 

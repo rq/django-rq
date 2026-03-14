@@ -17,7 +17,7 @@ from rq.registry import (
 from django_rq import get_queue
 from django_rq.workers import get_worker
 
-from .fixtures import access_self, failing_job
+from .fixtures import access_self, failing_job, say_hello
 from .redis_config import REDIS_CONFIG_1
 from .utils import get_queue_index
 
@@ -82,6 +82,30 @@ class ViewTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, second_job._dependency_id)
+
+    def test_job_details_with_dependents(self):
+        """Dependents are shown on job detail page, deleted dependents show as Deleted"""
+        queue = get_queue('default')
+        queue_index = get_queue_index('default')
+
+        job = queue.enqueue(say_hello)
+        second_job = queue.enqueue(say_hello, depends_on=job)
+        third_job = queue.enqueue(say_hello, depends_on=job)
+
+        url = reverse('admin:django_rq_job_detail', args=[queue_index, job.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, second_job.id)
+        self.assertContains(response, third_job.id)
+
+        # Delete third_job and verify it shows as Deleted
+        third_job_id = third_job.id
+        third_job.delete()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, second_job.id)
+        self.assertContains(response, third_job_id)
+        self.assertContains(response, 'Deleted')
 
     def test_requeue_job(self):
         """
