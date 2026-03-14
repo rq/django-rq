@@ -1,3 +1,10 @@
+### Version 4.0 (2026-02-28)
+* `django-rq` now automatically integrates with Django's admin backend without manual URL configuration. Thanks @selwin and @terencehonles
+!
+* Added new `COMMIT_MODE` setting to replace `AUTOCOMMIT`. More info in [docs](https://github.com/rq/django-rq?tab=readme-ov-file#commit-modes). Thanks @selwin!
+* Cron scheduler detail page now shows jobs configured in that particular scheduler. Thanks @selwin!
+* Removed legacy Sentry integration. Thanks @selwin!
+
 ### Version 3.2.2 (2025-12-24)
 * `get_statistics()` should not mutate `connection_kwargs`. Thanks @selwin!
 

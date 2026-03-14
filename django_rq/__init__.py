@@ -1,4 +1,4 @@
-__version__ = "3.2.2"
+__version__ = "4.0.0"
 
 from .connection_utils import get_connection
 from .decorators import job
