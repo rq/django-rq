@@ -363,6 +363,14 @@ def job_detail(request: HttpRequest, queue_index: int, job_id: str) -> HttpRespo
             dependency = None
         dependencies.append((dependency_id, dependency))
 
+    dependents = []
+    for dependent_id in job.dependent_ids:
+        try:
+            dependent = Job.fetch(dependent_id, connection=queue.connection, serializer=queue.serializer)
+        except NoSuchJobError:
+            dependent = None
+        dependents.append((dependent_id, dependent))
+
     context_data = {
         **each_context(request),
         'queue_index': queue_index,
@@ -371,6 +379,7 @@ def job_detail(request: HttpRequest, queue_index: int, job_id: str) -> HttpRespo
         'data_is_valid': data_is_valid,
         'exc_info': exc_info,
         'dependencies': dependencies,
+        'dependents': dependents,
     }
     return render(request, 'django_rq/job_detail.html', context_data)
 
