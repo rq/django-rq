@@ -77,7 +77,18 @@ jobs:
 
       - name: Check for missing migrations
         run: |
-          `which django-admin` makemigrations django_rq --check --settings=tests.settings --pythonpath=.
+          DJANGO_SETTINGS_MODULE=django_rq_check_settings python -c "
+          import django
+          from django.conf import settings
+          settings.configure(
+              INSTALLED_APPS=['django.contrib.contenttypes', 'django.contrib.auth', 'django_rq'],
+              DATABASES={'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'}},
+              RQ_QUEUES={'default': {'HOST': 'localhost', 'PORT': 6379, 'DB': 0}},
+          )
+          django.setup()
+          from django.core.management import call_command
+          call_command('makemigrations', 'django_rq', '--check')
+          "
 
   mypy:
     runs-on: ubuntu-latest
