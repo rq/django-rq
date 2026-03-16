@@ -58,6 +58,27 @@ jobs:
         run: |
           `which django-admin` test tests --settings=tests.settings --pythonpath=. -v2
 
+  migrations:
+    runs-on: ubuntu-latest
+    name: Check for missing migrations
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v4.2.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install django rq redis
+
+      - name: Check for missing migrations
+        run: |
+          `which django-admin` makemigrations django_rq --check --settings=tests.settings --pythonpath=.
+
   mypy:
     runs-on: ubuntu-latest
     name: Type check
