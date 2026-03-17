@@ -1,3 +1,7 @@
+### Version 4.0.1 (2026-03-17)
+* Job detail page now shows a job's dependent jobs. Thanks @selwin!
+* Added missing migration that causes Django's makemigrations to complain. Thanks @bjorndbuilder!
+
 ### Version 4.0 (2026-03-14)
 * `django-rq` now automatically integrates with Django's admin backend without manual URL configuration. Thanks @selwin and @terencehonles
 !
