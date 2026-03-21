@@ -8,6 +8,7 @@ from rq.worker_pool import WorkerPool
 
 from ...jobs import get_job_class
 from ...queues import get_queues
+from ...utils import reset_db_connections
 from ...workers import get_worker_class
 
 
@@ -83,4 +84,6 @@ class Command(BaseCommand):
             worker_class=worker_class,
             job_class=job_class,
         )
+        # Close any opened DB connection before any fork.
+        reset_db_connections()
         pool.start(burst=options.get('burst', False), logging_level=logging_level)
