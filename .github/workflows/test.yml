@@ -58,6 +58,38 @@ jobs:
         run: |
           `which django-admin` test tests --settings=tests.settings --pythonpath=. -v2
 
+  migrations:
+    runs-on: ubuntu-latest
+    name: Check for missing migrations
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v4.2.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install django rq redis
+
+      - name: Check for missing migrations
+        run: |
+          DJANGO_SETTINGS_MODULE=django_rq_check_settings python -c "
+          import django
+          from django.conf import settings
+          settings.configure(
+              INSTALLED_APPS=['django.contrib.contenttypes', 'django.contrib.auth', 'django_rq'],
+              DATABASES={'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'}},
+              RQ_QUEUES={'default': {'HOST': 'localhost', 'PORT': 6379, 'DB': 0}},
+          )
+          django.setup()
+          from django.core.management import call_command
+          call_command('makemigrations', 'django_rq', '--check')
+          "
+
   mypy:
     runs-on: ubuntu-latest
     name: Type check
