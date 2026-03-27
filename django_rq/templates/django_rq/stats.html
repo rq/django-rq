@@ -1,16 +1,6 @@
 {% extends "admin/base_site.html" %}
 {% load static django_rq %}
 
-{% block extrastyle %}
-    {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
-    <style>
-        #changelist table thead th:first-child {
-            width: inherit
-        }
-    </style>
-{% endblock %}
-
 {% block title %}Queues{% endblock %}
 
 {% block content_title %}<h1>Queues</h1>{% endblock %}
@@ -22,116 +12,186 @@
     </div>
 {% endblock %}
 
+{% block extrastyle %}
+    {{ block.super }}
+    {% if not unfold_installed %}
+    <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+    <style>
+        #changelist table thead th:first-child { width: inherit }
+    </style>
+    {% endif %}
+{% endblock %}
+
 {% block content %}
+
+{% if unfold_installed %}
+
+<h1 class="font-semibold mb-4 text-xl text-font-important-light dark:text-font-important-dark">Queues</h1>
+
+<div class="overflow-x-auto rounded-default border border-base-200 dark:border-base-800 mb-6">
+    <table class="w-full">
+        <thead class="bg-base-100 dark:bg-base-800">
+            <tr>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Name</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Queued Jobs</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Oldest Queued Job</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Active Jobs</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Deferred Jobs</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Finished Jobs</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Failed Jobs</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Scheduled Jobs</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Workers</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Host</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Port</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">DB</th>
+                {% if queue.scheduler_pid is not False %}
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Scheduler PID</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for queue in queues %}
+            <tr class="border-t border-base-200 dark:border-base-800 hover:bg-base-50 dark:hover:bg-base-800/50">
+                <td class="p-3 px-4 text-sm font-medium">
+                    <a href="{% rq_url 'jobs' queue.index %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ queue.name }}</a>
+                </td>
+                <td class="p-3 px-4 text-sm">
+                    <a href="{% rq_url 'jobs' queue.index %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ queue.jobs }}</a>
+                </td>
+                <td class="p-3 px-4 text-sm">{{ queue.oldest_job_timestamp }}</td>
+                <td class="p-3 px-4 text-sm">
+                    <a href="{% rq_url 'started_jobs' queue.index %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ queue.started_jobs }}</a>
+                </td>
+                <td class="p-3 px-4 text-sm">
+                    <a href="{% rq_url 'deferred_jobs' queue.index %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ queue.deferred_jobs }}</a>
+                </td>
+                <td class="p-3 px-4 text-sm">
+                    <a href="{% rq_url 'finished_jobs' queue.index %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ queue.finished_jobs }}</a>
+                </td>
+                <td class="p-3 px-4 text-sm">
+                    <a href="{% rq_url 'failed_jobs' queue.index %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ queue.failed_jobs }}</a>
+                </td>
+                <td class="p-3 px-4 text-sm">
+                    <a href="{% rq_url 'scheduled_jobs' queue.index %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ queue.scheduled_jobs }}</a>
+                </td>
+                <td class="p-3 px-4 text-sm">
+                    <a href="{% rq_url 'workers' queue.index %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ queue.workers }}</a>
+                </td>
+                <td class="p-3 px-4 text-sm">{{ queue.connection_kwargs.host }}</td>
+                <td class="p-3 px-4 text-sm">{{ queue.connection_kwargs.port }}</td>
+                <td class="p-3 px-4 text-sm">{{ queue.connection_kwargs.db }}</td>
+                {% if queue.scheduler_pid is not False %}
+                <td class="p-3 px-4 text-sm">{{ queue.scheduler_pid|default_if_none:"Inactive" }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="flex flex-wrap gap-2 mb-8">
+    <a href="{% rq_url 'home_json' %}" class="border border-base-200 dark:border-base-800 font-medium hover:bg-base-50 dark:hover:bg-base-800 px-3 py-2 rounded-default text-sm">View as JSON</a>
+    {% if view_metrics %}
+    <a href="{% rq_url 'metrics' %}" class="border border-base-200 dark:border-base-800 font-medium hover:bg-base-50 dark:hover:bg-base-800 px-3 py-2 rounded-default text-sm">View Metrics</a>
+    {% endif %}
+</div>
+
+<h2 class="font-semibold mb-4 text-base text-font-important-light dark:text-font-important-dark">Cron Schedulers</h2>
+
+{% if cron_schedulers %}
+<div class="overflow-x-auto rounded-default border border-base-200 dark:border-base-800 mb-8">
+    <table class="w-full">
+        <thead class="bg-base-100 dark:bg-base-800">
+            <tr>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Name</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Host</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Port</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">DB</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cron_scheduler in cron_schedulers %}
+            <tr class="border-t border-base-200 dark:border-base-800 hover:bg-base-50 dark:hover:bg-base-800/50">
+                <td class="p-3 px-4 text-sm">
+                    <a href="{% rq_url 'cron_scheduler_detail' cron_scheduler.connection_index cron_scheduler.name %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ cron_scheduler.name }}</a>
+                </td>
+                <td class="p-3 px-4 text-sm">{{ cron_scheduler.connection.connection_pool.connection_kwargs.host }}</td>
+                <td class="p-3 px-4 text-sm">{{ cron_scheduler.connection.connection_pool.connection_kwargs.port }}</td>
+                <td class="p-3 px-4 text-sm">{{ cron_scheduler.connection.connection_pool.connection_kwargs.db }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="mb-8 text-sm text-font-default-light dark:text-font-default-dark">No running cron schedulers</p>
+{% endif %}
+
+{% if schedulers %}
+<h2 class="font-semibold mb-4 text-base text-font-important-light dark:text-font-important-dark">RQ Scheduler</h2>
+<div class="overflow-x-auto rounded-default border border-base-200 dark:border-base-800 mb-8">
+    <table class="w-full">
+        <thead class="bg-base-100 dark:bg-base-800">
+            <tr>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Redis Connection</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Recurring Jobs</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for connection, scheduler in schedulers.items %}
+            <tr class="border-t border-base-200 dark:border-base-800 hover:bg-base-50 dark:hover:bg-base-800/50">
+                <td class="p-3 px-4 text-sm">
+                    <a href="{% rq_url 'scheduler_jobs' scheduler.index %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ connection }}</a>
+                </td>
+                <td class="p-3 px-4 text-sm">
+                    <a href="{% rq_url 'scheduler_jobs' scheduler.index %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ scheduler.count }}</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% else %}
 
 <div id="content-main">
     <div class="module" id="changelist">
         <div class="changelist-form-container">
-            <form id="changelist-form" method="post" {% if cl.formset and cl.formset.is_multipart %}
-                enctype="multipart/form-data" {% endif %} novalidate>{% csrf_token %}
+            <form id="changelist-form" method="post" novalidate>{% csrf_token %}
                 <div class="results">
                     <table id="results_list">
                         <thead>
                             <tr>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Name</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Queued Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Oldest Queued Job</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Active Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Deferred Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Finished Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Failed Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Scheduled Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Workers</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Host</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Port</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>DB</span></div>
-                                    <div class="clear"></div>
-                                </th>
+                                <th scope="col" class="sortable"><div class="text"><span>Name</span></div><div class="clear"></div></th>
+                                <th scope="col" class="sortable"><div class="text"><span>Queued Jobs</span></div><div class="clear"></div></th>
+                                <th scope="col" class="sortable"><div class="text"><span>Oldest Queued Job</span></div><div class="clear"></div></th>
+                                <th scope="col" class="sortable"><div class="text"><span>Active Jobs</span></div><div class="clear"></div></th>
+                                <th scope="col" class="sortable"><div class="text"><span>Deferred Jobs</span></div><div class="clear"></div></th>
+                                <th scope="col" class="sortable"><div class="text"><span>Finished Jobs</span></div><div class="clear"></div></th>
+                                <th scope="col" class="sortable"><div class="text"><span>Failed Jobs</span></div><div class="clear"></div></th>
+                                <th scope="col" class="sortable"><div class="text"><span>Scheduled Jobs</span></div><div class="clear"></div></th>
+                                <th scope="col" class="sortable"><div class="text"><span>Workers</span></div><div class="clear"></div></th>
+                                <th scope="col" class="sortable"><div class="text"><span>Host</span></div><div class="clear"></div></th>
+                                <th scope="col" class="sortable"><div class="text"><span>Port</span></div><div class="clear"></div></th>
+                                <th scope="col" class="sortable"><div class="text"><span>DB</span></div><div class="clear"></div></th>
                                 {% if queue.scheduler_pid is not False %}
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Scheduler PID</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                {% endif%}
+                                <th scope="col" class="sortable"><div class="text"><span>Scheduler PID</span></div><div class="clear"></div></th>
+                                {% endif %}
                             </tr>
                         </thead>
                         <tbody>
                             {% for queue in queues %}
                             <tr class="{% cycle 'row1' 'row2' %}">
-                                <th>
-                                    <a href="{% rq_url 'jobs' queue.index %}">
-                                        {{ queue.name }}
-                                    </a>
-                                </th>
-                                <th>
-                                    <a href="{% rq_url 'jobs' queue.index %}">
-                                        {{ queue.jobs }}
-                                    </a>
-                                </th>
+                                <th><a href="{% rq_url 'jobs' queue.index %}">{{ queue.name }}</a></th>
+                                <th><a href="{% rq_url 'jobs' queue.index %}">{{ queue.jobs }}</a></th>
                                 <td>{{ queue.oldest_job_timestamp }}</td>
-                                <th>
-                                    <a href="{% rq_url 'started_jobs' queue.index %}">
-                                        {{ queue.started_jobs }}
-                                    </a>
-                                </th>
-                                <th>
-                                    <a href="{% rq_url 'deferred_jobs' queue.index %}">
-                                        {{ queue.deferred_jobs }}
-                                    </a>
-                                </th>
-                                <th>
-                                    <a href="{% rq_url 'finished_jobs' queue.index %}">
-                                        {{ queue.finished_jobs }}
-                                    </a>
-                                </th>
-                                <th>
-                                    <a href="{% rq_url 'failed_jobs' queue.index %}">
-                                        {{ queue.failed_jobs }}
-                                    </a>
-                                </th>
-                                <th>
-                                    <a href="{% rq_url 'scheduled_jobs' queue.index %}">
-                                        {{ queue.scheduled_jobs }}
-                                    </a>
-                                </th>
-                                <th><a href="{% rq_url 'workers' queue.index %}">
-                                        {{ queue.workers }}
-                                    </a>
-                                </th>
+                                <th><a href="{% rq_url 'started_jobs' queue.index %}">{{ queue.started_jobs }}</a></th>
+                                <th><a href="{% rq_url 'deferred_jobs' queue.index %}">{{ queue.deferred_jobs }}</a></th>
+                                <th><a href="{% rq_url 'finished_jobs' queue.index %}">{{ queue.finished_jobs }}</a></th>
+                                <th><a href="{% rq_url 'failed_jobs' queue.index %}">{{ queue.failed_jobs }}</a></th>
+                                <th><a href="{% rq_url 'scheduled_jobs' queue.index %}">{{ queue.scheduled_jobs }}</a></th>
+                                <th><a href="{% rq_url 'workers' queue.index %}">{{ queue.workers }}</a></th>
                                 <td>{{ queue.connection_kwargs.host }}</td>
                                 <td>{{ queue.connection_kwargs.port }}</td>
                                 <td>{{ queue.connection_kwargs.db }}</td>
@@ -145,9 +205,9 @@
                 </div>
                 <p class="paginator">
                     <a href="{% rq_url 'home_json' %}" class="showall">View as JSON</a>
-                {% if view_metrics %}
+                    {% if view_metrics %}
                     <a href="{% rq_url 'metrics' %}" class="showall">View Metrics</a>
-                {% endif %}
+                    {% endif %}
                 </p>
             </form>
         </div>
@@ -160,9 +220,7 @@
             <table id="result_list">
                 <thead>
                     <tr>
-                        <th>
-                            <div class="text"><span>Name</span></div>
-                        </th>
+                        <th><div class="text"><span>Name</span></div></th>
                         <th><div class="text"><span>Host</span></div></th>
                         <th><div class="text"><span>Port</span></div></th>
                         <th><div class="text"><span>DB</span></div></th>
@@ -203,5 +261,7 @@
     </table>
     {% endif %}
 </div>
+
+{% endif %}
 
 {% endblock %}

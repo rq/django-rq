@@ -6,7 +6,9 @@
 
 {% block extrastyle %}
     {{ block.super }}
+    {% if not unfold_installed %}
     <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+    {% endif %}
 {% endblock %}
 
 {% block extrahead %}
@@ -23,18 +25,48 @@
     </script>
 {% endblock %}
 
-
 {% block breadcrumbs %}
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
         <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
-        <a href = "{% rq_url 'jobs' queue_index %}">{{ queue.name }} Workers</a>
+        <a href="{% rq_url 'jobs' queue_index %}">{{ queue.name }} Workers</a>
     </div>
 {% endblock %}
 
 {% block content_title %}<h1>Workers in {{ queue.name }}</h1>{% endblock %}
 
 {% block content %}
+
+{% if unfold_installed %}
+
+<h1 class="font-semibold mb-4 text-xl text-font-important-light dark:text-font-important-dark">Workers in {{ queue.name }}</h1>
+
+<div class="overflow-x-auto rounded-default border border-base-200 dark:border-base-800 mb-8">
+    <table class="w-full">
+        <thead class="bg-base-100 dark:bg-base-800">
+            <tr>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Name</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">State</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Birth</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">PID</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for worker in workers %}
+            <tr class="border-t border-base-200 dark:border-base-800 hover:bg-base-50 dark:hover:bg-base-800/50">
+                <td class="p-3 px-4 text-sm font-medium">
+                    <a href="{% rq_url 'worker_details' queue_index worker.key %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ worker.name }}</a>
+                </td>
+                <td class="p-3 px-4 text-sm">{{ worker.get_state }}</td>
+                <td class="p-3 px-4 text-sm">{{ worker.birth_date|to_localtime|date:"Y-m-d, H:i:s" }}</td>
+                <td class="p-3 px-4 text-sm">{{ worker.pid|unlocalize }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% else %}
 
 <div id="content-main">
     <div class="module" id="changelist">
@@ -44,23 +76,19 @@
                 <table id="result_list">
                     <thead>
                         <tr>
-                            <th><div class = 'text'><span>Name</span></div></th>
-                            <th><div class = 'text'><span>State</span></div></th>
-                            <th><div class = 'text'><span>Birth</span></div></th>
-                            <th><div class = 'text'><span>PID</span></div></th>
+                            <th><div class="text"><span>Name</span></div></th>
+                            <th><div class="text"><span>State</span></div></th>
+                            <th><div class="text"><span>Birth</span></div></th>
+                            <th><div class="text"><span>PID</span></div></th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for worker in workers %}
-                            <tr class = "{% cycle 'row1' 'row2' %}">
+                            <tr class="{% cycle 'row1' 'row2' %}">
                                 <th>
-                                    <a href = '{% rq_url 'worker_details' queue_index worker.key %}'>
-                                        {{ worker.name }}
-                                    </a>
+                                    <a href="{% rq_url 'worker_details' queue_index worker.key %}">{{ worker.name }}</a>
                                 </th>
-                                <td>
-                                    {{ worker.get_state }}
-                                </td>
+                                <td>{{ worker.get_state }}</td>
                                 <td>{{ worker.birth_date|to_localtime|date:"Y-m-d, H:i:s" }}</td>
                                 <td>{{ worker.pid|unlocalize }}</td>
                             </tr>
@@ -71,5 +99,7 @@
         </form>
     </div>
 </div>
+
+{% endif %}
 
 {% endblock %}

@@ -4,8 +4,10 @@
 
 {% block extrastyle %}
     {{ block.super }}
+    {% if not unfold_installed %}
     <link rel="stylesheet" href="{% static 'admin/css/forms.css' %}">
     <link rel="stylesheet" href="{% static 'admin/css/changelists.css' %}">
+    {% endif %}
 {% endblock %}
 
 {% block title %}Cron Scheduler: {{ scheduler.name }}{% endblock %}
@@ -21,78 +23,99 @@
 {% endblock %}
 
 {% block content %}
+
+{% if unfold_installed %}
+
+<h1 class="font-semibold mb-4 text-xl text-font-important-light dark:text-font-important-dark">Cron Scheduler: {{ scheduler.name }}</h1>
+
+<div class="border border-base-200 dark:border-base-800 rounded-default mb-6 overflow-hidden">
+    <div class="flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-36 text-font-default-light dark:text-font-default-dark text-sm">Name</span>
+        <span class="text-sm">{{ scheduler.name }}</span>
+    </div>
+    <div class="border-t border-base-200 dark:border-base-800 flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-36 text-font-default-light dark:text-font-default-dark text-sm">Hostname</span>
+        <span class="text-sm">{{ scheduler.hostname }}</span>
+    </div>
+    <div class="border-t border-base-200 dark:border-base-800 flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-36 text-font-default-light dark:text-font-default-dark text-sm">PID</span>
+        <span class="text-sm">{{ scheduler.pid }}</span>
+    </div>
+    <div class="border-t border-base-200 dark:border-base-800 flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-36 text-font-default-light dark:text-font-default-dark text-sm">Created At</span>
+        <span class="text-sm">{% if scheduler.created_at %}{{ scheduler.created_at|to_localtime|date:"Y-m-d, H:i:s" }}{% else %}-{% endif %}</span>
+    </div>
+    <div class="border-t border-base-200 dark:border-base-800 flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-36 text-font-default-light dark:text-font-default-dark text-sm">Last Heartbeat</span>
+        <span class="text-sm">{% if scheduler.last_heartbeat %}{{ scheduler.last_heartbeat|to_localtime|date:"Y-m-d, H:i:s" }}{% else %}-{% endif %}</span>
+    </div>
+    {% if scheduler.config_file %}
+    <div class="border-t border-base-200 dark:border-base-800 flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-36 text-font-default-light dark:text-font-default-dark text-sm">Config File</span>
+        <span class="text-sm font-mono">{{ scheduler.config_file }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<h2 class="font-semibold mb-4 text-base text-font-important-light dark:text-font-important-dark">Cron Jobs</h2>
+
+{% if cron_jobs %}
+<div class="overflow-x-auto rounded-default border border-base-200 dark:border-base-800 mb-8">
+    <table class="w-full">
+        <thead class="bg-base-100 dark:bg-base-800">
+            <tr>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Callable</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Queue</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Schedule</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Next Enqueue</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Latest Enqueue</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Args</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Kwargs</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Meta</th>
+                <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Options</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cron_job in cron_jobs %}
+            <tr class="border-t border-base-200 dark:border-base-800 hover:bg-base-50 dark:hover:bg-base-800/50">
+                <td class="p-3 px-4 text-sm font-mono text-xs">{{ cron_job.func_name|default:"-" }}</td>
+                <td class="p-3 px-4 text-sm">{{ cron_job.queue_name|default:"-" }}</td>
+                <td class="p-3 px-4 text-sm font-mono text-xs">{{ cron_job.schedule }}</td>
+                <td class="p-3 px-4 text-sm whitespace-nowrap">
+                    {% if cron_job.next_enqueue_time %}{{ cron_job.next_enqueue_time|to_localtime|date:"Y-m-d, H:i:s" }}{% else %}-{% endif %}
+                </td>
+                <td class="p-3 px-4 text-sm whitespace-nowrap">
+                    {% if cron_job.latest_enqueue_time %}{{ cron_job.latest_enqueue_time|to_localtime|date:"Y-m-d, H:i:s" }}{% else %}-{% endif %}
+                </td>
+                <td class="p-3 px-4 text-sm font-mono text-xs">{{ cron_job.args|default_if_none:"-" }}</td>
+                <td class="p-3 px-4 text-sm font-mono text-xs">{{ cron_job.kwargs|default_if_none:"-" }}</td>
+                <td class="p-3 px-4 text-sm font-mono text-xs">{{ cron_job.meta|default_if_none:"-" }}</td>
+                <td class="p-3 px-4 text-sm">
+                    {% for option in cron_job.options %}
+                        <span class="font-mono text-xs">{{ option }}</span>{% if not forloop.last %}<br>{% endif %}
+                    {% empty %}-{% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="mb-8 text-sm text-font-default-light dark:text-font-default-dark">No persisted cron jobs found</p>
+{% endif %}
+
+{% else %}
+
 <div id="content-main">
-
     <fieldset class="module aligned">
-
-        <div class="form-row">
-            <div>
-                <div class="flex-container">
-                    <label>Name:</label>
-                    <div class="readonly">{{ scheduler.name }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div>
-                <div class="flex-container">
-                    <label>Hostname:</label>
-                    <div class="readonly">{{ scheduler.hostname }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div>
-                <div class="flex-container">
-                    <label>PID:</label>
-                    <div class="readonly">{{ scheduler.pid }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div>
-                <div class="flex-container">
-                    <label>Created At:</label>
-                    <div class="readonly">
-                        {% if scheduler.created_at %}
-                            {{ scheduler.created_at|to_localtime|date:"Y-m-d, H:i:s" }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div>
-                <div class="flex-container">
-                    <label>Last Heartbeat:</label>
-                    <div class="readonly">
-                        {% if scheduler.last_heartbeat %}
-                            {{ scheduler.last_heartbeat|to_localtime|date:"Y-m-d, H:i:s" }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-
+        <div class="form-row"><div><div class="flex-container"><label>Name:</label><div class="readonly">{{ scheduler.name }}</div></div></div></div>
+        <div class="form-row"><div><div class="flex-container"><label>Hostname:</label><div class="readonly">{{ scheduler.hostname }}</div></div></div></div>
+        <div class="form-row"><div><div class="flex-container"><label>PID:</label><div class="readonly">{{ scheduler.pid }}</div></div></div></div>
+        <div class="form-row"><div><div class="flex-container"><label>Created At:</label><div class="readonly">{% if scheduler.created_at %}{{ scheduler.created_at|to_localtime|date:"Y-m-d, H:i:s" }}{% else %}-{% endif %}</div></div></div></div>
+        <div class="form-row"><div><div class="flex-container"><label>Last Heartbeat:</label><div class="readonly">{% if scheduler.last_heartbeat %}{{ scheduler.last_heartbeat|to_localtime|date:"Y-m-d, H:i:s" }}{% else %}-{% endif %}</div></div></div></div>
         {% if scheduler.config_file %}
-        <div class="form-row">
-            <div>
-                <div class="flex-container">
-                    <label>Config File:</label>
-                    <div class="readonly">{{ scheduler.config_file }}</div>
-                </div>
-            </div>
-        </div>
+        <div class="form-row"><div><div class="flex-container"><label>Config File:</label><div class="readonly">{{ scheduler.config_file }}</div></div></div></div>
         {% endif %}
-
     </fieldset>
 
     <div class="module" id="changelist">
@@ -119,30 +142,12 @@
                         <td>{{ cron_job.func_name|default:"-" }}</td>
                         <td>{{ cron_job.queue_name|default:"-" }}</td>
                         <td>{{ cron_job.schedule }}</td>
-                        <td>
-                            {% if cron_job.next_enqueue_time %}
-                                {{ cron_job.next_enqueue_time|to_localtime|date:"Y-m-d, H:i:s" }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if cron_job.latest_enqueue_time %}
-                                {{ cron_job.latest_enqueue_time|to_localtime|date:"Y-m-d, H:i:s" }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
+                        <td>{% if cron_job.next_enqueue_time %}{{ cron_job.next_enqueue_time|to_localtime|date:"Y-m-d, H:i:s" }}{% else %}-{% endif %}</td>
+                        <td>{% if cron_job.latest_enqueue_time %}{{ cron_job.latest_enqueue_time|to_localtime|date:"Y-m-d, H:i:s" }}{% else %}-{% endif %}</td>
                         <td>{{ cron_job.args|default_if_none:"-" }}</td>
                         <td>{{ cron_job.kwargs|default_if_none:"-" }}</td>
                         <td>{{ cron_job.meta|default_if_none:"-" }}</td>
-                        <td>
-                            {% for option in cron_job.options %}
-                                {{ option }}{% if not forloop.last %}<br>{% endif %}
-                            {% empty %}
-                                -
-                            {% endfor %}
-                        </td>
+                        <td>{% for option in cron_job.options %}{{ option }}{% if not forloop.last %}<br>{% endif %}{% empty %}-{% endfor %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -152,6 +157,8 @@
             {% endif %}
         </div>
     </div>
-
 </div>
+
+{% endif %}
+
 {% endblock %}
