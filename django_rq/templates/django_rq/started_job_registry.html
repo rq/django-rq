@@ -63,7 +63,6 @@
                     <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Last Heartbeat</th>
                     <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Enqueued</th>
                     <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Callable</th>
-                    {% block extra_columns %}{% endblock extra_columns %}
                 </tr>
             </thead>
             <tbody>
@@ -85,7 +84,6 @@
                         {% if execution.job.enqueued_at %}{{ execution.job.enqueued_at|to_localtime|date:"Y-m-d, H:i:s" }}{% endif %}
                     </td>
                     <td class="p-3 px-4 text-sm font-mono text-xs">{{ execution.job|show_func_name }}</td>
-                    {% block extra_columns_values %}{% endblock extra_columns_values %}
                 </tr>
                 {% endfor %}
             </tbody>
