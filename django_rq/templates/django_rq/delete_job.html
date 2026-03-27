@@ -4,22 +4,17 @@
 
 {% block extrastyle %}
     {{ block.super }}
-    <style>
-        .data {
-            display: inline-block;
-            float: left;
-            width: 80%;
-        }
-    </style>
+    {% if not unfold_installed %}
     <link href="{% static 'admin/css/forms.css' %}" type="text/css" rel="stylesheet">
+    {% endif %}
 {% endblock %}
 
 {% block breadcrumbs %}
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
         <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
-        <a href = "{% rq_url 'jobs' queue_index %}">{{ queue.name }}</a> &rsaquo;
-        <a href = "{% rq_url 'job_detail' queue_index job.id %}">{{ job.id }}</a> &rsaquo;
+        <a href="{% rq_url 'jobs' queue_index %}">{{ queue.name }}</a> &rsaquo;
+        <a href="{% rq_url 'job_detail' queue_index job.id %}">{{ job.id }}</a> &rsaquo;
         Delete
     </div>
 {% endblock %}
@@ -28,9 +23,24 @@
 
 {% block content %}
 
+{% if unfold_installed %}
+<h1 class="font-semibold mb-6 text-xl text-font-important-light dark:text-font-important-dark">Are you sure?</h1>
+<div class="border border-base-200 dark:border-base-800 rounded-default overflow-hidden mb-8">
+    <p class="p-4 text-sm">
+        Are you sure you want to delete
+        <a href="{% rq_url 'job_detail' queue_index job.id %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ job.id }}</a>
+        from <a href="{% rq_url 'jobs' queue_index %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ queue.name }}</a>?
+        This action can not be undone.
+    </p>
+    <form action="" method="post" class="border-t border-base-200 dark:border-base-800 px-4 py-3">
+        {% csrf_token %}
+        <button type="submit" class="bg-red-600 cursor-pointer font-medium hover:bg-red-500 px-3 py-2 rounded-default text-sm text-white">Yes, I'm sure</button>
+    </form>
+</div>
+{% else %}
 <div id="content-main">
     <p>
-        Are you sure you want to delete <a href = "{% rq_url 'job_detail' queue_index job.id %}">{{ job.id }}</a> from <a href = "{% rq_url 'jobs' queue_index %}">{{ queue.name }}</a>?
+        Are you sure you want to delete <a href="{% rq_url 'job_detail' queue_index job.id %}">{{ job.id }}</a> from <a href="{% rq_url 'jobs' queue_index %}">{{ queue.name }}</a>?
         This action can not be undone.
     </p>
     <form action="" method="post">
@@ -40,5 +50,6 @@
         </div>
     </form>
 </div>
+{% endif %}
 
 {% endblock %}

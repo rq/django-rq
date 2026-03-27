@@ -42,6 +42,7 @@ classifiers = [
 [project.optional-dependencies]
 prometheus = ["prometheus_client >= 0.4.0"]
 testing = ["pytest>=7.0", "pytest-django>=4.5"]
+unfold = ["django-unfold"]
 
 [project.urls]
 changelog = "https://github.com/rq/django-rq/blob/master/CHANGELOG.md"
