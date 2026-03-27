@@ -6,7 +6,9 @@
 
 {% block extrastyle %}
     {{ block.super }}
+    {% if not unfold_installed %}
     <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+    {% endif %}
 {% endblock %}
 
 {% block extrahead %}
@@ -23,7 +25,6 @@
     </script>
 {% endblock %}
 
-
 {% block breadcrumbs %}
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
@@ -36,6 +37,75 @@
 
 {% block content %}
 
+{% if unfold_installed %}
+
+<h1 class="font-semibold mb-4 text-xl text-font-important-light dark:text-font-important-dark">Scheduled jobs in {{ queue.name }}</h1>
+
+<form id="changelist-form" action="{% rq_url 'confirm_action' queue_index %}" method="post">
+    {% csrf_token %}
+    <div class="flex gap-2 items-center mb-4">
+        <select name="action" class="border border-base-200 dark:border-base-800 rounded-default bg-white dark:bg-base-900 px-3 py-2 text-sm" required>
+            <option value="" selected>---------</option>
+            <option value="delete">Delete</option>
+        </select>
+        <button type="submit" class="bg-primary-600 cursor-pointer font-medium hover:bg-primary-500 px-3 py-2 rounded-default text-sm text-white" name="index" value="0">Go</button>
+    </div>
+    <div class="overflow-x-auto rounded-default border border-base-200 dark:border-base-800 mb-4">
+        <table class="w-full">
+            <thead class="bg-base-100 dark:bg-base-800">
+                <tr>
+                    <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark w-px">
+                        <input type="checkbox" id="action-toggle" class="rounded">
+                    </th>
+                    <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">ID</th>
+                    <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">Created</th>
+                    <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark whitespace-nowrap">
+                        {% if sort_direction == 'ascending' %}
+                            <a href="?desc=1" class="flex items-center gap-1">Scheduled <span class="text-xs">↑</span></a>
+                        {% else %}
+                            <a href="?desc=0" class="flex items-center gap-1">Scheduled <span class="text-xs">↓</span></a>
+                        {% endif %}
+                    </th>
+                    <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Status</th>
+                    <th class="font-semibold p-3 px-4 text-left text-sm text-font-default-light dark:text-font-default-dark">Callable</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr class="border-t border-base-200 dark:border-base-800 hover:bg-base-50 dark:hover:bg-base-800/50">
+                    <td class="p-3 px-4">
+                        <input class="action-select rounded" name="_selected_action" type="checkbox" value="{{ job.id }}">
+                    </td>
+                    <td class="p-3 px-4 text-sm">
+                        <a href="{% rq_url 'job_detail' queue_index job.id %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400 font-mono text-xs">{{ job.id }}</a>
+                    </td>
+                    <td class="p-3 px-4 text-sm whitespace-nowrap">
+                        {% if job.created_at %}{{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}{% endif %}
+                    </td>
+                    <td class="p-3 px-4 text-sm whitespace-nowrap">
+                        {% if job.scheduled_at %}{{ job.scheduled_at|to_localtime|date:"Y-m-d, H:i:s" }}{% endif %}
+                    </td>
+                    <td class="p-3 px-4 text-sm">{{ job.get_status.value }}</td>
+                    <td class="p-3 px-4 text-sm font-mono text-xs">{{ job|show_func_name }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="flex gap-1 items-center text-sm">
+        {% for p in page_range %}
+            {% if p == page %}
+                <span class="font-medium px-3 py-1 rounded-default bg-primary-600 text-white">{{ p }}</span>
+            {% else %}
+                <a href="?page={{ p }}" class="border border-base-200 dark:border-base-800 hover:bg-base-50 dark:hover:bg-base-800 px-3 py-1 rounded-default">{{ p }}</a>
+            {% endif %}
+        {% endfor %}
+        <span class="ml-2 text-font-default-light dark:text-font-default-dark">{{ num_jobs }} jobs</span>
+    </div>
+</form>
+
+{% else %}
+
 <div id="content-main">
     <div class="module" id="changelist">
         <div class="changelist-form-container">
@@ -46,12 +116,6 @@
                         <select name="action" required>
                             <option value="" selected>---------</option>
                             <option value="delete">Delete</option>
-                            {% if job_status == 'Failed' %}
-                                <option value="requeue">Requeue</option>
-                            {% endif %}
-                            {% if job_status == 'Started' %}
-                                <option value="stop">Stop</option>
-                            {% endif %}
                         </select>
                     </label>
                     <button type="submit" class="button" title="Execute selected action" name="index" value="0">Go</button>
@@ -61,75 +125,36 @@
                         <thead>
                             <tr>
                                 <th scope="col" class="action-checkbox-column">
-                                    <div class="text">
-                                        <span><input type="checkbox" id="action-toggle"></span>
-                                    </div>
+                                    <div class="text"><span><input type="checkbox" id="action-toggle"></span></div>
                                     <div class="clear"></div>
                                 </th>
-                                <th scope="col" class="sortable">
-                                    <div class='text'><span>ID</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class='text'><span>Created</span></div>
-                                    <div class="clear"></div>
-                                </th>
+                                <th scope="col" class="sortable"><div class="text"><span>ID</span></div><div class="clear"></div></th>
+                                <th scope="col" class="sortable"><div class="text"><span>Created</span></div><div class="clear"></div></th>
                                 <th scope="col" class="sortable sorted {{ sort_direction }}">
                                     <div class="sortoptions">
-                                        {% if sort_direction == 'ascending' %}
-                                            <a href="?desc=1" class="toggle ascending" title="Toggle sorting"></a>
-                                        {% else %}
-                                            <a href="?desc=0" class="toggle descending" title="Toggle sorting"></a>
-                                        {% endif %}
-                                      </div>
-                                    <div class='text'>
-                                        {% if sort_direction == 'ascending' %}
-                                            <a href="?desc=1">
-                                        {% else %}
-                                            <a href="?desc=0">
-                                        {% endif %}
-                                        Scheduled
-                                        </a>
+                                        {% if sort_direction == 'ascending' %}<a href="?desc=1" class="toggle ascending" title="Toggle sorting"></a>
+                                        {% else %}<a href="?desc=0" class="toggle descending" title="Toggle sorting"></a>{% endif %}
+                                    </div>
+                                    <div class="text">
+                                        {% if sort_direction == 'ascending' %}<a href="?desc=1">Scheduled</a>{% else %}<a href="?desc=0">Scheduled</a>{% endif %}
                                     </div>
                                     <div class="clear"></div>
                                 </th>
-                                <th scope="col" class="sortable">
-                                    <div class='text'><span>Status</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class='text'><span>Callable</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                {% block extra_columns %}
-                                {% endblock extra_columns %}
+                                <th scope="col" class="sortable"><div class="text"><span>Status</span></div><div class="clear"></div></th>
+                                <th scope="col" class="sortable"><div class="text"><span>Callable</span></div><div class="clear"></div></th>
+                                {% block extra_columns %}{% endblock extra_columns %}
                             </tr>
                         </thead>
                         <tbody>
                             {% for job in jobs %}
                                 <tr>
-                                    <td class="action-checkbox">
-                                        <input class="action-select" name="_selected_action" type="checkbox" value="{{ job.id }}">
-                                    </td>
-                                    <th>
-                                        <a href="{% rq_url 'job_detail' queue_index job.id %}">
-                                            {{ job.id }}
-                                        </a>
-                                    </th>
-                                    <td>
-                                        {% if job.created_at %}
-                                            {{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if job.scheduled_at %}
-                                            {{ job.scheduled_at|to_localtime|date:"Y-m-d, H:i:s" }}
-                                        {% endif %}
-                                    </td>
+                                    <td class="action-checkbox"><input class="action-select" name="_selected_action" type="checkbox" value="{{ job.id }}"></td>
+                                    <th><a href="{% rq_url 'job_detail' queue_index job.id %}">{{ job.id }}</a></th>
+                                    <td>{% if job.created_at %}{{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}{% endif %}</td>
+                                    <td>{% if job.scheduled_at %}{{ job.scheduled_at|to_localtime|date:"Y-m-d, H:i:s" }}{% endif %}</td>
                                     <td>{{ job.get_status.value }}</td>
                                     <td>{{ job|show_func_name }}</td>
-                                    {% block extra_columns_values %}
-                                    {% endblock extra_columns_values %}
+                                    {% block extra_columns_values %}{% endblock extra_columns_values %}
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -137,13 +162,9 @@
                 </div>
                 <p class="paginator">
                     {% for p in page_range %}
-                        {% if p == page %}
-                            <span class="this-page">{{ p }}</span>
-                        {% elif forloop.last %}
-                            <a href="?page={{ p }}" class="end">{{ p }}</a>
-                        {% else %}
-                            <a href="?page={{ p }}">{{ p }}</a>
-                        {% endif %}
+                        {% if p == page %}<span class="this-page">{{ p }}</span>
+                        {% elif forloop.last %}<a href="?page={{ p }}" class="end">{{ p }}</a>
+                        {% else %}<a href="?page={{ p }}">{{ p }}</a>{% endif %}
                     {% endfor %}
                     {{ num_jobs }} jobs
                 </p>
@@ -151,5 +172,7 @@
         </div>
     </div>
 </div>
+
+{% endif %}
 
 {% endblock %}

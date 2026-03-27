@@ -4,6 +4,7 @@
 
 {% block extrastyle %}
     {{ block.super }}
+    {% if not unfold_installed %}
     <style>
         .data {
             display: inline-block;
@@ -14,14 +15,15 @@
         }
     </style>
     <link href="{% static 'admin/css/forms.css' %}" type="text/css" rel="stylesheet">
+    {% endif %}
 {% endblock %}
 
 {% block breadcrumbs %}
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
         <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
-        <a href = "{% rq_url 'workers' queue_index %}">{{ queue.name }} Workers</a> &rsaquo;
-        <a href = "{% rq_url 'worker_details' queue_index worker.name %}">{{ worker.name }}</a>
+        <a href="{% rq_url 'workers' queue_index %}">{{ queue.name }} Workers</a> &rsaquo;
+        <a href="{% rq_url 'worker_details' queue_index worker.name %}">{{ worker.name }}</a>
     </div>
 {% endblock %}
 
@@ -29,87 +31,132 @@
 
 {% block content %}
 
+{% if unfold_installed %}
+
+<h1 class="font-semibold mb-4 text-xl text-font-important-light dark:text-font-important-dark">Worker Info</h1>
+
+<div class="border border-base-200 dark:border-base-800 rounded-default mb-8 overflow-hidden">
+    <div class="flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-48 text-font-default-light dark:text-font-default-dark text-sm">Name</span>
+        <span class="text-sm">{{ worker.name }}</span>
+    </div>
+    <div class="border-t border-base-200 dark:border-base-800 flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-48 text-font-default-light dark:text-font-default-dark text-sm">State</span>
+        <span class="text-sm">{{ worker.get_state }}</span>
+    </div>
+    <div class="border-t border-base-200 dark:border-base-800 flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-48 text-font-default-light dark:text-font-default-dark text-sm">Birth</span>
+        <span class="text-sm">{{ worker.birth_date|to_localtime|date:"Y-m-d, H:i:s" }}</span>
+    </div>
+    <div class="border-t border-base-200 dark:border-base-800 flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-48 text-font-default-light dark:text-font-default-dark text-sm">Queues</span>
+        <span class="text-sm">{{ queue_names }}</span>
+    </div>
+    <div class="border-t border-base-200 dark:border-base-800 flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-48 text-font-default-light dark:text-font-default-dark text-sm">PID</span>
+        <span class="text-sm">{{ worker.pid }}</span>
+    </div>
+    {% if job %}
+    <div class="border-t border-base-200 dark:border-base-800 flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-48 text-font-default-light dark:text-font-default-dark text-sm">Current Job</span>
+        <span class="text-sm">
+            {{ job.func_name }}
+            (<a href="{% rq_url 'job_detail' queue_index job.id %}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400">{{ job.id }}</a>)
+        </span>
+    </div>
+    {% endif %}
+    {% if worker.successful_job_count != None %}
+    <div class="border-t border-base-200 dark:border-base-800 flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-48 text-font-default-light dark:text-font-default-dark text-sm">Successful job count</span>
+        <span class="text-sm">{{ worker.successful_job_count }}</span>
+    </div>
+    {% endif %}
+    {% if worker.failed_job_count != None %}
+    <div class="border-t border-base-200 dark:border-base-800 flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-48 text-font-default-light dark:text-font-default-dark text-sm">Failed job count</span>
+        <span class="text-sm">{{ worker.failed_job_count }}</span>
+    </div>
+    {% endif %}
+    {% if worker.total_working_time != None %}
+    <div class="border-t border-base-200 dark:border-base-800 flex gap-4 items-baseline p-3 px-4">
+        <span class="font-semibold min-w-48 text-font-default-light dark:text-font-default-dark text-sm">Total working time (seconds)</span>
+        <span class="text-sm">{{ total_working_time }}</span>
+    </div>
+    {% endif %}
+</div>
+
+{% else %}
+
 <div id="content-main">
-
-    <fieldset class="module aligned ">
-
+    <fieldset class="module aligned">
         <div class="form-row">
             <div>
                 <label class="required">Name:</label>
                 <div class="data">{{ worker.name }}</div>
             </div>
         </div>
-
         <div class="form-row">
             <div>
                 <label class="required">State:</label>
                 <div class="data">{{ worker.get_state }}</div>
             </div>
         </div>
-
         <div class="form-row">
             <div>
                 <label class="required">Birth:</label>
                 <div class="data">{{ worker.birth_date|to_localtime|date:"Y-m-d, H:i:s" }}</div>
             </div>
         </div>
-
         <div class="form-row">
             <div>
                 <label class="required">Queues:</label>
                 <div class="data">{{ queue_names }}</div>
             </div>
         </div>
-
         <div class="form-row">
             <div>
                 <label class="required">PID:</label>
                 <div class="data">{{ worker.pid }}</div>
             </div>
         </div>
-
         {% if job %}
         <div class="form-row">
             <div>
                 <label class="required">Current Job:</label>
                 <div class="data">
                     {{ job.func_name }}
-                    (<a href = "{% rq_url 'job_detail' queue_index job.id %}">{{ job.id }}</a>)
+                    (<a href="{% rq_url 'job_detail' queue_index job.id %}">{{ job.id }}</a>)
                 </div>
             </div>
         </div>
-
         {% endif %}
-
         {% if worker.successful_job_count != None %}
-            <div class="form-row">
-                <div>
-                    <label class="required">Successful job count:</label>
-                    <div class="data">{{ worker.successful_job_count }}</div>
-                </div>
+        <div class="form-row">
+            <div>
+                <label class="required">Successful job count:</label>
+                <div class="data">{{ worker.successful_job_count }}</div>
             </div>
+        </div>
         {% endif %}
-
         {% if worker.failed_job_count != None %}
-            <div class="form-row">
-                <div>
-                    <label class="required">Failed job count:</label>
-                    <div class="data">{{ worker.failed_job_count }}</div>
-                </div>
+        <div class="form-row">
+            <div>
+                <label class="required">Failed job count:</label>
+                <div class="data">{{ worker.failed_job_count }}</div>
             </div>
+        </div>
         {% endif %}
-
         {% if worker.total_working_time != None %}
-            <div class="form-row">
-                <div>
-                    <label class="required">Total working time (seconds):</label>
-                    <div class="data">{{ total_working_time }}</div>
-                </div>
+        <div class="form-row">
+            <div>
+                <label class="required">Total working time (seconds):</label>
+                <div class="data">{{ total_working_time }}</div>
             </div>
+        </div>
         {% endif %}
-
     </fieldset>
-
 </div>
+
+{% endif %}
 
 {% endblock %}
