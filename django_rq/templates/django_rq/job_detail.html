@@ -302,7 +302,9 @@
                 <tbody>
                     {% for result in job.results %}
                     <tr>
-                        <th>{{ result.id }}</th>
+                        <th>
+                            <a href="{% rq_url 'result_detail' queue_index job.id result.id %}">{{ result.id }}</a>
+                        </th>
                         <td>{{ result.type.name }}</td>
                         <td>{{ result.created_at|to_localtime|date:"Y-m-d, H:i:s" }}</td>
                     </tr>
