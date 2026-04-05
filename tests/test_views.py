@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.test.client import Client
 from django.urls import reverse
+from django.utils.html import escape
 from rq.job import Job, JobStatus
 from rq.registry import (
     DeferredJobRegistry,
@@ -68,7 +69,50 @@ class ViewTest(TestCase):
         url = reverse('admin:django_rq_job_detail', args=[queue_index, job.id])
         response = self.client.get(url)
         assert result.id
+        self.assertContains(response, 'ID')
+        self.assertContains(response, 'Type')
+        self.assertContains(response, 'Created At')
+        self.assertContains(response, reverse('admin:django_rq_result_detail', args=[queue_index, job.id, result.id]))
         self.assertContains(response, result.id)
+        self.assertContains(response, result.type.name)
+
+    def test_result_details(self):
+        """Result detail page shows successful and failed results and 404s"""
+        queue = get_queue('default')
+        queue_index = get_queue_index('default')
+        worker = get_worker('default')
+
+        job = queue.enqueue(access_self)
+        worker.work(burst=True)
+        result = job.results()[0]
+
+        url = reverse('admin:django_rq_result_detail', args=[queue_index, job.id, result.id])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'django_rq/result_detail.html')
+        self.assertContains(response, result.id)
+
+        failed_job_instance = queue.enqueue(failing_job)
+        worker.work(burst=True)
+        failed_result = failed_job_instance.results()[0]
+
+        url = reverse('admin:django_rq_result_detail', args=[queue_index, failed_job_instance.id, failed_result.id])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, failed_result.id)
+        self.assertContains(response, failed_result.type.name)
+        self.assertContains(response, failed_result.worker_name)
+        self.assertContains(response, escape(failed_result.exc_string), html=True)
+
+        url = reverse('admin:django_rq_result_detail', args=[queue_index, job.id, 'missing-result-id'])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        url = reverse('admin:django_rq_result_detail', args=[queue_index, 'missing-job-id', 'missing-result-id'])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
 
     def test_job_details_on_deleted_dependency(self):
         """Page doesn't crash even if job.dependency has been deleted"""
@@ -181,7 +225,9 @@ class ViewTest(TestCase):
             job_ids.append(job.id)
 
         # remove those jobs using view
-        self.client.post(reverse('admin:django_rq_actions', args=[queue_index]), {'action': 'delete', 'job_ids': job_ids})
+        self.client.post(
+            reverse('admin:django_rq_actions', args=[queue_index]), {'action': 'delete', 'job_ids': job_ids}
+        )
 
         # check if jobs are removed
         for job_id in job_ids:
@@ -233,7 +279,9 @@ class ViewTest(TestCase):
             self.assertTrue(job.is_failed)
 
         # renqueue failed jobs from failed queue
-        self.client.post(reverse('admin:django_rq_actions', args=[queue_index]), {'action': 'requeue', 'job_ids': job_ids})
+        self.client.post(
+            reverse('admin:django_rq_actions', args=[queue_index]), {'action': 'requeue', 'job_ids': job_ids}
+        )
 
         # check if we requeue all failed jobs
         for job in jobs:

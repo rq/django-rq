@@ -64,6 +64,11 @@ def get_admin_urlpatterns(name_prefix: str = '', view_wrapper: Optional[Callable
         path('queues/<int:queue_index>/requeue-all/', maybe_wrap(views.requeue_all), name=f'{name_prefix}requeue_all'),
         # Job detail and actions
         path('queues/<int:queue_index>/<str:job_id>/', maybe_wrap(views.job_detail), name=f'{name_prefix}job_detail'),
+        path(
+            'queues/<int:queue_index>/<str:job_id>/results/<str:result_id>/',
+            maybe_wrap(views.result_detail),
+            name=f'{name_prefix}result_detail',
+        ),
         path('queues/<int:queue_index>/<str:job_id>/delete/', maybe_wrap(views.delete_job), name=f'{name_prefix}delete_job'),
         path('queues/<int:queue_index>/<str:job_id>/requeue/', maybe_wrap(views.requeue_job_view), name=f'{name_prefix}requeue_job'),
         path('queues/<int:queue_index>/<str:job_id>/enqueue/', maybe_wrap(views.enqueue_job), name=f'{name_prefix}enqueue_job'),

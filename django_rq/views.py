@@ -386,6 +386,30 @@ def job_detail(request: HttpRequest, queue_index: int, job_id: str) -> HttpRespo
 
 @never_cache
 @staff_member_required
+def result_detail(request: HttpRequest, queue_index: int, job_id: str, result_id: str) -> HttpResponse:
+    queue = get_queue_by_index(queue_index)
+
+    try:
+        job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
+    except NoSuchJobError:
+        raise Http404(f"Couldn't find job with this ID: {job_id}")
+
+    result = next((result for result in job.results() if result.id == result_id), None)
+    if not result:
+        raise Http404(f"Couldn't find result with this ID: {result_id}")
+
+    context_data = {
+        **each_context(request),
+        'queue_index': queue_index,
+        'job': job,
+        'queue': queue,
+        'result': result,
+    }
+    return render(request, 'django_rq/result_detail.html', context_data)
+
+
+@never_cache
+@staff_member_required
 def delete_job(request: HttpRequest, queue_index: int, job_id: str) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
     job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
