@@ -1,3 +1,7 @@
+### Version 4.1 (2026-04-05)
+* Job detail page now shows execution results. Thanks @selwin!
+* Fixed RQ worker-pool command for projects using Postgres with SSL connections. Thanks @selwin!
+
 ### Version 4.0.1 (2026-03-17)
 * Job detail page now shows a job's dependent jobs. Thanks @selwin!
 * Added missing migration that causes Django's makemigrations to complain. Thanks @bjorndbuilder!
