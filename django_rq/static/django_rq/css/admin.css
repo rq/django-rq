@@ -1,50 +1,53 @@
 /*
  * django-rq admin design system.
  *
- * Primitives shared across every django-rq admin page. All selectors are
- * prefixed `.rq-` to avoid colliding with Django admin's stock CSS.
+ * Built on Django admin's CSS custom properties (base.css + dark_mode.css)
+ * so light/dark theming follows Django automatically. Only colors Django
+ * doesn't define live here as locals — and they get the same dark override
+ * pattern Django uses (@media + html[data-theme="dark"]).
+ *
+ * All selectors are prefixed `.rq-` to avoid colliding with Django admin.
  *
  * Layers:
- *   1. Tokens          — colors, fonts, sizes (:root custom properties)
+ *   1. Tokens          — local custom properties
  *   2. Layout          — title row, grid, columns
  *   3. Panels & fields — card + labeled field row
- *   4. Pills           — status pills (semantic state colors)
- *   5. Buttons         — ghost / default / danger variants
+ *   4. Pills           — semantic state pills
+ *   5. Buttons         — ghost + default + danger variants
  *   6. Tables          — generic table primitive + row/cell modifiers
  *   7. Callouts        — accented info/error blocks
- *   8. Utilities       — typography helpers (mono, muted, faint, num)
+ *   8. Utilities       — typography helpers
  */
 
 /* ── 1. Tokens ─────────────────────────────────────────────────── */
+/*
+ * Most colors are read inline as var(--django-thing) so they theme via
+ * Django's own variables. Locals are kept only for:
+ *   - Monospace fallback (older Django without --font-family-monospace)
+ *   - State foregrounds Django doesn't define (finished, queued/scheduled)
+ *   - Layout (grid widths)
+ */
 :root {
-    --rq-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --rq-mono: var(--font-family-monospace, ui-monospace, Menlo, Monaco, "Cascadia Mono", "Roboto Mono", monospace);
 
-    --rq-text: #333;
-    --rq-text-muted: #666;
-    --rq-text-faint: #999;
+    --rq-finished-fg: #417e38;
+    --rq-queued-fg: #9c6d1e;
 
-    --rq-border: #e5e5e5;
-    --rq-border-strong: #cccccc;
-    --rq-panel: #fff;
-    --rq-header-bg: #f6f6f6;
-    --rq-row-recent-bg: #fffdf5;
-    --rq-row-recent-hover-bg: #fbf6e6;
-    --rq-row-hover-bg: #f6f6f6;
-
-    --rq-link: #447e9b;
-    --rq-teal: #417690;
-
-    /* Semantic state colors — fg / bg / border pairs. */
-    --rq-failed-fg: #ba2121;     --rq-failed-bg: #fdecec;     --rq-failed-border: rgba(186, 33, 33, 0.2);
-    --rq-finished-fg: #417e38;   --rq-finished-bg: #ecf4ea;   --rq-finished-border: rgba(65, 126, 56, 0.2);
-    --rq-started-fg: #3778b7;    --rq-started-bg: #eaf1f8;    --rq-started-border: rgba(55, 120, 183, 0.2);
-    --rq-queued-fg: #9c6d1e;     --rq-queued-bg: #fbf3e3;     --rq-queued-border: rgba(156, 109, 30, 0.2);
-    --rq-deferred-fg: #6b6b6b;   --rq-deferred-bg: #efefef;   --rq-deferred-border: rgba(107, 107, 107, 0.2);
-    --rq-scheduled-fg: #6a3a9a;  --rq-scheduled-bg: #f1eaf6;  --rq-scheduled-border: rgba(106, 58, 154, 0.2);
-
-    /* Layout — overrideable per page via a wrapping selector. */
     --rq-grid-left: 360px;
     --rq-grid-gap: 16px;
+}
+
+/* Dark overrides — only for tokens Django doesn't theme for us. Mirrors
+   Django's pattern of duplicating into both selectors. */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --rq-finished-fg: #6dbf5e;
+        --rq-queued-fg: #d4a151;
+    }
+}
+html[data-theme="dark"] {
+    --rq-finished-fg: #6dbf5e;
+    --rq-queued-fg: #d4a151;
 }
 
 /* ── 2. Layout ─────────────────────────────────────────────────── */
@@ -61,7 +64,7 @@
     font-size: 20px;
     font-weight: 300;
     letter-spacing: -0.2px;
-    color: var(--rq-text);
+    color: var(--body-fg);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -70,7 +73,7 @@
 .rq-title-row .rq-title-id {
     font-family: var(--rq-mono);
     font-size: 15px;
-    color: var(--rq-text-muted);
+    color: var(--body-quiet-color);
     font-weight: 400;
     word-break: break-all;
 }
@@ -101,17 +104,17 @@
 
 /* ── 3. Panels & fields ────────────────────────────────────────── */
 .rq-panel {
-    background: var(--rq-panel);
-    border: 1px solid var(--rq-border);
+    background: var(--body-bg);
+    border: 1px solid var(--hairline-color);
     border-radius: 0;
 }
 .rq-panel-header {
     padding: 10px 16px;
-    border-bottom: 1px solid var(--rq-border);
+    border-bottom: 1px solid var(--hairline-color);
     font-size: 10.5px;
     letter-spacing: 0.5px;
     text-transform: uppercase;
-    color: var(--rq-text-muted);
+    color: var(--body-quiet-color);
     font-weight: 700;
 }
 .rq-panel-body { padding: 10px 0; }
@@ -125,15 +128,15 @@
 }
 .rq-field-label {
     font-size: 11.5px;
-    color: var(--rq-text-muted);
+    color: var(--body-quiet-color);
     letter-spacing: 0.2px;
 }
 .rq-field-value {
     font-size: 12.5px;
-    color: var(--rq-text);
+    color: var(--body-fg);
     word-break: break-all;
 }
-.rq-field-value a { color: var(--rq-link); text-decoration: none; }
+.rq-field-value a { color: var(--link-fg); text-decoration: none; }
 .rq-field-value ul { margin: 0; padding-left: 18px; }
 
 /* ── 4. Pills ──────────────────────────────────────────────────── */
@@ -148,7 +151,8 @@
     padding: 2px 8px;
     border-radius: 2px;
     line-height: 1.5;
-    border: 1px solid;
+    /* Border auto-derives from the pill's foreground at 25% alpha. */
+    border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
 }
 .rq-pill-dense { font-size: 10.5px; padding: 1px 6px; }
 .rq-pill::before {
@@ -161,12 +165,15 @@
     flex-shrink: 0;
 }
 
-.rq-state-failed    { color: var(--rq-failed-fg);    background: var(--rq-failed-bg);    border-color: var(--rq-failed-border); }
-.rq-state-finished  { color: var(--rq-finished-fg);  background: var(--rq-finished-bg);  border-color: var(--rq-finished-border); }
-.rq-state-started   { color: var(--rq-started-fg);   background: var(--rq-started-bg);   border-color: var(--rq-started-border); }
-.rq-state-queued    { color: var(--rq-queued-fg);    background: var(--rq-queued-bg);    border-color: var(--rq-queued-border); }
-.rq-state-deferred  { color: var(--rq-deferred-fg);  background: var(--rq-deferred-bg);  border-color: var(--rq-deferred-border); }
-.rq-state-scheduled { color: var(--rq-scheduled-fg); background: var(--rq-scheduled-bg); border-color: var(--rq-scheduled-border); }
+/* State colors. Backgrounds use Django's --message-* vars where they
+   exist; foregrounds use Django's --error-fg / --link-fg / --body-quiet-color
+   where they exist. The rest are locals (see :root). */
+.rq-state-failed    { color: var(--error-fg);          background: var(--message-error-bg); }
+.rq-state-finished  { color: var(--rq-finished-fg);    background: var(--message-success-bg); }
+.rq-state-started   { color: var(--link-fg);           background: var(--message-info-bg); }
+.rq-state-queued,
+.rq-state-scheduled { color: var(--rq-queued-fg);      background: var(--message-warning-bg); }
+.rq-state-deferred  { color: var(--body-quiet-color);  background: var(--message-debug-bg); }
 
 /* ── 5. Buttons ────────────────────────────────────────────────── */
 .rq-btn {
@@ -183,23 +190,24 @@
     text-decoration: none;
 }
 .rq-btn-ghost {
-    background: #fff;
-    color: var(--rq-text);
-    border: 1px solid var(--rq-border-strong);
+    background: var(--body-bg);
+    color: var(--body-fg);
+    border: 1px solid var(--border-color);
 }
-.rq-btn-ghost.rq-btn-danger { color: var(--rq-failed-fg); }
+.rq-btn-ghost.rq-btn-danger { color: var(--error-fg); }
 .rq-btn-default,
 .rq-btn-default:link,
 .rq-btn-default:visited {
-    background: var(--rq-teal);
-    color: #fff;
-    border: 1px solid var(--rq-teal);
+    background: var(--button-bg);
+    color: var(--button-fg);
+    border: 1px solid var(--button-bg);
 }
+.rq-btn-default:hover { background: var(--button-hover-bg); border-color: var(--button-hover-bg); }
 
 /* ── 6. Tables ─────────────────────────────────────────────────── */
 .rq-table-card {
-    background: #fff;
-    border: 1px solid var(--rq-border);
+    background: var(--body-bg);
+    border: 1px solid var(--hairline-color);
     margin-bottom: 16px;
 }
 .rq-table {
@@ -209,31 +217,33 @@
     table-layout: fixed;
 }
 .rq-table th {
-    background: var(--rq-header-bg);
+    background: var(--darkened-bg);
     padding: 8px 12px;
     text-align: left;
     font-weight: 600;
     font-size: 10.5px;
     letter-spacing: 0.4px;
-    color: var(--rq-text-muted);
+    color: var(--body-quiet-color);
     text-transform: uppercase;
     white-space: nowrap;
-    border-bottom: 1px solid var(--rq-border);
+    border-bottom: 1px solid var(--hairline-color);
 }
 .rq-table td {
     padding: 9px 12px;
     vertical-align: middle;
-    border-top: 1px solid var(--rq-border);
+    border-top: 1px solid var(--hairline-color);
 }
-.rq-table tbody tr { background: #fff; }
-.rq-table tbody tr:hover { background: var(--rq-row-hover-bg); }
-.rq-table tbody tr.rq-row-recent { background: var(--rq-row-recent-bg); }
-.rq-table tbody tr.rq-row-recent:hover { background: var(--rq-row-recent-hover-bg); }
+.rq-table tbody tr { background: var(--body-bg); }
+.rq-table tbody tr:hover { background: var(--selected-bg); }
+.rq-table tbody tr.rq-row-recent { background: var(--selected-row); }
+.rq-table tbody tr.rq-row-recent:hover {
+    background: color-mix(in srgb, var(--selected-row) 80%, var(--body-fg));
+}
 .rq-table tbody tr.rq-clickable { cursor: pointer; }
 
 .rq-table .rq-cell-action { text-align: right; }
 .rq-table .rq-cell-action a {
-    color: var(--rq-link);
+    color: var(--link-fg);
     font-size: 11.5px;
     text-decoration: none;
     white-space: nowrap;
@@ -241,17 +251,17 @@
 
 /* ── 7. Callouts ───────────────────────────────────────────────── */
 .rq-callout {
-    background: #fff;
-    border: 1px solid var(--rq-border);
+    background: var(--body-bg);
+    border: 1px solid var(--hairline-color);
     margin-bottom: 16px;
 }
 .rq-callout-error {
-    border-color: var(--rq-failed-border);
-    border-left: 3px solid var(--rq-failed-fg);
+    border-color: color-mix(in srgb, var(--error-fg) 25%, transparent);
+    border-left: 3px solid var(--error-fg);
 }
 .rq-callout-head {
     padding: 12px 16px;
-    border-bottom: 1px solid var(--rq-border);
+    border-bottom: 1px solid var(--hairline-color);
 }
 .rq-callout-eyebrow {
     font-size: 10.5px;
@@ -259,15 +269,15 @@
     text-transform: uppercase;
     font-weight: 700;
 }
-.rq-callout-error .rq-callout-eyebrow { color: var(--rq-failed-fg); }
+.rq-callout-error .rq-callout-eyebrow { color: var(--error-fg); }
 .rq-callout-pre {
     margin: 0;
     padding: 12px 16px;
-    background: #fafafa;
+    background: var(--darkened-bg);
     font-family: var(--rq-mono);
     font-size: 11.5px;
     line-height: 1.55;
-    color: var(--rq-text);
+    color: var(--body-fg);
     overflow-x: auto;
     white-space: pre;
 }
@@ -277,15 +287,15 @@
     padding: 8px 16px;
     font-family: var(--rq-mono);
     font-size: 12px;
-    color: var(--rq-text);
+    color: var(--body-fg);
     background: transparent;
     white-space: pre-wrap;
     word-break: break-all;
 }
 
 /* ── 8. Utilities ──────────────────────────────────────────────── */
-.rq-mono     { font-family: var(--rq-mono); }
-.rq-muted    { color: var(--rq-text-muted); }
-.rq-faint    { color: var(--rq-text-faint); }
-.rq-nowrap   { white-space: nowrap; }
-.rq-num      { text-align: right; font-family: var(--rq-mono); font-variant-numeric: tabular-nums; }
+.rq-mono   { font-family: var(--rq-mono); }
+.rq-muted  { color: var(--body-quiet-color); }
+.rq-faint  { color: var(--body-quiet-color); opacity: 0.7; }
+.rq-nowrap { white-space: nowrap; }
+.rq-num    { text-align: right; font-family: var(--rq-mono); font-variant-numeric: tabular-nums; }

@@ -29,12 +29,10 @@
     <div class="rq-title-row">
         <h1>
             Job
-            <span class="rq-title-id" id="rq-job-id">{{ job.id }}</span>
+            <span class="rq-title-id">{{ job.id }}</span>
             <span class="rq-pill rq-state-{% if status == 'queued' or status == 'finished' or status == 'failed' or status == 'started' or status == 'deferred' or status == 'scheduled' %}{{ status }}{% else %}deferred{% endif %}">{{ status }}</span>
         </h1>
         <div class="rq-actions">
-            <button type="button" class="rq-btn rq-btn-ghost"
-                    onclick="(function(){var t=document.getElementById('rq-job-id').innerText;if(navigator.clipboard){navigator.clipboard.writeText(t);}else{var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}})();">Copy ID</button>
             <a class="rq-btn rq-btn-ghost rq-btn-danger" href="{% rq_url 'delete_job' queue_index job.id %}">Delete</a>
             {% if job.is_started %}
                 <form method="POST" action="{% rq_url 'stop_job' queue_index job.id %}">
