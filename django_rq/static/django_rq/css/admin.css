@@ -135,9 +135,7 @@ html[data-theme="dark"] {
 
 /* ── 4. Pills ──────────────────────────────────────────────────── */
 .rq-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
+    display: inline-block;
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.3px;
@@ -149,15 +147,6 @@ html[data-theme="dark"] {
     border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
 }
 .rq-pill-dense { font-size: 10.5px; padding: 1px 6px; }
-.rq-pill::before {
-    content: "";
-    width: 6px;
-    height: 6px;
-    border-radius: 6px;
-    background: currentColor;
-    display: inline-block;
-    flex-shrink: 0;
-}
 
 /* State colors. Backgrounds use Django's --message-* vars where they
    exist; foregrounds use Django's --error-fg / --link-fg / --body-quiet-color

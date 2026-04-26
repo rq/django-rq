@@ -151,14 +151,14 @@
                                             <li>{{ key }}: {{ value|force_escape }}</li>
                                         {% endfor %}
                                     </ul>
-                                {% else %}{}
+                                {% else %}-
                                 {% endif %}
                             {% else %}Unpickling Error{% endif %}
                         </div>
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">meta</div>
-                        <div class="rq-field-value rq-mono{% if not job.meta %} rq-faint{% endif %}">{{ job.meta|default:"{}" }}</div>
+                        <div class="rq-field-value rq-mono{% if not job.meta %} rq-faint{% endif %}">{{ job.meta|default:"-" }}</div>
                     </div>
                 </div>
             </div>
