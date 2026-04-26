@@ -6,6 +6,7 @@
 
 {% block extrastyle %}
     {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/forms.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'django_rq/css/admin.css' %}">
 {% endblock %}
 
@@ -183,7 +184,6 @@
     </div>
 
     <div class="submit-row">
-        <div class="deletelink-box"><a href="{% rq_url 'delete_job' queue_index job.id %}" class="deletelink">Delete</a></div>
         {% if job.is_started %}
             <form method="POST" action="{% rq_url 'stop_job' queue_index job.id %}">
                 {% csrf_token %}
@@ -202,6 +202,7 @@
                 <input type="submit" value="Enqueue" class="default" name="Enqueue">
             </form>
         {% endif %}
+        <a href="{% rq_url 'delete_job' queue_index job.id %}" class="deletelink">Delete</a>
     </div>
 
     {% if job.results %}
