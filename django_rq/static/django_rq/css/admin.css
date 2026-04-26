@@ -1,0 +1,291 @@
+/*
+ * django-rq admin design system.
+ *
+ * Primitives shared across every django-rq admin page. All selectors are
+ * prefixed `.rq-` to avoid colliding with Django admin's stock CSS.
+ *
+ * Layers:
+ *   1. Tokens          — colors, fonts, sizes (:root custom properties)
+ *   2. Layout          — title row, grid, columns
+ *   3. Panels & fields — card + labeled field row
+ *   4. Pills           — status pills (semantic state colors)
+ *   5. Buttons         — ghost / default / danger variants
+ *   6. Tables          — generic table primitive + row/cell modifiers
+ *   7. Callouts        — accented info/error blocks
+ *   8. Utilities       — typography helpers (mono, muted, faint, num)
+ */
+
+/* ── 1. Tokens ─────────────────────────────────────────────────── */
+:root {
+    --rq-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    --rq-text: #333;
+    --rq-text-muted: #666;
+    --rq-text-faint: #999;
+
+    --rq-border: #e5e5e5;
+    --rq-border-strong: #cccccc;
+    --rq-panel: #fff;
+    --rq-header-bg: #f6f6f6;
+    --rq-row-recent-bg: #fffdf5;
+    --rq-row-recent-hover-bg: #fbf6e6;
+    --rq-row-hover-bg: #f6f6f6;
+
+    --rq-link: #447e9b;
+    --rq-teal: #417690;
+
+    /* Semantic state colors — fg / bg / border pairs. */
+    --rq-failed-fg: #ba2121;     --rq-failed-bg: #fdecec;     --rq-failed-border: rgba(186, 33, 33, 0.2);
+    --rq-finished-fg: #417e38;   --rq-finished-bg: #ecf4ea;   --rq-finished-border: rgba(65, 126, 56, 0.2);
+    --rq-started-fg: #3778b7;    --rq-started-bg: #eaf1f8;    --rq-started-border: rgba(55, 120, 183, 0.2);
+    --rq-queued-fg: #9c6d1e;     --rq-queued-bg: #fbf3e3;     --rq-queued-border: rgba(156, 109, 30, 0.2);
+    --rq-deferred-fg: #6b6b6b;   --rq-deferred-bg: #efefef;   --rq-deferred-border: rgba(107, 107, 107, 0.2);
+    --rq-scheduled-fg: #6a3a9a;  --rq-scheduled-bg: #f1eaf6;  --rq-scheduled-border: rgba(106, 58, 154, 0.2);
+
+    /* Layout — overrideable per page via a wrapping selector. */
+    --rq-grid-left: 360px;
+    --rq-grid-gap: 16px;
+}
+
+/* ── 2. Layout ─────────────────────────────────────────────────── */
+.rq-title-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+.rq-title-row h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 300;
+    letter-spacing: -0.2px;
+    color: var(--rq-text);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.rq-title-row .rq-title-id {
+    font-family: var(--rq-mono);
+    font-size: 15px;
+    color: var(--rq-text-muted);
+    font-weight: 400;
+    word-break: break-all;
+}
+
+.rq-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.rq-actions form { margin: 0; }
+
+.rq-grid {
+    display: grid;
+    grid-template-columns: var(--rq-grid-left) 1fr;
+    gap: var(--rq-grid-gap);
+    margin-bottom: var(--rq-grid-gap);
+}
+@media (max-width: 900px) {
+    .rq-grid { grid-template-columns: 1fr; }
+}
+.rq-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rq-grid-gap);
+    min-width: 0;
+}
+
+/* ── 3. Panels & fields ────────────────────────────────────────── */
+.rq-panel {
+    background: var(--rq-panel);
+    border: 1px solid var(--rq-border);
+    border-radius: 0;
+}
+.rq-panel-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--rq-border);
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--rq-text-muted);
+    font-weight: 700;
+}
+.rq-panel-body { padding: 10px 0; }
+
+.rq-field {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 12px;
+    padding: 6px 16px;
+    align-items: baseline;
+}
+.rq-field-label {
+    font-size: 11.5px;
+    color: var(--rq-text-muted);
+    letter-spacing: 0.2px;
+}
+.rq-field-value {
+    font-size: 12.5px;
+    color: var(--rq-text);
+    word-break: break-all;
+}
+.rq-field-value a { color: var(--rq-link); text-decoration: none; }
+.rq-field-value ul { margin: 0; padding-left: 18px; }
+
+/* ── 4. Pills ──────────────────────────────────────────────────── */
+.rq-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 2px;
+    line-height: 1.5;
+    border: 1px solid;
+}
+.rq-pill-dense { font-size: 10.5px; padding: 1px 6px; }
+.rq-pill::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 6px;
+    background: currentColor;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.rq-state-failed    { color: var(--rq-failed-fg);    background: var(--rq-failed-bg);    border-color: var(--rq-failed-border); }
+.rq-state-finished  { color: var(--rq-finished-fg);  background: var(--rq-finished-bg);  border-color: var(--rq-finished-border); }
+.rq-state-started   { color: var(--rq-started-fg);   background: var(--rq-started-bg);   border-color: var(--rq-started-border); }
+.rq-state-queued    { color: var(--rq-queued-fg);    background: var(--rq-queued-bg);    border-color: var(--rq-queued-border); }
+.rq-state-deferred  { color: var(--rq-deferred-fg);  background: var(--rq-deferred-bg);  border-color: var(--rq-deferred-border); }
+.rq-state-scheduled { color: var(--rq-scheduled-fg); background: var(--rq-scheduled-bg); border-color: var(--rq-scheduled-border); }
+
+/* ── 5. Buttons ────────────────────────────────────────────────── */
+.rq-btn {
+    display: inline-flex;
+    align-items: center;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    cursor: pointer;
+    line-height: 1.5;
+    text-decoration: none;
+}
+.rq-btn-ghost {
+    background: #fff;
+    color: var(--rq-text);
+    border: 1px solid var(--rq-border-strong);
+}
+.rq-btn-ghost.rq-btn-danger { color: var(--rq-failed-fg); }
+.rq-btn-default,
+.rq-btn-default:link,
+.rq-btn-default:visited {
+    background: var(--rq-teal);
+    color: #fff;
+    border: 1px solid var(--rq-teal);
+}
+
+/* ── 6. Tables ─────────────────────────────────────────────────── */
+.rq-table-card {
+    background: #fff;
+    border: 1px solid var(--rq-border);
+    margin-bottom: 16px;
+}
+.rq-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    table-layout: fixed;
+}
+.rq-table th {
+    background: var(--rq-header-bg);
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 10.5px;
+    letter-spacing: 0.4px;
+    color: var(--rq-text-muted);
+    text-transform: uppercase;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--rq-border);
+}
+.rq-table td {
+    padding: 9px 12px;
+    vertical-align: middle;
+    border-top: 1px solid var(--rq-border);
+}
+.rq-table tbody tr { background: #fff; }
+.rq-table tbody tr:hover { background: var(--rq-row-hover-bg); }
+.rq-table tbody tr.rq-row-recent { background: var(--rq-row-recent-bg); }
+.rq-table tbody tr.rq-row-recent:hover { background: var(--rq-row-recent-hover-bg); }
+.rq-table tbody tr.rq-clickable { cursor: pointer; }
+
+.rq-table .rq-cell-action { text-align: right; }
+.rq-table .rq-cell-action a {
+    color: var(--rq-link);
+    font-size: 11.5px;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+/* ── 7. Callouts ───────────────────────────────────────────────── */
+.rq-callout {
+    background: #fff;
+    border: 1px solid var(--rq-border);
+    margin-bottom: 16px;
+}
+.rq-callout-error {
+    border-color: var(--rq-failed-border);
+    border-left: 3px solid var(--rq-failed-fg);
+}
+.rq-callout-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--rq-border);
+}
+.rq-callout-eyebrow {
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+.rq-callout-error .rq-callout-eyebrow { color: var(--rq-failed-fg); }
+.rq-callout-pre {
+    margin: 0;
+    padding: 12px 16px;
+    background: #fafafa;
+    font-family: var(--rq-mono);
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--rq-text);
+    overflow-x: auto;
+    white-space: pre;
+}
+
+.rq-pre {
+    margin: 0;
+    padding: 8px 16px;
+    font-family: var(--rq-mono);
+    font-size: 12px;
+    color: var(--rq-text);
+    background: transparent;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* ── 8. Utilities ──────────────────────────────────────────────── */
+.rq-mono     { font-family: var(--rq-mono); }
+.rq-muted    { color: var(--rq-text-muted); }
+.rq-faint    { color: var(--rq-text-faint); }
+.rq-nowrap   { white-space: nowrap; }
+.rq-num      { text-align: right; font-family: var(--rq-mono); font-variant-numeric: tabular-nums; }
