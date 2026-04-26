@@ -32,27 +32,6 @@
             <span class="rq-title-id">{{ job.id }}</span>
             <span class="rq-pill rq-state-{% if status == 'queued' or status == 'finished' or status == 'failed' or status == 'started' or status == 'deferred' or status == 'scheduled' %}{{ status }}{% else %}deferred{% endif %}">{{ status }}</span>
         </h1>
-        <div class="rq-actions">
-            <a class="rq-btn rq-btn-ghost rq-btn-danger" href="{% rq_url 'delete_job' queue_index job.id %}">Delete</a>
-            {% if job.is_started %}
-                <form method="POST" action="{% rq_url 'stop_job' queue_index job.id %}">
-                    {% csrf_token %}
-                    <button type="submit" name="stop" class="rq-btn rq-btn-ghost rq-btn-danger">Stop</button>
-                </form>
-            {% endif %}
-            {% if job.is_failed %}
-                <form method="POST" action="{% rq_url 'requeue_job' queue_index job.id %}">
-                    {% csrf_token %}
-                    <button type="submit" name="requeue" class="rq-btn rq-btn-default">Requeue</button>
-                </form>
-            {% endif %}
-            {% if not job.is_queued and not job.is_failed and not job.is_started %}
-                <form method="POST" action="{% rq_url 'enqueue_job' queue_index job.id %}">
-                    {% csrf_token %}
-                    <button type="submit" name="Enqueue" class="rq-btn rq-btn-default">Enqueue</button>
-                </form>
-            {% endif %}
-        </div>
     </div>
 
     <div class="rq-grid">
@@ -201,6 +180,28 @@
             </div>
             {% endif %}
         </div>
+    </div>
+
+    <div class="submit-row">
+        <div class="deletelink-box"><a href="{% rq_url 'delete_job' queue_index job.id %}" class="deletelink">Delete</a></div>
+        {% if job.is_started %}
+            <form method="POST" action="{% rq_url 'stop_job' queue_index job.id %}">
+                {% csrf_token %}
+                <input type="submit" value="Stop" class="deletelink" name="stop">
+            </form>
+        {% endif %}
+        {% if job.is_failed %}
+            <form method="POST" action="{% rq_url 'requeue_job' queue_index job.id %}">
+                {% csrf_token %}
+                <input type="submit" value="Requeue" class="default" name="requeue">
+            </form>
+        {% endif %}
+        {% if not job.is_queued and not job.is_failed %}
+            <form method="POST" action="{% rq_url 'enqueue_job' queue_index job.id %}">
+                {% csrf_token %}
+                <input type="submit" value="Enqueue" class="default" name="Enqueue">
+            </form>
+        {% endif %}
     </div>
 
     {% if job.results %}

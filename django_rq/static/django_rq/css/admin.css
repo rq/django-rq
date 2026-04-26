@@ -13,10 +13,12 @@
  *   2. Layout          — title row, grid, columns
  *   3. Panels & fields — card + labeled field row
  *   4. Pills           — semantic state pills
- *   5. Buttons         — ghost + default + danger variants
- *   6. Tables          — generic table primitive + row/cell modifiers
- *   7. Callouts        — accented info/error blocks
- *   8. Utilities       — typography helpers
+ *   5. Tables          — generic table primitive + row/cell modifiers
+ *   6. Callouts        — accented info/error blocks
+ *   7. Utilities       — typography helpers
+ *
+ * Buttons use Django admin's stock classes (`.default`, `.deletelink`)
+ * directly — no custom button CSS lives here.
  */
 
 /* ── 1. Tokens ─────────────────────────────────────────────────── */
@@ -77,14 +79,6 @@ html[data-theme="dark"] {
     font-weight: 400;
     word-break: break-all;
 }
-
-.rq-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-.rq-actions form { margin: 0; }
 
 .rq-grid {
     display: grid;
@@ -175,36 +169,7 @@ html[data-theme="dark"] {
 .rq-state-scheduled { color: var(--rq-queued-fg);      background: var(--message-warning-bg); }
 .rq-state-deferred  { color: var(--body-quiet-color);  background: var(--message-debug-bg); }
 
-/* ── 5. Buttons ────────────────────────────────────────────────── */
-.rq-btn {
-    display: inline-flex;
-    align-items: center;
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.2px;
-    padding: 4px 10px;
-    border-radius: 2px;
-    cursor: pointer;
-    line-height: 1.5;
-    text-decoration: none;
-}
-.rq-btn-ghost {
-    background: var(--body-bg);
-    color: var(--body-fg);
-    border: 1px solid var(--border-color);
-}
-.rq-btn-ghost.rq-btn-danger { color: var(--error-fg); }
-.rq-btn-default,
-.rq-btn-default:link,
-.rq-btn-default:visited {
-    background: var(--button-bg);
-    color: var(--button-fg);
-    border: 1px solid var(--button-bg);
-}
-.rq-btn-default:hover { background: var(--button-hover-bg); border-color: var(--button-hover-bg); }
-
-/* ── 6. Tables ─────────────────────────────────────────────────── */
+/* ── 5. Tables ─────────────────────────────────────────────────── */
 .rq-table-card {
     background: var(--body-bg);
     border: 1px solid var(--hairline-color);
@@ -249,7 +214,7 @@ html[data-theme="dark"] {
     white-space: nowrap;
 }
 
-/* ── 7. Callouts ───────────────────────────────────────────────── */
+/* ── 6. Callouts ───────────────────────────────────────────────── */
 .rq-callout {
     background: var(--body-bg);
     border: 1px solid var(--hairline-color);
@@ -293,7 +258,7 @@ html[data-theme="dark"] {
     word-break: break-all;
 }
 
-/* ── 8. Utilities ──────────────────────────────────────────────── */
+/* ── 7. Utilities ──────────────────────────────────────────────── */
 .rq-mono   { font-family: var(--rq-mono); }
 .rq-muted  { color: var(--body-quiet-color); }
 .rq-faint  { color: var(--body-quiet-color); opacity: 0.7; }
