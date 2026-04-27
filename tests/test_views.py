@@ -69,9 +69,9 @@ class ViewTest(TestCase):
         url = reverse('admin:django_rq_job_detail', args=[queue_index, job.id])
         response = self.client.get(url)
         assert result.id
-        self.assertContains(response, 'ID')
+        self.assertContains(response, 'Result')
         self.assertContains(response, 'Type')
-        self.assertContains(response, 'Created At')
+        self.assertContains(response, 'Started')
         self.assertContains(response, reverse('admin:django_rq_result_detail', args=[queue_index, job.id, result.id]))
         self.assertContains(response, result.id)
         self.assertContains(response, result.type.name)

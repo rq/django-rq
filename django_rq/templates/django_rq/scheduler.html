@@ -85,12 +85,12 @@
                                 <td>{{ job.schedule }}</td>
                                 <td>
                                     {% if job.next_run %}
-                                        {{ job.next_run|to_localtime|date:"Y-m-d, H:i:s" }}
+                                        {{ job.next_run|timestamp_tooltip }}
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if job.ended_at %}
-                                        {{ job.ended_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                        {{ job.ended_at|timestamp_tooltip }}
                                     {% endif %}
                                 </td>
                                 <td>{{ job.get_status.value }}</td>

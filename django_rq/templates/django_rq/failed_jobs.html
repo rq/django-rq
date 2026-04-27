@@ -121,24 +121,24 @@
                                     </th>
                                     <td>
                                         {% if job.created_at %}
-                                            {{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                            {{ job.created_at|timestamp_tooltip }}
                                         {% endif %}
                                     </td>
                                     {% if job_status == 'Scheduled' %}
                                     <td>
                                         {% if job.scheduled_at %}
-                                            {{ job.scheduled_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                            {{ job.scheduled_at|timestamp_tooltip }}
                                         {% endif %}
                                     </td>
                                     {% endif %}
                                     <td>
                                         {% if job.enqueued_at %}
-                                            {{ job.enqueued_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                            {{ job.enqueued_at|timestamp_tooltip }}
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if job.ended_at %}
-                                            {{ job.ended_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                            {{ job.ended_at|timestamp_tooltip }}
                                         {% endif %}
                                     </td>
                                     <td>{{ job.get_status.value }}</td>

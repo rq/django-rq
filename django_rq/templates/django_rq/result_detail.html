@@ -71,7 +71,7 @@
             <div>
                 <div class = "flex-container">
                     <label>Created:</label>
-                    <div class="readonly">{{ result.created_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
+                    <div class="readonly">{{ result.created_at|timestamp_tooltip }}</div>
                 </div>
             </div>
         </div>
