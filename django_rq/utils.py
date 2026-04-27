@@ -48,29 +48,55 @@ def get_scheduler_pid(queue: Queue) -> Union[bool, int, None]:
     return None
 
 
-_DISPLAYABLE_CONNECTION_KWARGS = ('host', 'port', 'db', 'username', 'service_name')
+_DISPLAYABLE_CONNECTION_KWARGS = (
+    'host',
+    'port',
+    'db',
+    'username',
+    'client_name',
+    'service_name',
+    'sentinels',
+    'unix_socket_path',
+    'path',
+    'socket_timeout',
+    'socket_connect_timeout',
+    'socket_keepalive',
+    'health_check_interval',
+    'protocol',
+    'encoding',
+    'decode_responses',
+)
 
 
 def get_displayable_connection_kwargs(queue: Queue) -> dict[str, Any]:
-    """Return the queue's Redis connection kwargs suitable for display in
-    templates and JSON output.
+    """Return safe Redis connection metadata for templates and JSON output.
 
-    Only operationally meaningful fields are returned: host, port, db,
-    username, and service_name (Sentinel). Anything else — passwords,
-    redis-py internals, transport tuning — is excluded by the allowlist.
+    Only operationally meaningful fields are returned. Secret-bearing values
+    and redis-py internals are excluded by the allowlist.
 
     For Sentinel-backed queues, host and port reflect the first sentinel
-    endpoint; service_name identifies the master.
+    endpoint; sentinels lists all known endpoints; service_name identifies the
+    master.
     """
     pool = queue.connection.connection_pool
+    connection_kwargs = pool.connection_kwargs.copy()
+
     if isinstance(pool, SentinelConnectionPool):
-        first_sentinel = pool.sentinel_manager.sentinels[0]
-        connection_kwargs = pool.connection_kwargs.copy()
-        sentinel_connection_kwargs = first_sentinel.connection_pool.connection_kwargs
-        connection_kwargs['host'] = sentinel_connection_kwargs.get('host')
-        connection_kwargs['port'] = sentinel_connection_kwargs.get('port')
-    else:
-        connection_kwargs = pool.connection_kwargs
+        connection_kwargs['service_name'] = getattr(pool, 'service_name', None)
+        sentinel_connections = pool.sentinel_manager.sentinels
+        sentinel_kwargs = [
+            sentinel.connection_pool.connection_kwargs
+            for sentinel in sentinel_connections
+        ]
+        if sentinel_kwargs:
+            first_sentinel_kwargs = sentinel_kwargs[0]
+            connection_kwargs['host'] = first_sentinel_kwargs.get('host')
+            connection_kwargs['port'] = first_sentinel_kwargs.get('port')
+            connection_kwargs['sentinels'] = [
+                (kwargs.get('host'), kwargs.get('port'))
+                for kwargs in sentinel_kwargs
+                if kwargs.get('host') is not None and kwargs.get('port') is not None
+            ]
 
     return {
         key: connection_kwargs[key]

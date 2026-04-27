@@ -75,36 +75,50 @@ class RqStatsTest(TestCase):
         call_command('rqstats', '-y')
 
 
-class DisplayableConnectionKwargsTest(TestCase):
-    DISPLAYABLE_KEYS = {'host', 'port', 'db', 'username', 'service_name'}
+FORBIDDEN_CONNECTION_KEYS = ('password', 'credential_provider', 'connection_pool', 'parser_class', 'retry', 'driver_info')
 
-    def test_returns_only_allowlisted_keys(self):
-        """get_displayable_connection_kwargs returns host/port/db (and optional
-        username/service_name) and excludes everything else — passwords,
-        redis-py internals, transport tuning."""
+
+class DisplayableConnectionKwargsTest(TestCase):
+    def test_returns_safe_connection_metadata(self):
+        """get_displayable_connection_kwargs returns operationally meaningful
+        fields and never leaks secrets or redis-py internals."""
         queue = get_queue('url')
         self.assertEqual(queue.connection.connection_pool.connection_kwargs.get('password'), 'password')
 
         displayable = get_displayable_connection_kwargs(queue)
 
-        self.assertLessEqual(set(displayable), self.DISPLAYABLE_KEYS)
+        for key in FORBIDDEN_CONNECTION_KEYS:
+            self.assertNotIn(key, displayable)
         self.assertEqual(displayable.get('host'), 'host')
         self.assertEqual(displayable.get('port'), 1234)
         self.assertEqual(displayable.get('db'), 4)
+        self.assertEqual(displayable.get('username'), 'username')
 
     def test_sentinel_returns_first_sentinel_endpoint(self):
-        """For Sentinel-backed queues, host/port reflect the first sentinel
-        endpoint; service_name identifies the master."""
+        """For Sentinel-backed queues, expose safe Sentinel metadata."""
         queue = get_queue('sentinel')
         sentinels = queue.connection.connection_pool.sentinel_manager.sentinels
         first_sentinel_kwargs = sentinels[0].connection_pool.connection_kwargs
 
         displayable = get_displayable_connection_kwargs(queue)
 
-        self.assertLessEqual(set(displayable), self.DISPLAYABLE_KEYS)
+        for key in FORBIDDEN_CONNECTION_KEYS:
+            self.assertNotIn(key, displayable)
         self.assertEqual(displayable.get('host'), first_sentinel_kwargs.get('host'))
         self.assertEqual(displayable.get('port'), first_sentinel_kwargs.get('port'))
         self.assertEqual(displayable.get('db'), queue.connection.connection_pool.connection_kwargs.get('db'))
+        self.assertEqual(displayable.get('service_name'), 'testmaster')
+        self.assertEqual(displayable.get('socket_timeout'), 10)
+        self.assertEqual(
+            displayable.get('sentinels'),
+            [
+                (
+                    sentinel.connection_pool.connection_kwargs.get('host'),
+                    sentinel.connection_pool.connection_kwargs.get('port'),
+                )
+                for sentinel in sentinels
+            ],
+        )
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
