@@ -14,7 +14,7 @@
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
         <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
-        <a href="{% rq_url 'jobs' queue_index %}">{{ queue.name }}</a> &rsaquo;
+        <a href="{% rq_url 'queue_details' queue_index %}">{{ queue.name }}</a> &rsaquo;
         <span>{{ job.id }}</span>
     </div>
 {% endblock %}
@@ -43,7 +43,7 @@
                     <div class="rq-field">
                         <div class="rq-field-label">Queue</div>
                         <div class="rq-field-value">
-                            <a href="{% rq_url 'jobs' queue_index %}">{{ job.origin }}</a>
+                            <a href="{% rq_url 'queue_details' queue_index %}">{{ job.origin }}</a>
                         </div>
                     </div>
                     <div class="rq-field">

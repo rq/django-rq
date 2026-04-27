@@ -7,8 +7,8 @@ from unittest.mock import PropertyMock, patch
 from uuid import uuid4
 
 import rq
-from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -27,7 +27,7 @@ from django_rq.jobs import get_job_class
 from django_rq.management.commands import rqworker
 from django_rq.queues import DjangoRQ, get_queue, get_queues
 from django_rq.templatetags.django_rq import force_escape, timestamp_tooltip, to_localtime
-from django_rq.utils import get_scheduler_pid
+from django_rq.utils import get_displayable_connection_kwargs, get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
 from tests.base import DjangoRQTestCase
 from tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self
@@ -73,6 +73,38 @@ class RqStatsTest(TestCase):
         call_command('rqstats')
         call_command('rqstats', '-j')
         call_command('rqstats', '-y')
+
+
+class DisplayableConnectionKwargsTest(TestCase):
+    DISPLAYABLE_KEYS = {'host', 'port', 'db', 'username', 'service_name'}
+
+    def test_returns_only_allowlisted_keys(self):
+        """get_displayable_connection_kwargs returns host/port/db (and optional
+        username/service_name) and excludes everything else — passwords,
+        redis-py internals, transport tuning."""
+        queue = get_queue('url')
+        self.assertEqual(queue.connection.connection_pool.connection_kwargs.get('password'), 'password')
+
+        displayable = get_displayable_connection_kwargs(queue)
+
+        self.assertLessEqual(set(displayable), self.DISPLAYABLE_KEYS)
+        self.assertEqual(displayable.get('host'), 'host')
+        self.assertEqual(displayable.get('port'), 1234)
+        self.assertEqual(displayable.get('db'), 4)
+
+    def test_sentinel_returns_first_sentinel_endpoint(self):
+        """For Sentinel-backed queues, host/port reflect the first sentinel
+        endpoint; service_name identifies the master."""
+        queue = get_queue('sentinel')
+        sentinels = queue.connection.connection_pool.sentinel_manager.sentinels
+        first_sentinel_kwargs = sentinels[0].connection_pool.connection_kwargs
+
+        displayable = get_displayable_connection_kwargs(queue)
+
+        self.assertLessEqual(set(displayable), self.DISPLAYABLE_KEYS)
+        self.assertEqual(displayable.get('host'), first_sentinel_kwargs.get('host'))
+        self.assertEqual(displayable.get('port'), first_sentinel_kwargs.get('port'))
+        self.assertEqual(displayable.get('db'), queue.connection.connection_pool.connection_kwargs.get('db'))
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})

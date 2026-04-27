@@ -42,6 +42,21 @@ class ViewTest(TestCase):
         response = self.client.get(reverse('admin:django_rq_jobs', args=[queue_index]))
         self.assertEqual(response.context['jobs'], [job])
 
+    def test_queue_details(self):
+        """Queue detail page renders queue summary with safe connection kwargs."""
+        queue = get_queue('default')
+        queue.enqueue(access_self)
+        queue_index = get_queue_index('default')
+
+        response = self.client.get(reverse('admin:django_rq_queue_details', args=[queue_index]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['queue'], queue)
+        self.assertEqual(response.context['queue_index'], queue_index)
+        self.assertEqual(response.context['num_jobs'], 1)
+        self.assertIn('host', response.context['connection_kwargs'])
+        self.assertNotIn('password', response.context['connection_kwargs'])
+
     def test_job_details(self):
         """Job data is displayed properly"""
         queue = get_queue('default')
