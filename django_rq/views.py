@@ -77,6 +77,11 @@ def queue_details(request: HttpRequest, queue_index: int) -> HttpResponse:
     connection = queue.connection
     queue_config = get_queues_list()[queue_index]['connection_config']
 
+    oldest_job_id = connection.lindex(queue.key, 0)
+    newest_job_id = connection.lindex(queue.key, -1)
+    oldest_queued_job = queue.fetch_job(oldest_job_id.decode('utf-8')) if oldest_job_id else None
+    newest_queued_job = queue.fetch_job(newest_job_id.decode('utf-8')) if newest_job_id else None
+
     context_data = {
         **each_context(request),
         'queue': queue,
@@ -91,6 +96,8 @@ def queue_details(request: HttpRequest, queue_index: int) -> HttpResponse:
         'num_deferred': len(DeferredJobRegistry(queue.name, connection)),
         'num_scheduled': len(ScheduledJobRegistry(queue.name, connection)),
         'scheduler_pid': get_scheduler_pid(queue),
+        'oldest_queued_job': oldest_queued_job,
+        'newest_queued_job': newest_queued_job,
     }
     return render(request, 'django_rq/queue_detail.html', context_data)
 
