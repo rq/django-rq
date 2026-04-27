@@ -26,7 +26,7 @@ from django_rq.decorators import job
 from django_rq.jobs import get_job_class
 from django_rq.management.commands import rqworker
 from django_rq.queues import DjangoRQ, get_queue, get_queues
-from django_rq.templatetags.django_rq import force_escape, to_localtime
+from django_rq.templatetags.django_rq import force_escape, timestamp_tooltip, to_localtime
 from django_rq.utils import get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
 from tests.base import DjangoRQTestCase
@@ -557,6 +557,34 @@ class TemplateTagTest(TestCase):
 
             self.assertIsNotNone(time.tzinfo)
             self.assertEqual(time.strftime("%z"), '+0700')
+
+    def test_timestamp_tooltip(self):
+        """Renders local time visibly with UTC in title; handles aware
+        datetimes correctly; falsy input renders an em-dash."""
+        import datetime as _dt
+
+        # Naive UTC datetime → local time visible, UTC in tooltip.
+        with self.settings(TIME_ZONE='Asia/Jakarta'):
+            naive = _dt.datetime(2026, 4, 26, 17, 10, 24)
+            html = timestamp_tooltip(naive)
+            self.assertIn('<time', html)
+            self.assertIn('datetime="2026-04-26T17:10:24+00:00"', html)
+            self.assertIn('title="UTC: 2026-04-26 17:10:24"', html)
+            # Asia/Jakarta is UTC+7 → visible value is 00:10:24 the next day.
+            self.assertIn('>2026-04-27 00:10:24</time>', html)
+
+        # Aware datetime is converted (not reinterpreted) on its way to UTC.
+        with self.settings(TIME_ZONE='UTC'):
+            tz = _dt.timezone(_dt.timedelta(hours=5, minutes=30))
+            aware = _dt.datetime(2026, 4, 26, 22, 40, 24, tzinfo=tz)  # 17:10:24 UTC
+            html = timestamp_tooltip(aware)
+            # The right UTC instant is 17:10:24, NOT 22:40:24 (the local clock).
+            self.assertIn('title="UTC: 2026-04-26 17:10:24"', html)
+            self.assertIn('>2026-04-26 17:10:24</time>', html)
+
+        # Falsy input renders an em-dash placeholder.
+        self.assertEqual(timestamp_tooltip(None), '—')
+        self.assertEqual(timestamp_tooltip(''), '—')
 
     def test_force_escape_safe_string(self):
         html = "<h1>hello world</h1>"

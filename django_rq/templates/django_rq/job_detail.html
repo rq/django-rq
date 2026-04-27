@@ -68,19 +68,19 @@
                 <div class="rq-panel-body">
                     <div class="rq-field">
                         <div class="rq-field-label">Created</div>
-                        <div class="rq-field-value">{% if job.created_at %}{{ job.created_at|to_localtime|date:"Y-m-d H:i:s" }}{% else %}—{% endif %}</div>
+                        <div class="rq-field-value">{{ job.created_at|timestamp_tooltip }}</div>
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">Enqueued</div>
-                        <div class="rq-field-value">{% if job.enqueued_at %}{{ job.enqueued_at|to_localtime|date:"Y-m-d H:i:s" }}{% else %}—{% endif %}</div>
+                        <div class="rq-field-value">{{ job.enqueued_at|timestamp_tooltip }}</div>
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">Last started</div>
-                        <div class="rq-field-value">{% if job.started_at %}{{ job.started_at|to_localtime|date:"Y-m-d H:i:s" }}{% else %}—{% endif %}</div>
+                        <div class="rq-field-value">{{ job.started_at|timestamp_tooltip }}</div>
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">Last ended</div>
-                        <div class="rq-field-value">{% if job.ended_at %}{{ job.ended_at|to_localtime|date:"Y-m-d H:i:s" }}{% else %}—{% endif %}</div>
+                        <div class="rq-field-value">{{ job.ended_at|timestamp_tooltip }}</div>
                     </div>
                 </div>
             </div>
@@ -237,7 +237,7 @@
                                 {% else %}rq-state-deferred{% endif %}">{{ type }}</span>
                         {% endwith %}
                     </td>
-                    <td class="rq-nowrap">{% if result.created_at %}{{ result.created_at|to_localtime|date:"Y-m-d H:i:s" }}{% endif %}</td>
+                    <td class="rq-nowrap">{{ result.created_at|timestamp_tooltip }}</td>
                     <td class="rq-num">—</td>
                     <td class="rq-cell-action">
                         <a href="{% rq_url 'result_detail' queue_index job.id result.id %}" onclick="event.stopPropagation();">View &rarr;</a>

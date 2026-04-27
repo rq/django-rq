@@ -58,7 +58,7 @@
                     <label>Created At:</label>
                     <div class="readonly">
                         {% if scheduler.created_at %}
-                            {{ scheduler.created_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                            {{ scheduler.created_at|timestamp_tooltip }}
                         {% else %}
                             -
                         {% endif %}
@@ -73,7 +73,7 @@
                     <label>Last Heartbeat:</label>
                     <div class="readonly">
                         {% if scheduler.last_heartbeat %}
-                            {{ scheduler.last_heartbeat|to_localtime|date:"Y-m-d, H:i:s" }}
+                            {{ scheduler.last_heartbeat|timestamp_tooltip }}
                         {% else %}
                             -
                         {% endif %}
@@ -121,14 +121,14 @@
                         <td>{{ cron_job.schedule }}</td>
                         <td>
                             {% if cron_job.next_enqueue_time %}
-                                {{ cron_job.next_enqueue_time|to_localtime|date:"Y-m-d, H:i:s" }}
+                                {{ cron_job.next_enqueue_time|timestamp_tooltip }}
                             {% else %}
                                 -
                             {% endif %}
                         </td>
                         <td>
                             {% if cron_job.latest_enqueue_time %}
-                                {{ cron_job.latest_enqueue_time|to_localtime|date:"Y-m-d, H:i:s" }}
+                                {{ cron_job.latest_enqueue_time|timestamp_tooltip }}
                             {% else %}
                                 -
                             {% endif %}

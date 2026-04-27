@@ -115,7 +115,7 @@
                                     </th>
                                     <td>
                                         {% if job.created_at %}
-                                            {{ job.created_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                            {{ job.created_at|timestamp_tooltip }}
                                         {% endif %}
                                     </td>
                                     <td>{{ job.get_status.value }}</td>

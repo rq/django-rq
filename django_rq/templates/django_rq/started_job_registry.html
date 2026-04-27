@@ -99,17 +99,17 @@
                                     </th>
                                     <td>
                                         {% if execution.created_at %}
-                                            {{ execution.created_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                            {{ execution.created_at|timestamp_tooltip }}
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if execution.last_heartbeat %}
-                                            {{ execution.last_heartbeat|to_localtime|date:"Y-m-d, H:i:s" }}
+                                            {{ execution.last_heartbeat|timestamp_tooltip }}
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if execution.job.enqueued_at %}
-                                            {{ execution.job.enqueued_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                            {{ execution.job.enqueued_at|timestamp_tooltip }}
                                         {% endif %}
                                     </td>
                                     <td>{{ execution.job|show_func_name }}</td>
