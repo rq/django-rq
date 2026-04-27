@@ -208,13 +208,6 @@
     {% if job.results %}
     <div class="rq-table-card">
         <table class="rq-table">
-            <colgroup>
-                <col style="width: 200px;">
-                <col style="width: 140px;">
-                <col style="width: 180px;">
-                <col style="width: 100px;">
-                <col style="width: 80px;">
-            </colgroup>
             <thead>
                 <tr>
                     <th>Result</th>
@@ -227,7 +220,7 @@
             <tbody>
                 {% for result in job.results %}
                 <tr class="rq-clickable{% if forloop.first %} rq-row-recent{% endif %}" onclick="window.location='{% rq_url 'result_detail' queue_index job.id result.id %}'">
-                    <td class="rq-mono rq-nowrap">{{ result.id }}</td>
+                    <td class="rq-nowrap">{{ result.id }}</td>
                     <td>
                         {% with type=result.type.name %}
                             <span class="rq-pill rq-pill-dense

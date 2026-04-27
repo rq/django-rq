@@ -160,7 +160,6 @@ html[data-theme="dark"] {
     width: 100%;
     border-collapse: collapse;
     font-size: 12.5px;
-    table-layout: fixed;
 }
 .rq-table th {
     background: var(--darkened-bg);
