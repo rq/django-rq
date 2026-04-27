@@ -21,9 +21,9 @@
 {% block breadcrumbs %}
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
-        <a href="{% url 'rq_home' %}">Django RQ</a> &rsaquo;
-        <a href = "{% url 'rq_jobs' queue_index %}">{{ queue.name }}</a> &rsaquo;
-        <a href = "{% url 'rq_job_detail' queue_index job.id %}">{{ job.id }}</a>
+        <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
+        <a href = "{% rq_url 'jobs' queue_index %}">{{ queue.name }}</a> &rsaquo;
+        <a href = "{% rq_url 'job_detail' queue_index job.id %}">{{ job.id }}</a>
     </div>
 {% endblock %}
 
@@ -190,13 +190,40 @@
                             {% if not forloop.first %}
                                 <br>
                             {% endif %}
-                            <a href = "{% url 'rq_job_detail' queue_index dependency.0 %}">
-                                {% if dependency.1 %}
-                                    {{ dependency.1.func_name }}
-                                {% else %}
-                                    Deleted
-                                {% endif %}
+                            {% if dependency.1 %}
+                                {{ dependency.1.func_name }}
+                            {% else %}
+                                Deleted
+                            {% endif %}
+                            <a href = "{% rq_url 'job_detail' queue_index dependency.0 %}">
                                 ({{ dependency.0 }})
+                            </a>
+                        {% endfor %}
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if dependents %}
+        <div class="form-row">
+            <div>
+                <div class = "flex-container">
+                    <label>Dependents:</label>
+                    <div class="readonly">
+
+                        {% for dependent in dependents %}
+                            {% if not forloop.first %}
+                                <br>
+                            {% endif %}
+                            {% if dependent.1 %}
+                                {{ dependent.1.func_name }}
+                            {% else %}
+                                Deleted
+                            {% endif %}
+                            <a href = "{% rq_url 'job_detail' queue_index dependent.0 %}">
+                                ({{ dependent.0 }})
                             </a>
                         {% endfor %}
 
@@ -232,76 +259,61 @@
     <div class="submit-row">
         <div class="deletelink-box"><a href="delete/" class="deletelink">Delete</a></div>
         {% if job.is_started %}
-            <form method = 'POST' action = "{% url 'rq_stop_job' queue_index job.id %}">
+            <form method = 'POST' action = "{% rq_url 'stop_job' queue_index job.id %}">
                 {% csrf_token %}
                 <input type="submit" value="Stop" class="deletelink" name="stop">
             </form>
         {% endif %}
         {% if job.is_failed %}
-            <form method = 'POST' action = "{% url 'rq_requeue_job' queue_index job.id %}">
+            <form method = 'POST' action = "{% rq_url 'requeue_job' queue_index job.id %}">
                 {% csrf_token %}
                 <input type="submit" value="Requeue" class="default" name="requeue">
             </form>
         {% endif %}
         {% if not job.is_queued and not job.is_failed %}
-            <form method = 'POST' action = "{% url 'rq_enqueue_job' queue_index job.id %}">
+            <form method = 'POST' action = "{% rq_url 'enqueue_job' queue_index job.id %}">
                 {% csrf_token %}
                 <input type="submit" value="Enqueue" class="default" name="Enqueue">
             </form>
         {% endif %}
     </div>
 
-
-    <div class="inline-group" id="choice_set-group">
-
-        {% for result in job.results %}
-        <h2>Result {{ result.id }}</h2>
-        <div class="inline-related">
-
-            <fieldset class="module aligned ">
-                <div class="form-row field-choice_text">
-                    <div>
-                        <div class = "flex-container">
-                            <label>Type:</label>
-                            <div class="readonly">
-                                {{ result.type.name }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row field-votes">
-                    <div>
-                        <div class = "flex-container">
-                            <label>Created at:</label>
-                            <div class="readonly">{{ result.created_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
-                        </div>
-                    </div>
-                </div>
-                {% if result.type.value == 1 %}
-                    <div class="form-row field-votes">
-                        <div>
-                            <div class = "flex-container">
-                                <label>Return value:</label>
-                                <div><pre>{{ result.return_value }}</pre></div>
-                            </div>
-                        </div>
-                    </div>
-                {% elif result.type.value == 2 %}
-                    <div class="form-row field-votes">
-                        <div>
-                            <div class = "flex-container">
-                                <label>Exception:</label>
-                                <div><pre>{{ result.exc_string }}</pre></div>
-                            </div>
-                        </div>
-                    </div>
-                {% endif %}
-
-            </fieldset>
+    {% if job.results %}
+    <div id="job-results">
+        <h3>Results</h3>
+        <div class="results">
+            <table id="result_list">
+                <thead>
+                    <tr>
+                        <th scope="col" class="sortable">
+                            <div class="text"><span>ID</span></div>
+                            <div class="clear"></div>
+                        </th>
+                        <th scope="col" class="sortable">
+                            <div class="text"><span>Type</span></div>
+                            <div class="clear"></div>
+                        </th>
+                        <th scope="col" class="sortable">
+                            <div class="text"><span>Created At</span></div>
+                            <div class="clear"></div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in job.results %}
+                    <tr>
+                        <th>
+                            <a href="{% rq_url 'result_detail' queue_index job.id result.id %}">{{ result.id }}</a>
+                        </th>
+                        <td>{{ result.type.name }}</td>
+                        <td>{{ result.created_at|to_localtime|date:"Y-m-d, H:i:s" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        {% endfor %}
     </div>
+    {% endif %}
 
 </div>
 

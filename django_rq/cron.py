@@ -170,6 +170,44 @@ class DjangoCronScheduler(CronScheduler):
         # This should never happen - if we have a connection_config, it must be in the list
         raise ValueError('Could not find matching connection config in unique configs.')
 
+    def get_jobs_data(self) -> list[dict[str, Any]]:
+        """Returns a list of dicts describing each registered cron job for display purposes."""
+        cron_jobs_data: list[dict[str, object]] = []
+
+        for job in self.get_jobs():
+            cron_string = job.cron
+            interval = job.interval
+
+            if cron_string:
+                schedule = f"cron: {cron_string}"
+            elif interval is not None:
+                schedule = f"every {interval} seconds"
+            else:
+                schedule = "-"
+
+            job_options = job.job_options
+            options: list[str] = []
+            for key in ('job_timeout', 'result_ttl', 'ttl', 'failure_ttl'):
+                value = job_options.get(key)
+                if value is not None:
+                    options.append(f"{key}={value}")
+
+            cron_jobs_data.append(
+                {
+                    "func_name": job.func_name,
+                    "queue_name": job.queue_name,
+                    "schedule": schedule,
+                    "latest_enqueue_time": job.latest_enqueue_time,
+                    "next_enqueue_time": job.next_enqueue_time,
+                    "args": job.args,
+                    "kwargs": job.kwargs,
+                    "meta": job_options.get('meta'),
+                    "options": options,
+                }
+            )
+
+        return cron_jobs_data
+
     @classmethod
     def all(cls, connection: Redis, cleanup: bool = True) -> list['DjangoCronScheduler']:  # type: ignore[override]
         """

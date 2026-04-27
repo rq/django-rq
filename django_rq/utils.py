@@ -53,7 +53,7 @@ def get_statistics(run_maintenance_tasks: bool = False) -> dict[str, list[dict[s
     for index, config in enumerate(get_queues_list()):
         queue = get_queue_by_index(index)
         connection = queue.connection
-        connection_kwargs = connection.connection_pool.connection_kwargs
+        connection_kwargs = connection.connection_pool.connection_kwargs.copy()
 
         if run_maintenance_tasks:
             clean_registries(queue)
@@ -75,6 +75,7 @@ def get_statistics(run_maintenance_tasks: bool = False) -> dict[str, list[dict[s
         connection_kwargs.pop('parser_class', None)
         connection_kwargs.pop('retry', None)
         connection_kwargs.pop('password', None)
+        connection_kwargs.pop('driver_info', None)
 
         queue_data = {
             'name': queue.name,

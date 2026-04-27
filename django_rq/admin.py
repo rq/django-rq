@@ -53,14 +53,15 @@ class QueueAdmin(admin.ModelAdmin):
             """Wrap view with admin_site.admin_view for permission checking"""
 
             @wraps(view)
-            def wrapper(*args, **kwargs):
-                return self.admin_site.admin_view(view)(*args, **kwargs)
+            def wrapper(request, *args, **kwargs):
+                request.current_app = self.admin_site.name
+                return self.admin_site.admin_view(view)(request, *args, **kwargs)
 
             return wrapper
 
         # Get both sets of URL patterns
-        api_urls = get_api_urlpatterns()  # Not wrapped - have their own auth
-        admin_urls = get_admin_urlpatterns(view_wrapper=wrap)  # Wrapped with admin auth
+        api_urls = get_api_urlpatterns(name_prefix='django_rq_')  # Not wrapped - have their own auth
+        admin_urls = get_admin_urlpatterns(name_prefix='django_rq_', view_wrapper=wrap)  # Wrapped with admin auth
 
         # Combine and add to standard ModelAdmin URLs
         return api_urls + admin_urls + super().get_urls()

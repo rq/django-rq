@@ -1,0 +1,114 @@
+{% extends "admin/change_list.html" %}
+
+{% load static django_rq %}
+
+{% block title %}Result {{ result.id }} {{ block.super }}{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        .data {
+            display: inline-block;
+            float: left;
+            width: 80%;
+            font-size: 12px;
+            padding-top: 3px;
+        }
+    </style>
+    <link href="{% static 'admin/css/forms.css' %}" type="text/css" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+        <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
+        <a href="{% rq_url 'jobs' queue_index %}">{{ queue.name }}</a> &rsaquo;
+        <a href="{% rq_url 'job_detail' queue_index job.id %}">{{ job.id }}</a> &rsaquo;
+        <a href="{% rq_url 'result_detail' queue_index job.id result.id %}">{{ result.id }}</a>
+    </div>
+{% endblock %}
+
+{% block content_title %}<h2>Result {{ result.id }}</h2>{% endblock %}
+
+{% block object-tools %}{% endblock %}
+
+{% block content %}
+
+<div id="content-main">
+
+    <fieldset class="module aligned ">
+
+        <div class="form-row">
+            <div>
+                <div class = "flex-container">
+                    <label>Job ID:</label>
+                    <div class="readonly">
+                        <a href="{% rq_url 'job_detail' queue_index job.id %}">{{ job.id }}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <div class = "flex-container">
+                    <label>Result ID:</label>
+                    <div class="readonly">{{ result.id }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <div class = "flex-container">
+                    <label>Type:</label>
+                    <div class="readonly">{{ result.type.name }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <div class = "flex-container">
+                    <label>Created:</label>
+                    <div class="readonly">{{ result.created_at|to_localtime|date:"Y-m-d, H:i:s" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <div class = "flex-container">
+                    <label>Worker:</label>
+                    <div class="readonly">{{ result.worker_name|default:"-" }}</div>
+                </div>
+            </div>
+        </div>
+
+        {% if result.return_value is not None %}
+        <div class="form-row">
+            <div>
+                <div class = "flex-container">
+                    <label>Return Value:</label>
+                    <div><pre>{{ result.return_value }}</pre></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if result.exc_string %}
+        <div class="form-row">
+            <div>
+                <div class = "flex-container">
+                    <label>Exception:</label>
+                    <div><pre>{{ result.exc_string }}</pre></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </fieldset>
+
+</div>
+
+{% endblock %}

@@ -79,7 +79,8 @@ RQ_EXCEPTION_HANDLERS = ['path.to.my.handler']  # If you need custom exception h
 
 ## Admin Integration
 
-_Changed in Version 3.0_
+_New in Version 4.0_
+
 Django-RQ automatically integrates with Django's admin interface. Once installed, navigate to `/admin/django_rq/dashboard/` to access:
 - Queue statistics and monitoring dashboard
 - Job registry browsers (scheduled, started, finished, failed, deferred)
@@ -100,6 +101,17 @@ urlpatterns += [
 ```
 
 This makes views accessible at `/django-rq/` instead of within the admin interface at `/admin/django_rq/dashboard/`.
+
+### Template URL Resolution
+
+Templates in django-rq use a custom `{% rq_url %}` tag to resolve view names inside either the admin integration or standalone URLs. The tag detects the current admin namespace (when present) and falls back to the `django_rq:` namespace, avoiding hard-coded prefixes and keeping links working in both modes.
+
+If you copy or override django-rq templates, load the tag library and use `rq_url` instead of `url` for django-rq views:
+
+```django
+{% load django_rq %}
+<a href="{% rq_url 'home' %}">Django RQ</a>
+```
 
 ## Usage
 
@@ -474,7 +486,7 @@ Note that setting the `is_async` parameter explicitly when calling `get_queue` w
 
 ### Commit Modes
 
-*New in version 3.0 (not yet released)*
+_New in Version 4.0_
 
 By default, jobs are enqueued when the database transaction commits. This behavior is controlled by the `COMMIT_MODE` setting:
 

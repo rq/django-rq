@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.test.client import Client
 from django.urls import reverse
+from django.utils.html import escape
 from rq.job import Job, JobStatus
 from rq.registry import (
     DeferredJobRegistry,
@@ -17,7 +18,7 @@ from rq.registry import (
 from django_rq import get_queue
 from django_rq.workers import get_worker
 
-from .fixtures import access_self, failing_job
+from .fixtures import access_self, failing_job, say_hello
 from .redis_config import REDIS_CONFIG_1
 from .utils import get_queue_index
 
@@ -38,7 +39,7 @@ class ViewTest(TestCase):
         queue = get_queue('default')
         job = queue.enqueue(access_self)
         queue_index = get_queue_index('default')
-        response = self.client.get(reverse('rq_jobs', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_jobs', args=[queue_index]))
         self.assertEqual(response.context['jobs'], [job])
 
     def test_job_details(self):
@@ -47,7 +48,7 @@ class ViewTest(TestCase):
         job = queue.enqueue(access_self)
         queue_index = get_queue_index('default')
 
-        url = reverse('rq_job_detail', args=[queue_index, job.id])
+        url = reverse('admin:django_rq_job_detail', args=[queue_index, job.id])
         response = self.client.get(url)
         self.assertEqual(response.context['job'], job)
 
@@ -65,10 +66,53 @@ class ViewTest(TestCase):
         worker = get_worker('default')
         worker.work(burst=True)
         result = job.results()[0]
-        url = reverse('rq_job_detail', args=[queue_index, job.id])
+        url = reverse('admin:django_rq_job_detail', args=[queue_index, job.id])
         response = self.client.get(url)
         assert result.id
+        self.assertContains(response, 'ID')
+        self.assertContains(response, 'Type')
+        self.assertContains(response, 'Created At')
+        self.assertContains(response, reverse('admin:django_rq_result_detail', args=[queue_index, job.id, result.id]))
         self.assertContains(response, result.id)
+        self.assertContains(response, result.type.name)
+
+    def test_result_details(self):
+        """Result detail page shows successful and failed results and 404s"""
+        queue = get_queue('default')
+        queue_index = get_queue_index('default')
+        worker = get_worker('default')
+
+        job = queue.enqueue(access_self)
+        worker.work(burst=True)
+        result = job.results()[0]
+
+        url = reverse('admin:django_rq_result_detail', args=[queue_index, job.id, result.id])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'django_rq/result_detail.html')
+        self.assertContains(response, result.id)
+
+        failed_job_instance = queue.enqueue(failing_job)
+        worker.work(burst=True)
+        failed_result = failed_job_instance.results()[0]
+
+        url = reverse('admin:django_rq_result_detail', args=[queue_index, failed_job_instance.id, failed_result.id])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, failed_result.id)
+        self.assertContains(response, failed_result.type.name)
+        self.assertContains(response, failed_result.worker_name)
+        self.assertContains(response, escape(failed_result.exc_string), html=True)
+
+        url = reverse('admin:django_rq_result_detail', args=[queue_index, job.id, 'missing-result-id'])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        url = reverse('admin:django_rq_result_detail', args=[queue_index, 'missing-job-id', 'missing-result-id'])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
 
     def test_job_details_on_deleted_dependency(self):
         """Page doesn't crash even if job.dependency has been deleted"""
@@ -78,10 +122,34 @@ class ViewTest(TestCase):
         job = queue.enqueue(access_self)
         second_job = queue.enqueue(access_self, depends_on=job)
         job.delete()
-        url = reverse('rq_job_detail', args=[queue_index, second_job.id])
+        url = reverse('admin:django_rq_job_detail', args=[queue_index, second_job.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, second_job._dependency_id)
+
+    def test_job_details_with_dependents(self):
+        """Dependents are shown on job detail page, deleted dependents show as Deleted"""
+        queue = get_queue('default')
+        queue_index = get_queue_index('default')
+
+        job = queue.enqueue(say_hello)
+        second_job = queue.enqueue(say_hello, depends_on=job)
+        third_job = queue.enqueue(say_hello, depends_on=job)
+
+        url = reverse('admin:django_rq_job_detail', args=[queue_index, job.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, second_job.id)
+        self.assertContains(response, third_job.id)
+
+        # Delete third_job and verify it shows as Deleted
+        third_job_id = third_job.id
+        third_job.delete()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, second_job.id)
+        self.assertContains(response, third_job_id)
+        self.assertContains(response, 'Deleted')
 
     def test_requeue_job(self):
         """
@@ -94,7 +162,7 @@ class ViewTest(TestCase):
         worker.work(burst=True)
         job.refresh()
         self.assertTrue(job.is_failed)
-        self.client.post(reverse('rq_requeue_job', args=[queue_index, job.id]), {'requeue': 'Requeue'})
+        self.client.post(reverse('admin:django_rq_requeue_job', args=[queue_index, job.id]), {'requeue': 'Requeue'})
         self.assertIn(job, queue.jobs)
         job.delete()
 
@@ -109,10 +177,10 @@ class ViewTest(TestCase):
         worker = get_worker('default')
         worker.work(burst=True)
 
-        response = self.client.get(reverse('rq_requeue_all', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_requeue_all', args=[queue_index]))
         self.assertEqual(response.context['total_jobs'], 2)
         # After requeue_all is called, jobs are enqueued
-        response = self.client.post(reverse('rq_requeue_all', args=[queue_index]))
+        response = self.client.post(reverse('admin:django_rq_requeue_all', args=[queue_index]))
         self.assertEqual(len(queue), 2)
 
     def test_requeue_all_if_deleted_job(self):
@@ -126,12 +194,12 @@ class ViewTest(TestCase):
         worker = get_worker('default')
         worker.work(burst=True)
 
-        response = self.client.get(reverse('rq_requeue_all', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_requeue_all', args=[queue_index]))
         self.assertEqual(response.context['total_jobs'], 2)
         job.delete()
 
         # After requeue_all is called, jobs are enqueued
-        response = self.client.post(reverse('rq_requeue_all', args=[queue_index]))
+        response = self.client.post(reverse('admin:django_rq_requeue_all', args=[queue_index]))
         self.assertEqual(len(queue), 1)
 
     def test_delete_job(self):
@@ -142,7 +210,7 @@ class ViewTest(TestCase):
         queue = get_queue('django_rq_test')
         queue_index = get_queue_index('django_rq_test')
         job = queue.enqueue(access_self)
-        self.client.post(reverse('rq_delete_job', args=[queue_index, job.id]), {'post': 'yes'})
+        self.client.post(reverse('admin:django_rq_delete_job', args=[queue_index, job.id]), {'post': 'yes'})
         self.assertFalse(Job.exists(job.id, connection=queue.connection))
         self.assertNotIn(job.id, queue.job_ids)
 
@@ -157,7 +225,9 @@ class ViewTest(TestCase):
             job_ids.append(job.id)
 
         # remove those jobs using view
-        self.client.post(reverse('rq_actions', args=[queue_index]), {'action': 'delete', 'job_ids': job_ids})
+        self.client.post(
+            reverse('admin:django_rq_actions', args=[queue_index]), {'action': 'delete', 'job_ids': job_ids}
+        )
 
         # check if jobs are removed
         for job_id in job_ids:
@@ -180,7 +250,7 @@ class ViewTest(TestCase):
         self.assertIsNone(last_job.enqueued_at)
 
         # We want to force-enqueue this job
-        response = self.client.post(reverse('rq_enqueue_job', args=[queue_index, last_job.id]))
+        response = self.client.post(reverse('admin:django_rq_enqueue_job', args=[queue_index, last_job.id]))
 
         # Check that job is updated correctly
         last_job = queue.fetch_job(last_job.id)
@@ -209,7 +279,9 @@ class ViewTest(TestCase):
             self.assertTrue(job.is_failed)
 
         # renqueue failed jobs from failed queue
-        self.client.post(reverse('rq_actions', args=[queue_index]), {'action': 'requeue', 'job_ids': job_ids})
+        self.client.post(
+            reverse('admin:django_rq_actions', args=[queue_index]), {'action': 'requeue', 'job_ids': job_ids}
+        )
 
         # check if we requeue all failed jobs
         for job in jobs:
@@ -220,7 +292,7 @@ class ViewTest(TestCase):
         queue = get_queue('django_rq_test')
         queue_index = get_queue_index('django_rq_test')
         job = queue.enqueue(access_self)
-        self.client.post(reverse('rq_clear', args=[queue_index]), {'post': 'yes'})
+        self.client.post(reverse('admin:django_rq_clear', args=[queue_index]), {'post': 'yes'})
         self.assertFalse(Job.exists(job.id, connection=queue.connection))
         self.assertNotIn(job.id, queue.job_ids)
 
@@ -232,7 +304,7 @@ class ViewTest(TestCase):
         job = queue.enqueue(access_self)
         registry = FinishedJobRegistry(queue.name, queue.connection)
         registry.add(job, 2)
-        response = self.client.get(reverse('rq_finished_jobs', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_finished_jobs', args=[queue_index]))
         self.assertEqual(response.context['jobs'], [job])
 
     def test_failed_jobs(self):
@@ -241,13 +313,13 @@ class ViewTest(TestCase):
         queue_index = get_queue_index('django_rq_test')
 
         # Test that page doesn't fail when FailedJobRegistry is empty
-        response = self.client.get(reverse('rq_failed_jobs', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_failed_jobs', args=[queue_index]))
         self.assertEqual(response.status_code, 200)
 
         job = queue.enqueue(access_self)
         registry = FailedJobRegistry(queue.name, queue.connection)
         registry.add(job, 2)
-        response = self.client.get(reverse('rq_failed_jobs', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_failed_jobs', args=[queue_index]))
         self.assertEqual(response.context['jobs'], [job])
 
     def test_scheduled_jobs(self):
@@ -256,16 +328,16 @@ class ViewTest(TestCase):
         queue_index = get_queue_index('django_rq_test')
 
         # Test that page doesn't fail when ScheduledJobRegistry is empty
-        response = self.client.get(reverse('rq_scheduled_jobs', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_scheduled_jobs', args=[queue_index]))
         self.assertEqual(response.status_code, 200)
 
         job = queue.enqueue_at(datetime.now(), access_self)
-        response = self.client.get(reverse('rq_scheduled_jobs', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_scheduled_jobs', args=[queue_index]))
         self.assertEqual(response.context['jobs'], [job])
 
-        # Test that page doesn't crash when job_id has special characters (exclude :)
-        queue.enqueue_at(datetime.now(), access_self, job_id="job-!@#$%^&*()_=+[]{};',.<>?|`~")
-        response = self.client.get(reverse('rq_scheduled_jobs', args=[queue_index]))
+        # Test that page doesn't crash when job_id contains allowed non-alphanumeric characters.
+        queue.enqueue_at(datetime.now(), access_self, job_id="job-with_allowed-chars_123")
+        response = self.client.get(reverse('admin:django_rq_scheduled_jobs', args=[queue_index]))
         self.assertEqual(response.status_code, 200)
 
     def test_scheduled_jobs_registry_removal(self):
@@ -278,7 +350,7 @@ class ViewTest(TestCase):
         self.assertEqual(len(registry), 1)
 
         queue.connection.delete(job.key)
-        response = self.client.get(reverse('rq_scheduled_jobs', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_scheduled_jobs', args=[queue_index]))
         self.assertEqual(response.context['jobs'], [])
 
         self.assertEqual(len(registry), 0)
@@ -291,7 +363,7 @@ class ViewTest(TestCase):
 
         job = queue.enqueue(access_self)
         worker.prepare_execution(job)
-        response = self.client.get(reverse('rq_started_jobs', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_started_jobs', args=[queue_index]))
         self.assertEqual(response.context['jobs'], [job])
 
     def test_deferred_jobs(self):
@@ -302,7 +374,7 @@ class ViewTest(TestCase):
         job = queue.enqueue(access_self)
         registry = DeferredJobRegistry(queue.name, queue.connection)
         registry.add(job, 2)
-        response = self.client.get(reverse('rq_deferred_jobs', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_deferred_jobs', args=[queue_index]))
         self.assertEqual(response.context['jobs'], [job])
 
     def test_workers(self):
@@ -315,7 +387,7 @@ class ViewTest(TestCase):
         worker2 = get_worker('test3')
         worker2.register_birth()
 
-        response = self.client.get(reverse('rq_workers', args=[queue_index]))
+        response = self.client.get(reverse('admin:django_rq_workers', args=[queue_index]))
         self.assertEqual(response.context['workers'], [worker1])
 
     def test_worker_details(self):
@@ -325,7 +397,7 @@ class ViewTest(TestCase):
         worker = get_worker('django_rq_test', name=uuid.uuid4().hex)
         worker.register_birth()
 
-        response = self.client.get(reverse('rq_worker_details', args=[queue_index, worker.key]))
+        response = self.client.get(reverse('admin:django_rq_worker_details', args=[queue_index, worker.key]))
         self.assertEqual(response.context['worker'], worker)
 
     @override_settings(
@@ -341,26 +413,26 @@ class ViewTest(TestCase):
         """
         Django-RQ's statistic as JSON only viewable by staff or with API_TOKEN
         """
-        response = self.client.get(reverse('rq_home'))
+        response = self.client.get(reverse('admin:django_rq_home'))
         self.assertEqual(response.status_code, 200)
 
-        response = self.client.get(reverse('rq_home_json'))
+        response = self.client.get(reverse('admin:django_rq_home_json'))
         self.assertEqual(response.status_code, 200)
 
         # Not staff, only token
         self.user.is_staff = False
         self.user.save()
 
-        response = self.client.get(reverse('rq_home'))
+        response = self.client.get(reverse('admin:django_rq_home'))
         self.assertEqual(response.status_code, 302)
 
-        response = self.client.get(reverse('rq_home_json'))
+        response = self.client.get(reverse('admin:django_rq_home_json'))
         self.assertEqual(response.status_code, 401)
 
         # With token,
         token = '12345abcde'
         with self.settings(RQ_API_TOKEN=token):
-            response = self.client.get(reverse('rq_home_json', args=[token]))
+            response = self.client.get(reverse('admin:django_rq_home_json', args=[token]))
             self.assertEqual(response.status_code, 200)
             data = response.json()
             self.assertIn("queues", data)
@@ -368,7 +440,7 @@ class ViewTest(TestCase):
             self.assertFalse(data.get("error"))
 
             # Wrong token
-            response = self.client.get(reverse('rq_home_json', args=["wrong_token"]))
+            response = self.client.get(reverse('admin:django_rq_home_json', args=["wrong_token"]))
             self.assertEqual(response.status_code, 401)
 
     def test_action_stop_jobs(self):
@@ -395,7 +467,7 @@ class ViewTest(TestCase):
         # Stop those jobs using the view
         started_job_registry = StartedJobRegistry(queue.name, connection=queue.connection)
         self.assertEqual(len(started_job_registry), len(job_ids))
-        self.client.post(reverse('rq_actions', args=[queue_index]), {'action': 'stop', 'job_ids': job_ids})
+        self.client.post(reverse('admin:django_rq_actions', args=[queue_index]), {'action': 'stop', 'job_ids': job_ids})
         for job in jobs:
             worker.monitor_work_horse(job, queue)  # Sets the job as Failed and removes from Started
         self.assertEqual(len(started_job_registry), 0)
@@ -442,7 +514,7 @@ class ViewTest(TestCase):
     #         )
 
     #         response = self.client.get(
-    #             reverse("rq_scheduler_jobs", args=[scheduler_index])
+    #             reverse("admin:django_rq_scheduler_jobs", args=[scheduler_index])
     #         )
     #         self.assertEqual(response.context["num_jobs"], 3)
     #         context_jobs = {job.id: job for job in response.context["jobs"]}
@@ -452,7 +524,7 @@ class ViewTest(TestCase):
     #             context_jobs["thirty-repeat"].schedule, "interval: 600 repeat: 30"
     #         )
 
-    #         index_response = self.client.get(reverse("rq_home"))
+    #         index_response = self.client.get(reverse("admin:django_rq_home"))
     #         self.assertEqual(
     #             index_response.context["schedulers"],
     #             {"localhost:6379/1": {"count": 3, "index": 0}},

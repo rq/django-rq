@@ -1,3 +1,24 @@
+### Version 4.1 (2026-04-05)
+* Job detail page now shows execution results. Thanks @selwin!
+* Fixed RQ worker-pool command for projects using Postgres with SSL connections. Thanks @selwin!
+
+### Version 4.0.1 (2026-03-17)
+* Job detail page now shows a job's dependent jobs. Thanks @selwin!
+* Added missing migration that causes Django's makemigrations to complain. Thanks @bjorndbuilder!
+
+### Version 4.0 (2026-03-14)
+* `django-rq` now automatically integrates with Django's admin backend without manual URL configuration. Thanks @selwin and @terencehonles
+!
+* Added new `COMMIT_MODE` setting to replace `AUTOCOMMIT`. More info in [docs](https://github.com/rq/django-rq?tab=readme-ov-file#commit-modes). Thanks @selwin!
+* Cron scheduler detail page now shows jobs configured in that particular scheduler. Thanks @selwin!
+* Removed legacy Sentry integration. Thanks @selwin!
+
+### Version 3.2.2 (2025-12-24)
+* `get_statistics()` should not mutate `connection_kwargs`. Thanks @selwin!
+
+### Version 3.2.1 (2025-11-24)
+* Changed `CronJob` argument from `timeout` to `job_timeout` to match RQ's implementation. Thanks @selwin!
+
 ### Version 3.2 (2025-11-22)
 * Added support for RQ's new `CronScheduler`. Thanks @selwin!
 * You can now run tests using pytest. Thanks @selwin!

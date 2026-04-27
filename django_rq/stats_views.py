@@ -2,7 +2,6 @@ from secrets import compare_digest
 
 from typing import Optional
 
-from django.contrib import admin
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
@@ -10,6 +9,7 @@ from django.views.decorators.cache import never_cache
 
 from . import settings as django_rq_settings
 from .utils import get_cron_schedulers, get_scheduler_statistics, get_statistics
+from .views import each_context
 
 try:
     import prometheus_client
@@ -64,7 +64,7 @@ def prometheus_metrics(request):
 @staff_member_required
 def stats(request: HttpRequest) -> HttpResponse:
     context_data = {
-        **admin.site.each_context(request),
+        **each_context(request),
         **get_statistics(run_maintenance_tasks=True),
         **get_scheduler_statistics(),
         "view_metrics": RQCollector is not None,
