@@ -34,8 +34,11 @@ def rq_viewname(request: HttpRequest, viewname: str) -> str:
 
 
 def each_context(request: HttpRequest) -> dict[str, Any]:
+    from django.apps import apps
+
     return {
         **admin.site.each_context(request),
+        'unfold_installed': apps.is_installed('unfold'),
     }
 
 
