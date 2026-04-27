@@ -30,7 +30,7 @@
     <div class="rq-title-row">
         <h1>
             Job
-            <span class="rq-title-id">{{ job.id }}</span>
+            {{ job.id }}
             <span class="rq-pill rq-state-{% if status == 'queued' or status == 'finished' or status == 'failed' or status == 'started' or status == 'deferred' or status == 'scheduled' %}{{ status }}{% else %}deferred{% endif %}">{{ status }}</span>
         </h1>
     </div>

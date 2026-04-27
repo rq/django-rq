@@ -72,14 +72,6 @@ html[data-theme="dark"] {
     gap: 12px;
     flex-wrap: wrap;
 }
-.rq-title-row .rq-title-id {
-    font-family: var(--rq-mono);
-    font-size: 15px;
-    color: var(--body-quiet-color);
-    font-weight: 400;
-    word-break: break-all;
-}
-
 .rq-grid {
     display: grid;
     grid-template-columns: var(--rq-grid-left) 1fr;
