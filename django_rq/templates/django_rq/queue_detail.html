@@ -32,12 +32,42 @@
             <div class="rq-panel">
                 <div class="rq-panel-header">Connection</div>
                 <div class="rq-panel-body">
-                    {% for key, value in connection_kwargs|items %}
                     <div class="rq-field">
-                        <div class="rq-field-label">{{ key }}</div>
-                        <div class="rq-field-value">{{ value }}</div>
+                        <div class="rq-field-label">Host</div>
+                        <div class="rq-field-value">{{ connection_kwargs.host|default_if_none:"—" }}</div>
                     </div>
-                    {% endfor %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Port</div>
+                        <div class="rq-field-value">{{ connection_kwargs.port|default_if_none:"—" }}</div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">DB</div>
+                        <div class="rq-field-value">{{ connection_kwargs.db|default_if_none:"—" }}</div>
+                    </div>
+                    {% if connection_kwargs.username %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Username</div>
+                        <div class="rq-field-value">{{ connection_kwargs.username }}</div>
+                    </div>
+                    {% endif %}
+                    {% if connection_kwargs.service_name %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Service name</div>
+                        <div class="rq-field-value">{{ connection_kwargs.service_name }}</div>
+                    </div>
+                    {% endif %}
+                    {% if connection_kwargs.sentinels %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Sentinels</div>
+                        <div class="rq-field-value">{% for host, port in connection_kwargs.sentinels %}{{ host }}:{{ port }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+                    </div>
+                    {% endif %}
+                    {% if connection_kwargs.unix_socket_path or connection_kwargs.path %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Unix socket</div>
+                        <div class="rq-field-value">{{ connection_kwargs.unix_socket_path|default:connection_kwargs.path }}</div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
