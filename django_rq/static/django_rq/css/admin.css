@@ -249,7 +249,5 @@ html[data-theme="dark"] {
 
 /* ── 7. Utilities ──────────────────────────────────────────────── */
 .rq-mono   { font-family: var(--rq-mono); }
-.rq-muted  { color: var(--body-quiet-color); }
-.rq-faint  { color: var(--body-quiet-color); opacity: 0.7; }
 .rq-nowrap { white-space: nowrap; }
 .rq-num    { text-align: right; font-family: var(--rq-mono); font-variant-numeric: tabular-nums; }
