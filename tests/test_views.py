@@ -249,6 +249,23 @@ class ViewTest(TestCase):
             self.assertFalse(Job.exists(job_id, connection=queue.connection))
             self.assertNotIn(job_id, queue.job_ids)
 
+    def test_confirm_action_filters_missing_jobs(self):
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+        job = queue.enqueue(access_self)
+        missing_job_id = str(uuid.uuid4())
+
+        response = self.client.post(
+            reverse('admin:django_rq_confirm_action', args=[queue_index]),
+            {'action': 'delete', '_selected_action': [job.id, missing_job_id]},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['job_ids'], [job.id])
+        self.assertEqual(len(response.context['jobs']), 2)
+        self.assertEqual(response.context['jobs'][1], {'id': missing_job_id, 'missing': True})
+        self.assertContains(response, '(no longer available)')
+
     def test_enqueue_jobs(self):
         queue = get_queue('django_rq_test')
         queue_index = get_queue_index('django_rq_test')
