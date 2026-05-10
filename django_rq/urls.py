@@ -54,6 +54,7 @@ def get_admin_urlpatterns(name_prefix: str = '', view_wrapper: Optional[Callable
         path('', maybe_wrap(stats_views.stats), name=f'{name_prefix}home'),
         # Queue views
         path('queues/<int:queue_index>/', maybe_wrap(views.jobs), name=f'{name_prefix}jobs'),
+        path('queues/<int:queue_index>/details/', maybe_wrap(views.queue_details), name=f'{name_prefix}queue_details'),
         path('queues/<int:queue_index>/finished/', maybe_wrap(views.finished_jobs), name=f'{name_prefix}finished_jobs'),
         path('queues/<int:queue_index>/failed/', maybe_wrap(views.failed_jobs), name=f'{name_prefix}failed_jobs'),
         path('queues/<int:queue_index>/failed/clear/', maybe_wrap(views.delete_failed_jobs), name=f'{name_prefix}delete_failed_jobs'),

@@ -1,3 +1,6 @@
+### Unreleased
+* `stats.json` and `rqstats --json/--yaml` now expose safe Redis connection metadata instead of raw redis-py connection kwargs. Secret values and redis-py internals are omitted. Thanks @selwin!
+
 ### Version 4.1 (2026-04-05)
 * Job detail page now shows execution results. Thanks @selwin!
 * Fixed RQ worker-pool command for projects using Postgres with SSL connections. Thanks @selwin!

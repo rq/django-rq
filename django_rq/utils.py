@@ -34,7 +34,7 @@ def get_scheduler_pid(queue: Queue) -> Union[bool, int, None]:
     '''
     try:
         # first try get the rq-scheduler
-        scheduler = get_scheduler(queue.name)  # should fail if rq_scheduler not present
+        get_scheduler(queue.name)  # should fail if rq_scheduler not present
         return False  # Not possible to give useful information without creating a performance issue (redis.keys())
     except ImproperlyConfigured:
         from rq.scheduler import RQScheduler
@@ -48,12 +48,68 @@ def get_scheduler_pid(queue: Queue) -> Union[bool, int, None]:
     return None
 
 
+_DISPLAYABLE_CONNECTION_KWARGS = (
+    'host',
+    'port',
+    'db',
+    'username',
+    'client_name',
+    'service_name',
+    'sentinels',
+    'unix_socket_path',
+    'path',
+    'socket_timeout',
+    'socket_connect_timeout',
+    'socket_keepalive',
+    'health_check_interval',
+    'protocol',
+    'encoding',
+    'decode_responses',
+)
+
+
+def get_displayable_connection_kwargs(queue: Queue) -> dict[str, Any]:
+    """Return safe Redis connection metadata for templates and JSON output.
+
+    Only operationally meaningful fields are returned. Secret-bearing values
+    and redis-py internals are excluded by the allowlist.
+
+    For Sentinel-backed queues, host and port reflect the first sentinel
+    endpoint; sentinels lists all known endpoints; service_name identifies the
+    master.
+    """
+    pool = queue.connection.connection_pool
+    connection_kwargs = pool.connection_kwargs.copy()
+
+    if isinstance(pool, SentinelConnectionPool):
+        connection_kwargs['service_name'] = getattr(pool, 'service_name', None)
+        sentinel_connections = pool.sentinel_manager.sentinels
+        sentinel_kwargs = [
+            sentinel.connection_pool.connection_kwargs
+            for sentinel in sentinel_connections
+        ]
+        if sentinel_kwargs:
+            first_sentinel_kwargs = sentinel_kwargs[0]
+            connection_kwargs['host'] = first_sentinel_kwargs.get('host')
+            connection_kwargs['port'] = first_sentinel_kwargs.get('port')
+            connection_kwargs['sentinels'] = [
+                (kwargs.get('host'), kwargs.get('port'))
+                for kwargs in sentinel_kwargs
+                if kwargs.get('host') is not None and kwargs.get('port') is not None
+            ]
+
+    return {
+        key: connection_kwargs[key]
+        for key in _DISPLAYABLE_CONNECTION_KWARGS
+        if connection_kwargs.get(key) is not None
+    }
+
+
 def get_statistics(run_maintenance_tasks: bool = False) -> dict[str, list[dict[str, Any]]]:
     queues = []
     for index, config in enumerate(get_queues_list()):
         queue = get_queue_by_index(index)
         connection = queue.connection
-        connection_kwargs = connection.connection_pool.connection_kwargs.copy()
 
         if run_maintenance_tasks:
             clean_registries(queue)
@@ -70,12 +126,7 @@ def get_statistics(run_maintenance_tasks: bool = False) -> dict[str, list[dict[s
         else:
             oldest_job_timestamp = "-"
 
-        # remove unneeded properties which are not serializable in JSON
-        connection_kwargs.pop('connection_pool', None)
-        connection_kwargs.pop('parser_class', None)
-        connection_kwargs.pop('retry', None)
-        connection_kwargs.pop('password', None)
-        connection_kwargs.pop('driver_info', None)
+        connection_kwargs = get_displayable_connection_kwargs(queue)
 
         queue_data = {
             'name': queue.name,
@@ -112,12 +163,11 @@ def get_scheduler_statistics() -> dict[str, dict[str, Any]]:
         # to handle the possibility of a configuration with multiple redis connections and scheduled
         # jobs in more than one of them
         queue = get_queue_by_index(index)
-        if isinstance(queue.connection.connection_pool, SentinelConnectionPool):
-            first_sentinel = queue.connection.connection_pool.sentinel_manager.sentinels[0]
-            connection = first_sentinel.connection_pool.connection_kwargs
-        else:
-            connection = queue.connection.connection_pool.connection_kwargs
-        conn_key = f"{connection.get('host', 'NOHOST')}:{connection.get('port', 6379)}/{connection.get('db', 0)}"
+        connection_kwargs = get_displayable_connection_kwargs(queue)
+        conn_key = (
+            f"{connection_kwargs.get('host', 'NOHOST')}:{connection_kwargs.get('port', 6379)}/"
+            f"{connection_kwargs.get('db', 0)}"
+        )
         if conn_key not in schedulers:
             try:
                 scheduler = get_scheduler(config['name'])

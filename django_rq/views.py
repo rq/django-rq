@@ -22,8 +22,8 @@ from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
 from .queues import get_queue_by_index, get_scheduler_by_index
-from .settings import get_queues_map
-from .utils import get_executions, get_jobs, stop_jobs
+from .settings import get_queues_list, get_queues_map
+from .utils import get_displayable_connection_kwargs, get_executions, get_jobs, get_scheduler_pid, stop_jobs
 
 
 def rq_viewname(request: HttpRequest, viewname: str) -> str:
@@ -68,6 +68,38 @@ def jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
         'job_status': 'Queued',
     }
     return render(request, 'django_rq/jobs.html', context_data)
+
+
+@never_cache
+@staff_member_required
+def queue_details(request: HttpRequest, queue_index: int) -> HttpResponse:
+    queue = get_queue_by_index(queue_index)
+    connection = queue.connection
+    queue_config = get_queues_list()[queue_index]['connection_config']
+
+    oldest_job_id = connection.lindex(queue.key, 0)
+    newest_job_id = connection.lindex(queue.key, -1)
+    oldest_queued_job = queue.fetch_job(oldest_job_id.decode('utf-8')) if oldest_job_id else None
+    newest_queued_job = queue.fetch_job(newest_job_id.decode('utf-8')) if newest_job_id else None
+
+    context_data = {
+        **each_context(request),
+        'queue': queue,
+        'queue_index': queue_index,
+        'connection_kwargs': get_displayable_connection_kwargs(queue),
+        'queue_config': queue_config,
+        'num_jobs': queue.count,
+        'num_workers': Worker.count(queue=queue),
+        'num_started': len(StartedJobRegistry(queue.name, connection)),
+        'num_finished': len(FinishedJobRegistry(queue.name, connection)),
+        'num_failed': len(FailedJobRegistry(queue.name, connection)),
+        'num_deferred': len(DeferredJobRegistry(queue.name, connection)),
+        'num_scheduled': len(ScheduledJobRegistry(queue.name, connection)),
+        'scheduler_pid': get_scheduler_pid(queue),
+        'oldest_queued_job': oldest_queued_job,
+        'newest_queued_job': newest_queued_job,
+    }
+    return render(request, 'django_rq/queue_detail.html', context_data)
 
 
 @never_cache

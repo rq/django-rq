@@ -1,0 +1,193 @@
+{% extends "admin/base_site.html" %}
+
+{% load static django_rq %}
+
+{% block title %}Queue {{ queue.name }} {{ block.super }}{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/forms.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'django_rq/css/admin.css' %}">
+{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+        <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
+        <span>{{ queue.name }}</span>
+    </div>
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+
+    <div class="rq-title-row">
+        <h1>Queue {{ queue.name }}</h1>
+    </div>
+
+    <div class="rq-grid">
+        <div class="rq-col">
+            <div class="rq-panel">
+                <div class="rq-panel-header">Connection</div>
+                <div class="rq-panel-body">
+                    <div class="rq-field">
+                        <div class="rq-field-label">Host</div>
+                        <div class="rq-field-value">{{ connection_kwargs.host|default_if_none:"—" }}</div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Port</div>
+                        <div class="rq-field-value">{{ connection_kwargs.port|default_if_none:"—" }}</div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">DB</div>
+                        <div class="rq-field-value">{{ connection_kwargs.db|default_if_none:"—" }}</div>
+                    </div>
+                    {% if connection_kwargs.username %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Username</div>
+                        <div class="rq-field-value">{{ connection_kwargs.username }}</div>
+                    </div>
+                    {% endif %}
+                    {% if connection_kwargs.service_name %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Service name</div>
+                        <div class="rq-field-value">{{ connection_kwargs.service_name }}</div>
+                    </div>
+                    {% endif %}
+                    {% if connection_kwargs.sentinels %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Sentinels</div>
+                        <div class="rq-field-value">{% for host, port in connection_kwargs.sentinels %}{{ host }}:{{ port }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+                    </div>
+                    {% endif %}
+                    {% if connection_kwargs.unix_socket_path or connection_kwargs.path %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Unix socket</div>
+                        <div class="rq-field-value">{{ connection_kwargs.unix_socket_path|default:connection_kwargs.path }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="rq-panel">
+                <div class="rq-panel-header">Configuration</div>
+                <div class="rq-panel-body">
+                    <div class="rq-field">
+                        <div class="rq-field-label">Async</div>
+                        <div class="rq-field-value">{{ queue_config.ASYNC|default_if_none:True }}</div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Default timeout</div>
+                        <div class="rq-field-value">{{ queue_config.DEFAULT_TIMEOUT|default:"—" }}</div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Serializer</div>
+                        <div class="rq-field-value">{{ queue_config.SERIALIZER|default:"—" }}</div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Queue class</div>
+                        <div class="rq-field-value">{{ queue_config.QUEUE_CLASS|default:"—" }}</div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Job class</div>
+                        <div class="rq-field-value">{{ queue_config.JOB_CLASS|default:"—" }}</div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Worker class</div>
+                        <div class="rq-field-value">{{ queue_config.WORKER_CLASS|default:"—" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="rq-col">
+            <div class="rq-panel">
+                <div class="rq-panel-header">Jobs</div>
+                <div class="rq-panel-body">
+                    <div class="rq-field">
+                        <div class="rq-field-label">Queued</div>
+                        <div class="rq-field-value">
+                            <a href="{% rq_url 'jobs' queue_index %}">{{ num_jobs }}</a>
+                        </div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Started</div>
+                        <div class="rq-field-value">
+                            <a href="{% rq_url 'started_jobs' queue_index %}">{{ num_started }}</a>
+                        </div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Deferred</div>
+                        <div class="rq-field-value">
+                            <a href="{% rq_url 'deferred_jobs' queue_index %}">{{ num_deferred }}</a>
+                        </div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Finished</div>
+                        <div class="rq-field-value">
+                            <a href="{% rq_url 'finished_jobs' queue_index %}">{{ num_finished }}</a>
+                        </div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Failed</div>
+                        <div class="rq-field-value">
+                            <a href="{% rq_url 'failed_jobs' queue_index %}">{{ num_failed }}</a>
+                        </div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Scheduled</div>
+                        <div class="rq-field-value">
+                            <a href="{% rq_url 'scheduled_jobs' queue_index %}">{{ num_scheduled }}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rq-panel">
+                <div class="rq-panel-header">Activity</div>
+                <div class="rq-panel-body">
+                    <div class="rq-field">
+                        <div class="rq-field-label">Oldest queued</div>
+                        <div class="rq-field-value">
+                            {% if oldest_queued_job %}
+                                <div>{{ oldest_queued_job.enqueued_at|timestamp_tooltip }}</div>
+                                <a href="{% rq_url 'job_detail' queue_index oldest_queued_job.id %}" class="rq-mono">{{ oldest_queued_job.id }}</a>
+                            {% else %}—{% endif %}
+                        </div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Newest queued</div>
+                        <div class="rq-field-value">
+                            {% if newest_queued_job %}
+                                <div>{{ newest_queued_job.enqueued_at|timestamp_tooltip }}</div>
+                                <a href="{% rq_url 'job_detail' queue_index newest_queued_job.id %}" class="rq-mono">{{ newest_queued_job.id }}</a>
+                            {% else %}—{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rq-panel">
+                <div class="rq-panel-header">Workers</div>
+                <div class="rq-panel-body">
+                    <div class="rq-field">
+                        <div class="rq-field-label">Workers</div>
+                        <div class="rq-field-value">
+                            <a href="{% rq_url 'workers' queue_index %}">{{ num_workers }}</a>
+                        </div>
+                    </div>
+                    {% if scheduler_pid is not False %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Scheduler PID</div>
+                        <div class="rq-field-value">{{ scheduler_pid|default_if_none:"Inactive" }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

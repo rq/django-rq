@@ -28,7 +28,7 @@
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
         <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
-        <a href="{% rq_url 'jobs' queue_index %}">{{ queue.name }}</a>
+        <a href="{% rq_url 'queue_details' queue_index %}">{{ queue.name }}</a>
     </div>
 {% endblock %}
 
