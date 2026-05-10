@@ -7,6 +7,7 @@
 {% block extrastyle %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'django_rq/css/admin.css' %}">
 {% endblock %}
 
 {% block extrahead %}
@@ -31,13 +32,16 @@
     </div>
 {% endblock %}
 
-{% block content_title %}<h1>Scheduler Managed Jobs</h1>{% endblock %}
+{% block content_title %}{% endblock %}
 
 {% block content %}
 
 <div id="content-main">
-    <ul class="object-tools">
-    </ul>
+    <div class="rq-changelist-header">
+        <h1>Scheduler Managed Jobs</h1>
+        <ul class="object-tools">
+        </ul>
+    </div>
     <div class="module" id="changelist">
         <div class="changelist-form-container">
           <div>
