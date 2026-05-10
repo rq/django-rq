@@ -40,6 +40,7 @@
 
     <div class="module" id="changelist">
         <div class="changelist-form-container">
+          <div>
             <form id="changelist-form" action="{% rq_url 'confirm_action' queue_index %}" method="post">
                 {% csrf_token %}
                 <div class="actions">
@@ -133,6 +134,7 @@
                     {{ num_jobs }} jobs
                 </p>
             </form>
+          </div>
         </div>
     </div>
 </div>

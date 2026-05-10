@@ -38,7 +38,9 @@
 
 <div id="content-main">
     <div class="module" id="changelist">
-        <form id="changelist-form" action="{% rq_url 'confirm_action' queue_index %}" method="post">
+        <div class="changelist-form-container">
+          <div>
+            <form id="changelist-form" action="{% rq_url 'confirm_action' queue_index %}" method="post">
             {% csrf_token %}
             <div class="results">
                 <table id="result_list">
@@ -68,7 +70,9 @@
                     </tbody>
                 </table>
             </div>
-        </form>
+            </form>
+          </div>
+        </div>
     </div>
 </div>
 

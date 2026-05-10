@@ -39,7 +39,9 @@
     <ul class="object-tools">
     </ul>
     <div class="module" id="changelist">
-        <form id="changelist-form" action="" method="post">
+        <div class="changelist-form-container">
+          <div>
+            <form id="changelist-form" action="" method="post">
             {% csrf_token %}
             <div class="actions">
                 <label>Actions:
@@ -112,7 +114,9 @@
                 {% endfor %}
                 {{ num_jobs }} jobs
             </p>
-        </form>
+            </form>
+          </div>
+        </div>
     </div>
 </div>
 
