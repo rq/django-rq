@@ -176,7 +176,7 @@ def scheduled_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
         job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=sort_direction == 'descending')
         jobs = get_jobs(queue, job_ids, registry)
         for job in jobs:
-            job.scheduled_at = registry.get_scheduled_time(job)  # type: ignore[attr-defined]
+            job.scheduled_at = registry.get_scheduled_time(job)
     else:
         page_range = []
 
@@ -344,7 +344,7 @@ def job_detail(request: HttpRequest, queue_index: int, job_id: str) -> HttpRespo
     rv = job.connection.hget(job.key, 'result')
     if rv is not None:
         # cache the result
-        job.legacy_result = job.serializer.loads(rv)  # type: ignore[attr-defined]
+        job.legacy_result = job.serializer.loads(rv)
     try:
         exc_info = job._exc_info
     except AttributeError:

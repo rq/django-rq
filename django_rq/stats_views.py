@@ -46,7 +46,7 @@ def prometheus_metrics(request):
 
     global registry
 
-    if not RQCollector:  # type: ignore[truthy-function]
+    if not RQCollector or not prometheus_client:  # type: ignore[truthy-function]
         raise Http404('prometheus_client has not been installed; install using extra "django-rq[prometheus]"')
 
     if not registry:
