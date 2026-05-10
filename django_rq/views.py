@@ -567,11 +567,19 @@ def confirm_action(request: HttpRequest, queue_index: int) -> HttpResponse:
     if request.method == 'POST' and request.POST.get('action', False):
         # confirm action
         if request.POST.get('_selected_action', False):
+            job_ids = request.POST.getlist('_selected_action')
+            jobs: list[Any] = []
+            for job_id in job_ids:
+                try:
+                    jobs.append(Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer))
+                except NoSuchJobError:
+                    jobs.append({'id': job_id, 'missing': True})
             context_data = {
                 **each_context(request),
                 'queue_index': queue_index,
                 'action': request.POST['action'],
-                'job_ids': request.POST.getlist('_selected_action'),
+                'job_ids': job_ids,
+                'jobs': jobs,
                 'queue': queue,
                 'next_url': next_url,
             }
