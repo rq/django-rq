@@ -627,7 +627,10 @@ def actions(request: HttpRequest, queue_index: int) -> HttpResponse:
                         continue
                     _requeue_job(queue, job)
                     requeued += 1
-                messages.info(request, 'You have successfully requeued %d  jobs!' % requeued)
+                messages.info(
+                    request,
+                    'You have successfully requeued %d job%s!' % (requeued, '' if requeued == 1 else 's'),
+                )
             elif request.POST['action'] == 'stop':
                 stopped, failed_to_stop = stop_jobs(queue, job_ids)
                 if len(stopped) > 0:
