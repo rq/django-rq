@@ -96,6 +96,7 @@ class UtilsTest(TestCase):
         self.assertEqual(get_jobs(queue, [job.id, job2.id], registry), [])
         self.assertEqual(len(registry), 0)
 
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
     def test_requeue_job(self):
         """requeue_job re-enqueues jobs from any source registry and removes them from it."""
         queue = get_queue('django_rq_test')
