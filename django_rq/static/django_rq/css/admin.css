@@ -243,6 +243,19 @@ html[data-theme="dark"] {
     word-break: break-all;
 }
 
+/* Page H1 + `.object-tools` on the same row. Templates blank out the
+   default `content_title` block and render the H1 here instead, so the
+   heading and tools live in one flex container. */
+.rq-changelist-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 10px;
+}
+.rq-changelist-header h1 { margin: 0; }
+.rq-changelist-header .object-tools { margin: 0; }
+
 /* ── 7. Utilities ──────────────────────────────────────────────── */
 .rq-mono   { font-family: var(--rq-mono); }
 .rq-nowrap { white-space: nowrap; }
