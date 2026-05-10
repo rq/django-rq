@@ -7,6 +7,7 @@
 {% block extrastyle %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'django_rq/css/admin.css' %}">
 {% endblock %}
 
 {% block extrahead %}
@@ -32,11 +33,13 @@
     </div>
 {% endblock %}
 
-{% block content_title %}<h1>{{ job_status }} jobs in {{ queue.name }}</h1>{% endblock %}
+{% block content_title %}{% endblock %}
 
 {% block content %}
 
 <div id="content-main">
+    <div class="rq-changelist-header">
+        <h1>{{ job_status }} jobs in {{ queue.name }}</h1>
     <ul class="object-tools">
         {% if job_status == 'Failed' %}
             <li><a href="{% rq_url 'requeue_all' queue_index %}" class="requeuelink">Requeue All</a></li>
@@ -45,8 +48,10 @@
             <li><a href="{% rq_url 'clear' queue_index %}" class="deletelink">Empty Queue</a></li>
         {% endif %}
     </ul>
+    </div>
     <div class="module" id="changelist">
         <div class="changelist-form-container">
+          <div>
             <form id="changelist-form" action="{% rq_url 'confirm_action' queue_index %}" method="post">
                 {% csrf_token %}
                 <div class="actions">
@@ -163,6 +168,7 @@
                     {{ num_jobs }} jobs
                 </p>
             </form>
+          </div>
         </div>
     </div>
 </div>

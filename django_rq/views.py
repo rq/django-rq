@@ -139,6 +139,7 @@ def finished_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
         'page': page,
         'page_range': page_range,
         'sort_direction': sort_direction,
+        'job_status': 'Finished',
     }
     return render(request, 'django_rq/finished_jobs.html', context_data)
 
@@ -180,6 +181,7 @@ def failed_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
         'page': page,
         'page_range': page_range,
         'sort_direction': sort_direction,
+        'job_status': 'Failed',
     }
     return render(request, 'django_rq/failed_jobs.html', context_data)
 
@@ -221,6 +223,7 @@ def scheduled_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
         'page': page,
         'page_range': page_range,
         'sort_direction': sort_direction,
+        'job_status': 'Scheduled',
     }
     return render(request, 'django_rq/scheduled_jobs.html', context_data)
 
