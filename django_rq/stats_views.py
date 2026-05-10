@@ -77,7 +77,7 @@ def stats(request: HttpRequest) -> HttpResponse:
 def stats_json(request: HttpRequest, token: Optional[str] = None) -> JsonResponse:
     if not is_authorized(request):
         api_token = django_rq_settings.get_api_token()
-        if token and token == api_token:
+        if token and compare_digest(token, api_token):
             return JsonResponse(get_statistics())
         else:
             return JsonResponse(
