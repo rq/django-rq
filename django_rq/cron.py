@@ -209,7 +209,7 @@ class DjangoCronScheduler(CronScheduler):
         return cron_jobs_data
 
     @classmethod
-    def all(cls, connection: Redis, cleanup: bool = True) -> list['DjangoCronScheduler']:
+    def all(cls, connection: Redis, cleanup: bool = True) -> list['DjangoCronScheduler']:  # type: ignore[override]
         """
         Returns all DjangoCronScheduler instances from the registry.
 
@@ -220,4 +220,4 @@ class DjangoCronScheduler(CronScheduler):
         Returns:
             List of DjangoCronScheduler instances
         """
-        return super().all(connection, cleanup)
+        return super().all(connection, cleanup)  # type: ignore[return-value]
