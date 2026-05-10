@@ -186,6 +186,11 @@ html[data-theme="dark"] {
 }
 .rq-table tbody tr.rq-clickable { cursor: pointer; }
 
+.rq-table .rq-col-job-id { width: 320px; }
+
+.rq-panel > .rq-table th,
+.rq-panel > .rq-table td { padding-left: 16px; padding-right: 16px; }
+
 .rq-table .rq-cell-action { text-align: right; }
 .rq-table .rq-cell-action a {
     color: var(--link-fg);

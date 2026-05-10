@@ -85,37 +85,6 @@
                 </div>
             </div>
 
-            {% if dependencies %}
-            <div class="rq-panel">
-                <div class="rq-panel-header">Depends on</div>
-                <div class="rq-panel-body">
-                    {% for dependency in dependencies %}
-                    <div class="rq-field">
-                        <div class="rq-field-label">{% if dependency.1 %}{{ dependency.1.func_name }}{% else %}Deleted{% endif %}</div>
-                        <div class="rq-field-value">
-                            <a href="{% rq_url 'job_detail' queue_index dependency.0 %}">{{ dependency.0 }}</a>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if dependents %}
-            <div class="rq-panel">
-                <div class="rq-panel-header">Dependents</div>
-                <div class="rq-panel-body">
-                    {% for dependent in dependents %}
-                    <div class="rq-field">
-                        <div class="rq-field-label">{% if dependent.1 %}{{ dependent.1.func_name }}{% else %}Deleted{% endif %}</div>
-                        <div class="rq-field-value">
-                            <a href="{% rq_url 'job_detail' queue_index dependent.0 %}">{{ dependent.0 }}</a>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
         </div>
 
         <div class="rq-col">
@@ -162,6 +131,50 @@
                     </div>
                 </div>
             </div>
+
+            {% if dependencies %}
+            <div class="rq-panel">
+                <div class="rq-panel-header">Depends on</div>
+                <table class="rq-table">
+                    <thead>
+                        <tr>
+                            <th class="rq-col-job-id">Job ID</th>
+                            <th>Callable</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dependency in dependencies %}
+                        <tr>
+                            <td><a href="{% rq_url 'job_detail' queue_index dependency.0 %}">{{ dependency.0 }}</a></td>
+                            <td>{% if dependency.1 %}{{ dependency.1.func_name }}{% else %}Deleted{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {% if dependents %}
+            <div class="rq-panel">
+                <div class="rq-panel-header">Dependents</div>
+                <table class="rq-table">
+                    <thead>
+                        <tr>
+                            <th class="rq-col-job-id">Job ID</th>
+                            <th>Callable</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dependent in dependents %}
+                        <tr>
+                            <td><a href="{% rq_url 'job_detail' queue_index dependent.0 %}">{{ dependent.0 }}</a></td>
+                            <td>{% if dependent.1 %}{{ dependent.1.func_name }}{% else %}Deleted{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
 
             {% if exc_info and job.exc_info %}
             <div class="rq-callout rq-callout-error">
