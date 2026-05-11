@@ -53,6 +53,8 @@ def load_config(config_path: str) -> dict[str, Any]:
         config['SECRET_KEY'] = config_module.SECRET_KEY
     if hasattr(config_module, 'DEBUG'):
         config['DEBUG'] = config_module.DEBUG
+    if hasattr(config_module, 'ALLOWED_HOSTS'):
+        config['ALLOWED_HOSTS'] = config_module.ALLOWED_HOSTS
 
     return config
 
@@ -80,9 +82,13 @@ def configure_django(config: dict[str, Any]) -> None:
     secret_key = config.get('SECRET_KEY') or get_or_create_secret_key()
     debug = config.get('DEBUG', True)
 
+    # Default to localhost only for security. Users can override in config
+    # if they need to access the dashboard from other hosts.
+    allowed_hosts = config.get('ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
+
     settings.configure(
         DEBUG=debug,
-        ALLOWED_HOSTS=['*'],
+        ALLOWED_HOSTS=allowed_hosts,
         SECRET_KEY=secret_key,
         ROOT_URLCONF='django_rq.dashboard.urls',
         INSTALLED_APPS=[
@@ -221,6 +227,10 @@ Example config file (my_config.py):
     # Optional settings:
     DEBUG = True  # Default: True
     SECRET_KEY = 'your-secret-key'  # Default: auto-generated and persisted
+
+    # ALLOWED_HOSTS defaults to ['127.0.0.1', 'localhost'].
+    # Set this if you need to access the dashboard from other hosts:
+    ALLOWED_HOSTS = ['your-server.example.com', '192.168.1.100']
 """,
     )
     parser.add_argument(
