@@ -3,30 +3,64 @@
 Standalone RQ Dashboard CLI.
 
 Usage:
-    rq-dashboard --config my_config.py
-    rq-dashboard --config my_config.py --host 0.0.0.0 --port 8080
+    rq-dashboard init                       # generate ./rq_dashboard_config.py
+    rq-dashboard run                        # auto-detects ./rq_dashboard_config.py
+    rq-dashboard run --config my_config.py
+    rq-dashboard run --config my_config.py --host 0.0.0.0 --port 8080
 """
 
 import argparse
 import importlib.util
-import os
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import django
 from django.conf import settings
 from django.core.management import call_command
 from django.core.management.utils import get_random_secret_key
 
-# Dashboard data directory
-DASHBOARD_DIR = Path.home() / '.rqdashboard'
+
+SAMPLE_CONFIG_FILENAME = 'rq_dashboard_config.py'
+
+SAMPLE_CONFIG_TEMPLATE = '''\
+"""Configuration for rq-dashboard. Edit the values below to match your setup.
+
+NOTE: this file contains a SECRET_KEY used to sign sessions and admin cookies.
+Treat it like a password — do NOT commit it to version control.
+"""
+
+SECRET_KEY = "__SECRET_KEY__"
+
+RQ_QUEUES = {
+    "default": {
+        "URL": "redis://localhost:6379/0",
+    },
+    # Add as many queues as you want. Each entry can use a URL (recommended,
+    # works with most hosted Redis providers) or explicit HOST/PORT/DB fields.
+    #
+    # "high": {
+    #     "URL": "redis://:password@redis.example.com:6380/0",
+    #     "SSL": True,
+    # },
+    # "low": {
+    #     "HOST": "localhost",
+    #     "PORT": 6379,
+    #     "DB": 1,
+    #     # "PASSWORD": "...",
+    # },
+}
+
+# Optional settings — uncomment to use:
+# DEBUG = True
+# ALLOWED_HOSTS = ["dashboard.example.com"]  # default: ["127.0.0.1", "localhost"]
+'''
 
 
 def load_config(config_path: str) -> dict[str, Any]:
     """Load RQ configuration from a Python file."""
-    config_path = os.path.abspath(config_path)
-    if not os.path.exists(config_path):
+    config_path = str(Path(config_path).resolve())
+    if not Path(config_path).exists():
         print(f"Error: Config file not found: {config_path}")
         sys.exit(1)
 
@@ -42,15 +76,20 @@ def load_config(config_path: str) -> dict[str, Any]:
         print("Error: Config file must define RQ_QUEUES")
         sys.exit(1)
 
+    if not hasattr(config_module, 'SECRET_KEY'):
+        print(
+            "Error: Config file must define SECRET_KEY. "
+            "Run `rq-dashboard init` to generate a fresh config with a random key."
+        )
+        sys.exit(1)
+
     config = {
         'RQ_QUEUES': config_module.RQ_QUEUES,
+        'SECRET_KEY': config_module.SECRET_KEY,
     }
 
-    # Optional settings
     if hasattr(config_module, 'RQ'):
         config['RQ'] = config_module.RQ
-    if hasattr(config_module, 'SECRET_KEY'):
-        config['SECRET_KEY'] = config_module.SECRET_KEY
     if hasattr(config_module, 'DEBUG'):
         config['DEBUG'] = config_module.DEBUG
     if hasattr(config_module, 'ALLOWED_HOSTS'):
@@ -59,27 +98,46 @@ def load_config(config_path: str) -> dict[str, Any]:
     return config
 
 
-def get_or_create_secret_key() -> str:
-    """Get or create a persistent secret key."""
-    secret_key_file = DASHBOARD_DIR / 'secret_key'
-    if secret_key_file.exists():
-        return secret_key_file.read_text().strip()
+def resolve_config_path(explicit: Optional[str]) -> Path:
+    """Resolve which config file to load."""
+    if explicit:
+        return Path(explicit)
 
-    secret_key = get_random_secret_key()
-    DASHBOARD_DIR.mkdir(parents=True, exist_ok=True)
-    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
-    with os.fdopen(os.open(secret_key_file, flags, 0o600), 'w') as fh:
-        fh.write(secret_key)
-    return secret_key
+    cwd_config = Path.cwd() / SAMPLE_CONFIG_FILENAME
+    if cwd_config.exists():
+        return cwd_config
+
+    print("rq-dashboard requires a config file.")
+    print()
+    print(
+        f"It looks for `{SAMPLE_CONFIG_FILENAME}` in the current directory, "
+        "or a path passed via `--config`."
+    )
+    print()
+    print("To generate a starter config in this directory, run:")
+    print()
+    print("    rq-dashboard init")
+    sys.exit(1)
 
 
-def configure_django(config: dict[str, Any]) -> None:
+def write_sample_config() -> None:
+    """Write a starter rq_dashboard_config.py into the current directory."""
+    path = Path.cwd() / SAMPLE_CONFIG_FILENAME
+    if path.exists():
+        print(f"{path} already exists. Refusing to overwrite.")
+        sys.exit(1)
+
+    body = SAMPLE_CONFIG_TEMPLATE.replace("__SECRET_KEY__", get_random_secret_key())
+    path.write_text(body)
+    print(f"Wrote {path}")
+    print("Edit it to point at your Redis instance(s), then run `rq-dashboard run`.")
+
+
+def configure_django(config: dict[str, Any], config_path: Path) -> None:
     """Configure Django settings programmatically."""
+    state_dir = config_path.resolve().parent
+    db_path = state_dir / 'rq_dashboard.sqlite3'
 
-    DASHBOARD_DIR.mkdir(parents=True, exist_ok=True)
-    db_path = DASHBOARD_DIR / 'db.sqlite3'
-
-    secret_key = config.get('SECRET_KEY') or get_or_create_secret_key()
     debug = config.get('DEBUG', True)
 
     # Default to localhost only for security. Users can override in config
@@ -89,7 +147,7 @@ def configure_django(config: dict[str, Any]) -> None:
     settings.configure(
         DEBUG=debug,
         ALLOWED_HOSTS=allowed_hosts,
-        SECRET_KEY=secret_key,
+        SECRET_KEY=config['SECRET_KEY'],
         ROOT_URLCONF='django_rq.dashboard.urls',
         INSTALLED_APPS=[
             'django.contrib.contenttypes',
@@ -130,7 +188,7 @@ def configure_django(config: dict[str, Any]) -> None:
             },
         ],
         STATIC_URL='/static/',
-        STATIC_ROOT=str(DASHBOARD_DIR / 'staticfiles'),
+        STATIC_ROOT=str(state_dir / 'rq_dashboard_static'),
         RQ_QUEUES=config['RQ_QUEUES'],
         RQ=config.get('RQ', {}),
         DEFAULT_AUTO_FIELD='django.db.models.BigAutoField',
@@ -144,16 +202,13 @@ def configure_django(config: dict[str, Any]) -> None:
 def check_or_create_superuser() -> None:
     """Check if superuser exists, prompt to create one if not."""
     from django.contrib.auth import get_user_model
-    from django.core.management import call_command
     from django.core.management.base import CommandError
 
     User = get_user_model()
 
-    # Check if any superuser exists
     if User.objects.filter(is_superuser=True).exists():
         return
 
-    # Prompt to create superuser
     print("=" * 70)
     print("No superuser found. You need to create one to access the dashboard.")
     print("=" * 70)
@@ -180,100 +235,92 @@ def check_or_create_superuser() -> None:
 
 def collect_static_files() -> None:
     """Collect static files if not in DEBUG mode."""
-    from django.conf import settings
-    from django.core.management import call_command
-
     if not settings.DEBUG:
         call_command('collectstatic', '--no-input', verbosity=0)
 
 
 def run_server(host: str, port: int) -> None:
     """Run the Django development server."""
-    from django.conf import settings
-    from django.core.management import call_command
-
     print(f"Starting RQ Dashboard at http://{host}:{port}/")
     print("Log in with your superuser credentials.")
     print("Press Ctrl+C to stop.")
     print()
 
-    # Use --insecure flag to serve static files even when DEBUG=False
-    # This is acceptable for a standalone dashboard tool
+    # Use --insecure flag to serve static files even when DEBUG=False.
+    # This is acceptable for a standalone dashboard tool.
     if settings.DEBUG:
         call_command('runserver', f'{host}:{port}', use_reloader=False)
     else:
         call_command('runserver', f'{host}:{port}', '--insecure', use_reloader=False)
 
 
-def parse_args(args: list[str] | None = None) -> argparse.Namespace:
-    """Parse command line arguments."""
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description='Run a standalone RQ Dashboard',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Example config file (my_config.py):
-
-    RQ_QUEUES = {
-        'default': {
-            'HOST': 'localhost',
-            'PORT': 6379,
-            'DB': 0,
-        },
-        'high': {
-            'URL': 'redis://localhost:6379/1',
-        }
-    }
-
-    # Optional settings:
-    DEBUG = True  # Default: True
-    SECRET_KEY = 'your-secret-key'  # Default: auto-generated and persisted
-
-    # ALLOWED_HOSTS defaults to ['127.0.0.1', 'localhost'].
-    # Set this if you need to access the dashboard from other hosts:
-    ALLOWED_HOSTS = ['your-server.example.com', '192.168.1.100']
-""",
+        prog='rq-dashboard',
+        description='Run a standalone RQ Dashboard.',
     )
-    parser.add_argument(
+    subparsers = parser.add_subparsers(dest='command', metavar='<command>')
+
+    subparsers.add_parser(
+        'init',
+        help=f'Generate a starter {SAMPLE_CONFIG_FILENAME} in the current directory.',
+    )
+
+    run_parser = subparsers.add_parser(
+        'run',
+        help='Start the dashboard server.',
+    )
+    run_parser.add_argument(
         '--config',
         '-c',
-        required=True,
-        help='Path to Python config file containing RQ_QUEUES',
+        help=(
+            f'Path to a Python config file. Defaults to ./{SAMPLE_CONFIG_FILENAME} '
+            'if present in the current directory.'
+        ),
     )
-    parser.add_argument(
+    run_parser.add_argument(
         '--host',
         default='127.0.0.1',
         help='Host to bind the server to (default: 127.0.0.1)',
     )
-    parser.add_argument(
+    run_parser.add_argument(
         '--port',
         '-p',
         type=int,
         default=8000,
         help='Port to bind the server to (default: 8000)',
     )
-    return parser.parse_args(args)
+
+    return parser
+
+
+def parse_args(args: list[str] | None = None) -> argparse.Namespace:
+    """Parse command line arguments."""
+    return build_parser().parse_args(args)
 
 
 def main() -> None:
-    """Main entry point for the rqdashboard CLI."""
-    args = parse_args()
+    """Main entry point for the rq-dashboard CLI."""
+    parser = build_parser()
+    args = parser.parse_args()
 
-    # Load config
-    config = load_config(args.config)
+    if args.command is None:
+        parser.print_help()
+        sys.exit(0)
 
-    # Configure Django
-    configure_django(config)
+    if args.command == 'init':
+        write_sample_config()
+        return
 
-    # Run migrations
-    call_command('migrate', '--run-syncdb', verbosity=0)
+    # args.command == 'run'
+    config_path = resolve_config_path(args.config)
+    config = load_config(str(config_path))
 
-    # Collect static files if DEBUG=False
+    configure_django(config, config_path)
+
+    call_command('migrate', verbosity=0)
     collect_static_files()
-
-    # Check/create superuser
     check_or_create_superuser()
-
-    # Run server
     run_server(args.host, args.port)
 
 

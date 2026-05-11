@@ -1,22 +1,17 @@
 """Tests for the standalone RQ Dashboard CLI."""
 
+import contextlib
+import io
 import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 
-class TestLoadConfig(unittest.TestCase):
-    """Tests for the load_config function."""
-
-    def test_load_valid_config(self):
-        """Test loading a valid config file."""
-        # Import here to avoid Django setup issues
-        from django_rq.dashboard.cli import load_config
-
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-            f.write("""
+VALID_CONFIG_BODY = """
+SECRET_KEY = 'test-secret-key'
 RQ_QUEUES = {
     'default': {
         'HOST': 'localhost',
@@ -24,7 +19,17 @@ RQ_QUEUES = {
         'DB': 0,
     }
 }
-""")
+"""
+
+
+class TestLoadConfig(unittest.TestCase):
+    """Tests for the load_config function."""
+
+    def test_load_valid_config(self):
+        from django_rq.dashboard.cli import load_config
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            f.write(VALID_CONFIG_BODY)
             f.flush()
             config_path = f.name
 
@@ -32,51 +37,40 @@ RQ_QUEUES = {
             config = load_config(config_path)
             self.assertIn('RQ_QUEUES', config)
             self.assertEqual(config['RQ_QUEUES']['default']['HOST'], 'localhost')
+            self.assertEqual(config['SECRET_KEY'], 'test-secret-key')
         finally:
             os.unlink(config_path)
 
     def test_load_config_with_optional_settings(self):
-        """Test loading a config file with optional RQ settings."""
         from django_rq.dashboard.cli import load_config
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-            f.write("""
-RQ_QUEUES = {
-    'default': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
-    }
-}
-RQ = {
-    'COMMIT_MODE': 'auto',
-}
-SECRET_KEY = 'my-secret-key'
-""")
+            f.write(VALID_CONFIG_BODY)
+            f.write("RQ = {'COMMIT_MODE': 'auto'}\n")
+            f.write("DEBUG = False\n")
+            f.write("ALLOWED_HOSTS = ['example.com']\n")
             f.flush()
             config_path = f.name
 
         try:
             config = load_config(config_path)
-            self.assertIn('RQ', config)
             self.assertEqual(config['RQ']['COMMIT_MODE'], 'auto')
-            self.assertEqual(config['SECRET_KEY'], 'my-secret-key')
+            self.assertFalse(config['DEBUG'])
+            self.assertEqual(config['ALLOWED_HOSTS'], ['example.com'])
         finally:
             os.unlink(config_path)
 
     def test_load_config_missing_file(self):
-        """Test loading a non-existent config file."""
         from django_rq.dashboard.cli import load_config
 
         with self.assertRaises(SystemExit):
             load_config('/nonexistent/path/config.py')
 
     def test_load_config_missing_rq_queues(self):
-        """Test loading a config file without RQ_QUEUES."""
         from django_rq.dashboard.cli import load_config
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-            f.write("FOO = 'bar'\n")
+            f.write("SECRET_KEY = 'x'\n")
             f.flush()
             config_path = f.name
 
@@ -86,61 +80,190 @@ SECRET_KEY = 'my-secret-key'
         finally:
             os.unlink(config_path)
 
+    def test_load_config_missing_secret_key(self):
+        from django_rq.dashboard.cli import load_config
 
-class TestSecretKey(unittest.TestCase):
-    """Tests for secret key generation."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            f.write("RQ_QUEUES = {'default': {'HOST': 'localhost', 'PORT': 6379, 'DB': 0}}\n")
+            f.flush()
+            config_path = f.name
 
-    def test_get_or_create_secret_key_creates_new(self):
-        """Test that a new secret key is created if none exists."""
-        from django_rq.dashboard.cli import get_or_create_secret_key
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch('django_rq.dashboard.cli.DASHBOARD_DIR', Path(tmpdir) / '.rqdashboard'):
-                secret_key = get_or_create_secret_key()
-                self.assertTrue(len(secret_key) > 20)
-
-                # Second call should return the same key
-                secret_key2 = get_or_create_secret_key()
-                self.assertEqual(secret_key, secret_key2)
+        try:
+            stderr = io.StringIO()
+            with contextlib.redirect_stdout(stderr):
+                with self.assertRaises(SystemExit):
+                    load_config(config_path)
+            self.assertIn('SECRET_KEY', stderr.getvalue())
+        finally:
+            os.unlink(config_path)
 
 
 class TestParseArgs(unittest.TestCase):
     """Tests for the argument parser."""
 
-    def test_config_is_required(self):
-        """Test that --config is required."""
+    def test_no_subcommand(self):
         from django_rq.dashboard.cli import parse_args
 
-        with self.assertRaises(SystemExit):
-            parse_args([])
+        args = parse_args([])
+        self.assertIsNone(args.command)
 
-    def test_parse_args_with_all_options(self):
-        """Test that all options are correctly parsed."""
+    def test_init_subcommand(self):
         from django_rq.dashboard.cli import parse_args
 
-        args = parse_args(['--config', 'test.py', '--host', '0.0.0.0', '--port', '9000'])
+        args = parse_args(['init'])
+        self.assertEqual(args.command, 'init')
 
+    def test_run_with_all_options(self):
+        from django_rq.dashboard.cli import parse_args
+
+        args = parse_args(['run', '--config', 'test.py', '--host', '0.0.0.0', '--port', '9000'])
+
+        self.assertEqual(args.command, 'run')
         self.assertEqual(args.config, 'test.py')
         self.assertEqual(args.host, '0.0.0.0')
         self.assertEqual(args.port, 9000)
 
-    def test_parse_args_with_short_options(self):
-        """Test that short options (-c, -p) work correctly."""
+    def test_run_with_short_options(self):
         from django_rq.dashboard.cli import parse_args
 
-        args = parse_args(['-c', 'config.py', '-p', '8080'])
+        args = parse_args(['run', '-c', 'config.py', '-p', '8080'])
 
+        self.assertEqual(args.command, 'run')
         self.assertEqual(args.config, 'config.py')
         self.assertEqual(args.port, 8080)
 
-    def test_parse_args_defaults(self):
-        """Test default values for host and port."""
+    def test_run_defaults(self):
         from django_rq.dashboard.cli import parse_args
 
-        args = parse_args(['--config', 'test.py'])
+        args = parse_args(['run'])
 
+        self.assertEqual(args.command, 'run')
+        self.assertIsNone(args.config)
         self.assertEqual(args.host, '127.0.0.1')
         self.assertEqual(args.port, 8000)
+
+    def test_bare_config_rejected(self):
+        """`rq-dashboard --config x.py` (no `run` subcommand) is a parser error."""
+        from django_rq.dashboard.cli import parse_args
+
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                parse_args(['--config', 'x.py'])
+
+    def test_main_with_no_args_prints_help_and_exits_zero(self):
+        from django_rq.dashboard import cli
+
+        stdout = io.StringIO()
+        with patch.object(sys, 'argv', ['rq-dashboard']):
+            with contextlib.redirect_stdout(stdout):
+                with self.assertRaises(SystemExit) as exc:
+                    cli.main()
+
+        self.assertEqual(exc.exception.code, 0)
+        output = stdout.getvalue()
+        self.assertIn('init', output)
+        self.assertIn('run', output)
+        self.assertEqual(args.host, '127.0.0.1')
+        self.assertEqual(args.port, 8000)
+
+
+class TestInit(unittest.TestCase):
+    """Tests for the `init` subcommand."""
+
+    def _run_init_in(self, tmpdir):
+        from django_rq.dashboard.cli import write_sample_config
+
+        original = Path.cwd()
+        os.chdir(tmpdir)
+        try:
+            write_sample_config()
+        finally:
+            os.chdir(original)
+
+    def test_init_writes_config_with_secret_key(self):
+        from django_rq.dashboard.cli import SAMPLE_CONFIG_FILENAME
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with contextlib.redirect_stdout(io.StringIO()):
+                self._run_init_in(tmpdir)
+
+            written = Path(tmpdir) / SAMPLE_CONFIG_FILENAME
+            self.assertTrue(written.exists())
+            body = written.read_text()
+            self.assertIn('RQ_QUEUES', body)
+            self.assertIn('SECRET_KEY', body)
+            self.assertNotIn('__SECRET_KEY__', body)
+
+    def test_init_generates_unique_secret_keys(self):
+        from django_rq.dashboard.cli import SAMPLE_CONFIG_FILENAME
+
+        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
+            with contextlib.redirect_stdout(io.StringIO()):
+                self._run_init_in(a)
+                self._run_init_in(b)
+
+            body_a = (Path(a) / SAMPLE_CONFIG_FILENAME).read_text()
+            body_b = (Path(b) / SAMPLE_CONFIG_FILENAME).read_text()
+            self.assertNotEqual(body_a, body_b)
+
+    def test_init_refuses_to_overwrite(self):
+        from django_rq.dashboard.cli import SAMPLE_CONFIG_FILENAME
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            existing = Path(tmpdir) / SAMPLE_CONFIG_FILENAME
+            existing.write_text("# pre-existing user file\n")
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                with self.assertRaises(SystemExit):
+                    self._run_init_in(tmpdir)
+
+            self.assertIn("already exists", stdout.getvalue())
+            self.assertEqual(existing.read_text(), "# pre-existing user file\n")
+
+
+class TestResolveConfigPath(unittest.TestCase):
+    """Tests for the config-path resolution helper."""
+
+    def test_explicit_wins(self):
+        from django_rq.dashboard.cli import resolve_config_path
+
+        path = resolve_config_path('/some/explicit/path.py')
+        self.assertEqual(path, Path('/some/explicit/path.py'))
+
+    def test_picks_up_cwd_config(self):
+        from django_rq.dashboard.cli import SAMPLE_CONFIG_FILENAME, resolve_config_path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (Path(tmpdir) / SAMPLE_CONFIG_FILENAME).write_text("# placeholder\n")
+
+            original = Path.cwd()
+            os.chdir(tmpdir)
+            try:
+                path = resolve_config_path(None)
+            finally:
+                os.chdir(original)
+
+            self.assertEqual(path.name, SAMPLE_CONFIG_FILENAME)
+            self.assertEqual(path.parent.resolve(), Path(tmpdir).resolve())
+
+    def test_no_config_exits_with_helpful_message(self):
+        from django_rq.dashboard.cli import resolve_config_path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            original = Path.cwd()
+            os.chdir(tmpdir)
+            try:
+                stdout = io.StringIO()
+                with contextlib.redirect_stdout(stdout):
+                    with self.assertRaises(SystemExit):
+                        resolve_config_path(None)
+            finally:
+                os.chdir(original)
+
+            output = stdout.getvalue()
+            self.assertIn("requires a config file", output)
+            self.assertIn("rq-dashboard init", output)
 
 
 class TestURLConfiguration(unittest.TestCase):
@@ -151,11 +274,9 @@ class TestURLConfiguration(unittest.TestCase):
         from django.test import override_settings
         from django.urls import clear_url_caches, reverse
 
-        # Test with dashboard_urls (which includes the django_rq.urls module so app_name applies)
         with override_settings(ROOT_URLCONF='django_rq.dashboard.urls'):
             clear_url_caches()
 
-            # Test that URLs can be reversed under the django_rq namespace
             url = reverse('django_rq:home')
             self.assertEqual(url, '/')
 
@@ -165,6 +286,5 @@ class TestURLConfiguration(unittest.TestCase):
             url = reverse('django_rq:failed_jobs', kwargs={'queue_index': 0})
             self.assertEqual(url, '/queues/0/failed/')
 
-            # Test admin namespace
             url = reverse('admin:index')
             self.assertEqual(url, '/admin/')
