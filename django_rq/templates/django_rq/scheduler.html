@@ -99,7 +99,7 @@
                                         {{ job.ended_at|timestamp_tooltip }}
                                     {% endif %}
                                 </td>
-                                <td>{{ job.get_status.value }}</td>
+                                <td>{{ job|job_status }}</td>
                                 <td>{{ job|show_func_name }}</td>
                             </tr>
                         {% endfor %}

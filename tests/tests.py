@@ -26,11 +26,11 @@ from django_rq.decorators import job
 from django_rq.jobs import get_job_class
 from django_rq.management.commands import rqworker
 from django_rq.queues import DjangoRQ, get_queue, get_queues
-from django_rq.templatetags.django_rq import force_escape, timestamp_tooltip, to_localtime
+from django_rq.templatetags.django_rq import force_escape, job_status, timestamp_tooltip, to_localtime
 from django_rq.utils import get_displayable_connection_kwargs, get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
 from tests.base import DjangoRQTestCase
-from tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self
+from tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self, say_hello
 from tests.redis_config import REDIS_CONFIG_1
 
 try:
@@ -595,6 +595,18 @@ class WorkerClassTest(TestCase):
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class TemplateTagTest(TestCase):
+    def test_job_status(self):
+        queue = get_queue()
+        job = queue.enqueue(say_hello)
+
+        self.assertEqual(job_status(job), 'queued')
+
+        queue.connection.hdel(job.key, 'status')
+        self.assertEqual(job_status(job), 'unknown')
+
+        queue.connection.delete(job.key)
+        self.assertEqual(job_status(job), 'unknown')
+
     def test_to_localtime(self):
         with self.settings(TIME_ZONE='Asia/Jakarta'):
             queue = get_queue()
