@@ -7,8 +7,8 @@ from unittest.mock import PropertyMock, patch
 from uuid import uuid4
 
 import rq
-from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -26,11 +26,11 @@ from django_rq.decorators import job
 from django_rq.jobs import get_job_class
 from django_rq.management.commands import rqworker
 from django_rq.queues import DjangoRQ, get_queue, get_queues
-from django_rq.templatetags.django_rq import force_escape, to_localtime
-from django_rq.utils import get_scheduler_pid
+from django_rq.templatetags.django_rq import force_escape, job_status, timestamp_tooltip, to_localtime
+from django_rq.utils import get_displayable_connection_kwargs, get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
 from tests.base import DjangoRQTestCase
-from tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self
+from tests.fixtures import DummyJob, DummyQueue, DummyWorker, access_self, say_hello
 from tests.redis_config import REDIS_CONFIG_1
 
 try:
@@ -73,6 +73,52 @@ class RqStatsTest(TestCase):
         call_command('rqstats')
         call_command('rqstats', '-j')
         call_command('rqstats', '-y')
+
+
+FORBIDDEN_CONNECTION_KEYS = ('password', 'credential_provider', 'connection_pool', 'parser_class', 'retry', 'driver_info')
+
+
+class DisplayableConnectionKwargsTest(TestCase):
+    def test_returns_safe_connection_metadata(self):
+        """get_displayable_connection_kwargs returns operationally meaningful
+        fields and never leaks secrets or redis-py internals."""
+        queue = get_queue('url')
+        self.assertEqual(queue.connection.connection_pool.connection_kwargs.get('password'), 'password')
+
+        displayable = get_displayable_connection_kwargs(queue)
+
+        for key in FORBIDDEN_CONNECTION_KEYS:
+            self.assertNotIn(key, displayable)
+        self.assertEqual(displayable.get('host'), 'host')
+        self.assertEqual(displayable.get('port'), 1234)
+        self.assertEqual(displayable.get('db'), 4)
+        self.assertEqual(displayable.get('username'), 'username')
+
+    def test_sentinel_returns_first_sentinel_endpoint(self):
+        """For Sentinel-backed queues, expose safe Sentinel metadata."""
+        queue = get_queue('sentinel')
+        sentinels = queue.connection.connection_pool.sentinel_manager.sentinels
+        first_sentinel_kwargs = sentinels[0].connection_pool.connection_kwargs
+
+        displayable = get_displayable_connection_kwargs(queue)
+
+        for key in FORBIDDEN_CONNECTION_KEYS:
+            self.assertNotIn(key, displayable)
+        self.assertEqual(displayable.get('host'), first_sentinel_kwargs.get('host'))
+        self.assertEqual(displayable.get('port'), first_sentinel_kwargs.get('port'))
+        self.assertEqual(displayable.get('db'), queue.connection.connection_pool.connection_kwargs.get('db'))
+        self.assertEqual(displayable.get('service_name'), 'testmaster')
+        self.assertEqual(displayable.get('socket_timeout'), 10)
+        self.assertEqual(
+            displayable.get('sentinels'),
+            [
+                (
+                    sentinel.connection_pool.connection_kwargs.get('host'),
+                    sentinel.connection_pool.connection_kwargs.get('port'),
+                )
+                for sentinel in sentinels
+            ],
+        )
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
@@ -549,6 +595,18 @@ class WorkerClassTest(TestCase):
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class TemplateTagTest(TestCase):
+    def test_job_status(self):
+        queue = get_queue()
+        job = queue.enqueue(say_hello)
+
+        self.assertEqual(job_status(job), 'queued')
+
+        queue.connection.hdel(job.key, 'status')
+        self.assertEqual(job_status(job), 'unknown')
+
+        queue.connection.delete(job.key)
+        self.assertEqual(job_status(job), 'unknown')
+
     def test_to_localtime(self):
         with self.settings(TIME_ZONE='Asia/Jakarta'):
             queue = get_queue()
@@ -557,6 +615,34 @@ class TemplateTagTest(TestCase):
 
             self.assertIsNotNone(time.tzinfo)
             self.assertEqual(time.strftime("%z"), '+0700')
+
+    def test_timestamp_tooltip(self):
+        """Renders local time visibly with UTC in title; handles aware
+        datetimes correctly; falsy input renders an em-dash."""
+        import datetime as _dt
+
+        # Naive UTC datetime → local time visible, UTC in tooltip.
+        with self.settings(TIME_ZONE='Asia/Jakarta'):
+            naive = _dt.datetime(2026, 4, 26, 17, 10, 24)
+            html = timestamp_tooltip(naive)
+            self.assertIn('<time', html)
+            self.assertIn('datetime="2026-04-26T17:10:24+00:00"', html)
+            self.assertIn('title="UTC: 2026-04-26 17:10:24"', html)
+            # Asia/Jakarta is UTC+7 → visible value is 00:10:24 the next day.
+            self.assertIn('>2026-04-27 00:10:24</time>', html)
+
+        # Aware datetime is converted (not reinterpreted) on its way to UTC.
+        with self.settings(TIME_ZONE='UTC'):
+            tz = _dt.timezone(_dt.timedelta(hours=5, minutes=30))
+            aware = _dt.datetime(2026, 4, 26, 22, 40, 24, tzinfo=tz)  # 17:10:24 UTC
+            html = timestamp_tooltip(aware)
+            # The right UTC instant is 17:10:24, NOT 22:40:24 (the local clock).
+            self.assertIn('title="UTC: 2026-04-26 17:10:24"', html)
+            self.assertIn('>2026-04-26 17:10:24</time>', html)
+
+        # Falsy input renders an em-dash placeholder.
+        self.assertEqual(timestamp_tooltip(None), '—')
+        self.assertEqual(timestamp_tooltip(''), '—')
 
     def test_force_escape_safe_string(self):
         html = "<h1>hello world</h1>"

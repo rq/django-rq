@@ -27,6 +27,7 @@
 <div id="content-main">
     <div class="module" id="changelist">
         <div class="changelist-form-container">
+          <div>
             <form id="changelist-form" method="post" {% if cl.formset and cl.formset.is_multipart %}
                 enctype="multipart/form-data" {% endif %} novalidate>{% csrf_token %}
                 <div class="results">
@@ -39,10 +40,6 @@
                                 </th>
                                 <th scope="col" class="sortable">
                                     <div class="text"><span>Queued Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Oldest Queued Job</span></div>
                                     <div class="clear"></div>
                                 </th>
                                 <th scope="col" class="sortable">
@@ -69,18 +66,6 @@
                                     <div class="text"><span>Workers</span></div>
                                     <div class="clear"></div>
                                 </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Host</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Port</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>DB</span></div>
-                                    <div class="clear"></div>
-                                </th>
                                 {% if queue.scheduler_pid is not False %}
                                 <th scope="col" class="sortable">
                                     <div class="text"><span>Scheduler PID</span></div>
@@ -93,7 +78,7 @@
                             {% for queue in queues %}
                             <tr class="{% cycle 'row1' 'row2' %}">
                                 <th>
-                                    <a href="{% rq_url 'jobs' queue.index %}">
+                                    <a href="{% rq_url 'queue_details' queue.index %}">
                                         {{ queue.name }}
                                     </a>
                                 </th>
@@ -102,7 +87,6 @@
                                         {{ queue.jobs }}
                                     </a>
                                 </th>
-                                <td>{{ queue.oldest_job_timestamp }}</td>
                                 <th>
                                     <a href="{% rq_url 'started_jobs' queue.index %}">
                                         {{ queue.started_jobs }}
@@ -132,11 +116,8 @@
                                         {{ queue.workers }}
                                     </a>
                                 </th>
-                                <td>{{ queue.connection_kwargs.host }}</td>
-                                <td>{{ queue.connection_kwargs.port }}</td>
-                                <td>{{ queue.connection_kwargs.db }}</td>
                                 {% if queue.scheduler_pid is not False %}
-                                <td>{{ queue.scheduler_pid|default_if_none:"Inactive" }}</td>
+                                <td>{{ queue.scheduler_pid|default_if_none:"-" }}</td>
                                 {% endif %}
                             </tr>
                             {% endfor %}
@@ -150,6 +131,7 @@
                 {% endif %}
                 </p>
             </form>
+          </div>
         </div>
     </div>
 

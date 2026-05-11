@@ -10,7 +10,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from rq import requeue_job
 from rq.exceptions import NoSuchJobError
-from rq.job import Job, JobStatus
+from rq.job import Job
 from rq.registry import (
     DeferredJobRegistry,
     FailedJobRegistry,
@@ -22,8 +22,17 @@ from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
 from .queues import get_queue_by_index, get_scheduler_by_index
-from .settings import get_queues_map
-from .utils import get_executions, get_jobs, stop_jobs
+from .settings import get_queues_list, get_queues_map
+from .utils import (
+    get_displayable_connection_kwargs,
+    get_executions,
+    get_jobs,
+    get_scheduler_pid,
+    stop_jobs,
+)
+from .utils import (
+    requeue_job as _requeue_job,
+)
 
 
 def rq_viewname(request: HttpRequest, viewname: str) -> str:
@@ -72,6 +81,38 @@ def jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
 
 @never_cache
 @staff_member_required
+def queue_details(request: HttpRequest, queue_index: int) -> HttpResponse:
+    queue = get_queue_by_index(queue_index)
+    connection = queue.connection
+    queue_config = get_queues_list()[queue_index]['connection_config']
+
+    oldest_job_id = connection.lindex(queue.key, 0)
+    newest_job_id = connection.lindex(queue.key, -1)
+    oldest_queued_job = queue.fetch_job(oldest_job_id.decode('utf-8')) if oldest_job_id else None
+    newest_queued_job = queue.fetch_job(newest_job_id.decode('utf-8')) if newest_job_id else None
+
+    context_data = {
+        **each_context(request),
+        'queue': queue,
+        'queue_index': queue_index,
+        'connection_kwargs': get_displayable_connection_kwargs(queue),
+        'queue_config': queue_config,
+        'num_jobs': queue.count,
+        'num_workers': Worker.count(queue=queue),
+        'num_started': len(StartedJobRegistry(queue.name, connection)),
+        'num_finished': len(FinishedJobRegistry(queue.name, connection)),
+        'num_failed': len(FailedJobRegistry(queue.name, connection)),
+        'num_deferred': len(DeferredJobRegistry(queue.name, connection)),
+        'num_scheduled': len(ScheduledJobRegistry(queue.name, connection)),
+        'scheduler_pid': get_scheduler_pid(queue),
+        'oldest_queued_job': oldest_queued_job,
+        'newest_queued_job': newest_queued_job,
+    }
+    return render(request, 'django_rq/queue_detail.html', context_data)
+
+
+@never_cache
+@staff_member_required
 def finished_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
 
@@ -107,6 +148,7 @@ def finished_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
         'page': page,
         'page_range': page_range,
         'sort_direction': sort_direction,
+        'job_status': 'Finished',
     }
     return render(request, 'django_rq/finished_jobs.html', context_data)
 
@@ -148,6 +190,7 @@ def failed_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
         'page': page,
         'page_range': page_range,
         'sort_direction': sort_direction,
+        'job_status': 'Failed',
     }
     return render(request, 'django_rq/failed_jobs.html', context_data)
 
@@ -189,6 +232,7 @@ def scheduled_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
         'page': page,
         'page_range': page_range,
         'sort_direction': sort_direction,
+        'job_status': 'Scheduled',
     }
     return render(request, 'django_rq/scheduled_jobs.html', context_data)
 
@@ -535,11 +579,21 @@ def confirm_action(request: HttpRequest, queue_index: int) -> HttpResponse:
     if request.method == 'POST' and request.POST.get('action', False):
         # confirm action
         if request.POST.get('_selected_action', False):
+            job_ids = request.POST.getlist('_selected_action')
+            actionable_job_ids: list[str] = []
+            jobs: list[Any] = []
+            for job_id in job_ids:
+                try:
+                    jobs.append(Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer))
+                    actionable_job_ids.append(job_id)
+                except NoSuchJobError:
+                    jobs.append({'id': job_id, 'missing': True})
             context_data = {
                 **each_context(request),
                 'queue_index': queue_index,
                 'action': request.POST['action'],
-                'job_ids': request.POST.getlist('_selected_action'),
+                'job_ids': actionable_job_ids,
+                'jobs': jobs,
                 'queue': queue,
                 'next_url': next_url,
             }
@@ -567,9 +621,18 @@ def actions(request: HttpRequest, queue_index: int) -> HttpResponse:
                     job.delete()
                 messages.info(request, f'You have successfully deleted {len(job_ids)} jobs!')
             elif request.POST['action'] == 'requeue':
+                requeued = 0
                 for job_id in job_ids:
-                    requeue_job(job_id, connection=queue.connection, serializer=queue.serializer)
-                messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
+                    try:
+                        job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
+                    except NoSuchJobError:
+                        continue
+                    _requeue_job(queue, job)
+                    requeued += 1
+                messages.info(
+                    request,
+                    'You have successfully requeued %d job%s!' % (requeued, '' if requeued == 1 else 's'),
+                )
             elif request.POST['action'] == 'stop':
                 stopped, failed_to_stop = stop_jobs(queue, job_ids)
                 if len(stopped) > 0:
@@ -588,25 +651,7 @@ def enqueue_job(request: HttpRequest, queue_index: int, job_id: str) -> HttpResp
     job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
 
     if request.method == 'POST':
-        try:
-            # _enqueue_job is new in RQ 1.14, this is used to enqueue
-            # job regardless of its dependencies
-            queue._enqueue_job(job)
-        except AttributeError:
-            queue.enqueue_job(job)
-
-        # Remove job from correct registry if needed
-        registry: Any
-        if job.get_status() == JobStatus.DEFERRED:
-            registry = DeferredJobRegistry(queue.name, queue.connection)
-            registry.remove(job)
-        elif job.get_status() == JobStatus.FINISHED:
-            registry = FinishedJobRegistry(queue.name, queue.connection)
-            registry.remove(job)
-        elif job.get_status() == JobStatus.SCHEDULED:
-            registry = ScheduledJobRegistry(queue.name, queue.connection)
-            registry.remove(job)
-
+        _requeue_job(queue, job)
         messages.info(request, f'You have successfully enqueued {job.id}')
         return redirect(rq_viewname(request, "job_detail"), queue_index, job_id)
 

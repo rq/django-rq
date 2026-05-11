@@ -46,7 +46,7 @@ def prometheus_metrics(request):
 
     global registry
 
-    if not RQCollector:  # type: ignore[truthy-function]
+    if not RQCollector or not prometheus_client:  # type: ignore[truthy-function]
         raise Http404('prometheus_client has not been installed; install using extra "django-rq[prometheus]"')
 
     if not registry:
@@ -77,7 +77,7 @@ def stats(request: HttpRequest) -> HttpResponse:
 def stats_json(request: HttpRequest, token: Optional[str] = None) -> JsonResponse:
     if not is_authorized(request):
         api_token = django_rq_settings.get_api_token()
-        if token and token == api_token:
+        if token and compare_digest(token, api_token):
             return JsonResponse(get_statistics())
         else:
             return JsonResponse(

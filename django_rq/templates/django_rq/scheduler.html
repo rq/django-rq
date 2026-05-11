@@ -7,6 +7,7 @@
 {% block extrastyle %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'django_rq/css/admin.css' %}">
 {% endblock %}
 
 {% block extrahead %}
@@ -31,15 +32,20 @@
     </div>
 {% endblock %}
 
-{% block content_title %}<h1>Scheduler Managed Jobs</h1>{% endblock %}
+{% block content_title %}{% endblock %}
 
 {% block content %}
 
 <div id="content-main">
-    <ul class="object-tools">
-    </ul>
+    <div class="rq-changelist-header">
+        <h1>Scheduler Managed Jobs</h1>
+        <ul class="object-tools">
+        </ul>
+    </div>
     <div class="module" id="changelist">
-        <form id="changelist-form" action="" method="post">
+        <div class="changelist-form-container">
+          <div>
+            <form id="changelist-form" action="" method="post">
             {% csrf_token %}
             <div class="actions">
                 <label>Actions:
@@ -85,15 +91,15 @@
                                 <td>{{ job.schedule }}</td>
                                 <td>
                                     {% if job.next_run %}
-                                        {{ job.next_run|to_localtime|date:"Y-m-d, H:i:s" }}
+                                        {{ job.next_run|timestamp_tooltip }}
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if job.ended_at %}
-                                        {{ job.ended_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                        {{ job.ended_at|timestamp_tooltip }}
                                     {% endif %}
                                 </td>
-                                <td>{{ job.get_status.value }}</td>
+                                <td>{{ job|job_status }}</td>
                                 <td>{{ job|show_func_name }}</td>
                             </tr>
                         {% endfor %}
@@ -112,7 +118,9 @@
                 {% endfor %}
                 {{ num_jobs }} jobs
             </p>
-        </form>
+            </form>
+          </div>
+        </div>
     </div>
 </div>
 

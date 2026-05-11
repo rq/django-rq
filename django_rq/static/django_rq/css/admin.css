@@ -1,0 +1,262 @@
+/*
+ * django-rq admin design system.
+ *
+ * Built on Django admin's CSS custom properties (base.css + dark_mode.css)
+ * so light/dark theming follows Django automatically. Only colors Django
+ * doesn't define live here as locals — and they get the same dark override
+ * pattern Django uses (@media + html[data-theme="dark"]).
+ *
+ * All selectors are prefixed `.rq-` to avoid colliding with Django admin.
+ *
+ * Layers:
+ *   1. Tokens          — local custom properties
+ *   2. Layout          — title row, grid, columns
+ *   3. Panels & fields — card + labeled field row
+ *   4. Pills           — semantic state pills
+ *   5. Tables          — generic table primitive + row/cell modifiers
+ *   6. Callouts        — accented info/error blocks
+ *   7. Utilities       — typography helpers
+ *
+ * Buttons use Django admin's stock classes (`.default`, `.deletelink`)
+ * directly — no custom button CSS lives here.
+ */
+
+/* ── 1. Tokens ─────────────────────────────────────────────────── */
+/*
+ * Most colors are read inline as var(--django-thing) so they theme via
+ * Django's own variables. Locals are kept only for:
+ *   - Monospace fallback (older Django without --font-family-monospace)
+ *   - State foregrounds Django doesn't define (finished, queued/scheduled)
+ *   - Layout (grid widths)
+ */
+:root {
+    --rq-mono: var(--font-family-monospace, ui-monospace, Menlo, Monaco, "Cascadia Mono", "Roboto Mono", monospace);
+
+    --rq-finished-fg: #417e38;
+    --rq-queued-fg: #9c6d1e;
+
+    --rq-grid-left: 360px;
+    --rq-grid-gap: 16px;
+}
+
+/* Dark overrides — only for tokens Django doesn't theme for us. Mirrors
+   Django's pattern of duplicating into both selectors. */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --rq-finished-fg: #6dbf5e;
+        --rq-queued-fg: #d4a151;
+    }
+}
+html[data-theme="dark"] {
+    --rq-finished-fg: #6dbf5e;
+    --rq-queued-fg: #d4a151;
+}
+
+/* ── 2. Layout ─────────────────────────────────────────────────── */
+.rq-title-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+.rq-title-row h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 300;
+    letter-spacing: -0.2px;
+    color: var(--body-fg);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.rq-grid {
+    display: grid;
+    grid-template-columns: var(--rq-grid-left) 1fr;
+    gap: var(--rq-grid-gap);
+    margin-bottom: var(--rq-grid-gap);
+}
+@media (max-width: 900px) {
+    .rq-grid { grid-template-columns: 1fr; }
+}
+.rq-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rq-grid-gap);
+    min-width: 0;
+}
+
+/* ── 3. Panels & fields ────────────────────────────────────────── */
+.rq-panel {
+    background: var(--body-bg);
+    border: 1px solid var(--hairline-color);
+    border-radius: 0;
+}
+.rq-panel-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--hairline-color);
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--body-quiet-color);
+    font-weight: 700;
+}
+.rq-panel-body { padding: 10px 0; }
+
+.rq-field {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 12px;
+    padding: 6px 16px;
+    align-items: baseline;
+}
+.rq-field-label {
+    font-size: 11.5px;
+    color: var(--body-quiet-color);
+    letter-spacing: 0.2px;
+}
+.rq-field-value {
+    font-size: 12.5px;
+    color: var(--body-fg);
+    word-break: break-all;
+}
+.rq-field-value a { color: var(--link-fg); text-decoration: none; }
+.rq-field-value ul { margin: 0; padding-left: 18px; }
+
+/* ── 4. Pills ──────────────────────────────────────────────────── */
+.rq-pill {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 2px;
+    line-height: 1.5;
+    /* Border auto-derives from the pill's foreground at 25% alpha. */
+    border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+}
+.rq-pill-dense { font-size: 10.5px; padding: 1px 6px; }
+
+/* State colors. Backgrounds use Django's --message-* vars where they
+   exist; foregrounds use Django's --error-fg / --link-fg / --body-quiet-color
+   where they exist. The rest are locals (see :root). */
+.rq-state-failed    { color: var(--error-fg);          background: var(--message-error-bg); }
+.rq-state-finished  { color: var(--rq-finished-fg);    background: var(--message-success-bg); }
+.rq-state-started   { color: var(--link-fg);           background: var(--message-info-bg); }
+.rq-state-queued,
+.rq-state-scheduled { color: var(--rq-queued-fg);      background: var(--message-warning-bg); }
+.rq-state-deferred  { color: var(--body-quiet-color);  background: var(--message-debug-bg); }
+
+/* ── 5. Tables ─────────────────────────────────────────────────── */
+.rq-table-card {
+    background: var(--body-bg);
+    border: 1px solid var(--hairline-color);
+    margin-bottom: 16px;
+}
+.rq-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+}
+.rq-table th {
+    background: var(--darkened-bg);
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 10.5px;
+    letter-spacing: 0.4px;
+    color: var(--body-quiet-color);
+    text-transform: uppercase;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--hairline-color);
+}
+.rq-table td {
+    padding: 9px 12px;
+    vertical-align: middle;
+    border-top: 1px solid var(--hairline-color);
+}
+.rq-table tbody tr { background: var(--body-bg); }
+.rq-table tbody tr:hover { background: var(--selected-bg); }
+.rq-table tbody tr.rq-row-recent { background: var(--selected-row); }
+.rq-table tbody tr.rq-row-recent:hover {
+    background: color-mix(in srgb, var(--selected-row) 80%, var(--body-fg));
+}
+.rq-table tbody tr.rq-clickable { cursor: pointer; }
+
+.rq-table .rq-col-job-id { width: 320px; }
+
+.rq-panel > .rq-table th,
+.rq-panel > .rq-table td { padding-left: 16px; padding-right: 16px; }
+
+.rq-table .rq-cell-action { text-align: right; }
+.rq-table .rq-cell-action a {
+    color: var(--link-fg);
+    font-size: 11.5px;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+/* ── 6. Callouts ───────────────────────────────────────────────── */
+.rq-callout {
+    background: var(--body-bg);
+    border: 1px solid var(--hairline-color);
+    margin-bottom: 16px;
+}
+.rq-callout-error {
+    border-color: color-mix(in srgb, var(--error-fg) 25%, transparent);
+    border-left: 3px solid var(--error-fg);
+}
+.rq-callout-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--hairline-color);
+}
+.rq-callout-eyebrow {
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+.rq-callout-error .rq-callout-eyebrow { color: var(--error-fg); }
+.rq-callout-pre {
+    margin: 0;
+    padding: 12px 16px;
+    background: var(--darkened-bg);
+    font-family: var(--rq-mono);
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--body-fg);
+    overflow-x: auto;
+    white-space: pre;
+}
+
+.rq-pre {
+    margin: 0;
+    padding: 8px 16px;
+    font-family: var(--rq-mono);
+    font-size: 12px;
+    color: var(--body-fg);
+    background: transparent;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Page H1 + `.object-tools` on the same row. Templates blank out the
+   default `content_title` block and render the H1 here instead, so the
+   heading and tools live in one flex container. */
+.rq-changelist-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 10px;
+}
+.rq-changelist-header h1 { margin: 0; }
+.rq-changelist-header .object-tools { margin: 0; }
+
+/* ── 7. Utilities ──────────────────────────────────────────────── */
+.rq-mono   { font-family: var(--rq-mono); }
+.rq-nowrap { white-space: nowrap; }
+.rq-num    { text-align: right; font-family: var(--rq-mono); font-variant-numeric: tabular-nums; }

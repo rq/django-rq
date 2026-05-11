@@ -10,7 +10,7 @@ If you find `django-rq` useful, please consider supporting its development via [
 
 ## Requirements
 
-- [Django](https://www.djangoproject.com/) (3.2+)
+- [Django](https://www.djangoproject.com/) (4.2+)
 - [RQ](https://github.com/nvie/rq)
 
 ## Installation

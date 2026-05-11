@@ -28,7 +28,7 @@
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
         <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
-        <a href = "{% rq_url 'jobs' queue_index %}">{{ queue.name }} Workers</a>
+        <a href = "{% rq_url 'queue_details' queue_index %}">{{ queue.name }} Workers</a>
     </div>
 {% endblock %}
 
@@ -38,7 +38,9 @@
 
 <div id="content-main">
     <div class="module" id="changelist">
-        <form id="changelist-form" action="{% rq_url 'confirm_action' queue_index %}" method="post">
+        <div class="changelist-form-container">
+          <div>
+            <form id="changelist-form" action="{% rq_url 'confirm_action' queue_index %}" method="post">
             {% csrf_token %}
             <div class="results">
                 <table id="result_list">
@@ -61,14 +63,16 @@
                                 <td>
                                     {{ worker.get_state }}
                                 </td>
-                                <td>{{ worker.birth_date|to_localtime|date:"Y-m-d, H:i:s" }}</td>
+                                <td>{{ worker.birth_date|timestamp_tooltip }}</td>
                                 <td>{{ worker.pid|unlocalize }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-        </form>
+            </form>
+          </div>
+        </div>
     </div>
 </div>
 

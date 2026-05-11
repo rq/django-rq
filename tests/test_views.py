@@ -42,6 +42,21 @@ class ViewTest(TestCase):
         response = self.client.get(reverse('admin:django_rq_jobs', args=[queue_index]))
         self.assertEqual(response.context['jobs'], [job])
 
+    def test_queue_details(self):
+        """Queue detail page renders queue summary with safe connection kwargs."""
+        queue = get_queue('default')
+        queue.enqueue(access_self)
+        queue_index = get_queue_index('default')
+
+        response = self.client.get(reverse('admin:django_rq_queue_details', args=[queue_index]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['queue'], queue)
+        self.assertEqual(response.context['queue_index'], queue_index)
+        self.assertEqual(response.context['num_jobs'], 1)
+        self.assertIn('host', response.context['connection_kwargs'])
+        self.assertNotIn('password', response.context['connection_kwargs'])
+
     def test_job_details(self):
         """Job data is displayed properly"""
         queue = get_queue('default')
@@ -69,9 +84,9 @@ class ViewTest(TestCase):
         url = reverse('admin:django_rq_job_detail', args=[queue_index, job.id])
         response = self.client.get(url)
         assert result.id
-        self.assertContains(response, 'ID')
+        self.assertContains(response, 'Result')
         self.assertContains(response, 'Type')
-        self.assertContains(response, 'Created At')
+        self.assertContains(response, 'Started')
         self.assertContains(response, reverse('admin:django_rq_result_detail', args=[queue_index, job.id, result.id]))
         self.assertContains(response, result.id)
         self.assertContains(response, result.type.name)
@@ -234,6 +249,23 @@ class ViewTest(TestCase):
             self.assertFalse(Job.exists(job_id, connection=queue.connection))
             self.assertNotIn(job_id, queue.job_ids)
 
+    def test_confirm_action_filters_missing_jobs(self):
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+        job = queue.enqueue(access_self)
+        missing_job_id = str(uuid.uuid4())
+
+        response = self.client.post(
+            reverse('admin:django_rq_confirm_action', args=[queue_index]),
+            {'action': 'delete', '_selected_action': [job.id, missing_job_id]},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['job_ids'], [job.id])
+        self.assertEqual(len(response.context['jobs']), 2)
+        self.assertEqual(response.context['jobs'][1], {'id': missing_job_id, 'missing': True})
+        self.assertContains(response, '(no longer available)')
+
     def test_enqueue_jobs(self):
         queue = get_queue('django_rq_test')
         queue_index = get_queue_index('django_rq_test')
@@ -278,7 +310,13 @@ class ViewTest(TestCase):
         for job in jobs:
             self.assertTrue(job.is_failed)
 
-        # renqueue failed jobs from failed queue
+        # also enqueue a job that will succeed and land in the FinishedJobRegistry
+        finished_job = queue.enqueue(access_self, result_ttl=500)
+        worker.work(burst=True)
+        self.assertEqual(finished_job.get_status(), JobStatus.FINISHED)
+        job_ids.append(finished_job.id)
+
+        # renqueue failed and finished jobs via the bulk action
         self.client.post(
             reverse('admin:django_rq_actions', args=[queue_index]), {'action': 'requeue', 'job_ids': job_ids}
         )
@@ -286,6 +324,11 @@ class ViewTest(TestCase):
         # check if we requeue all failed jobs
         for job in jobs:
             self.assertFalse(job.is_failed)
+
+        # finished job should be back on the queue and removed from the FinishedJobRegistry
+        finished_job.refresh()
+        self.assertEqual(finished_job.get_status(), JobStatus.QUEUED)
+        self.assertNotIn(finished_job.id, FinishedJobRegistry(queue.name, queue.connection).get_job_ids())
 
     def test_clear_queue(self):
         """Test that the queue clear actually clears the queue."""

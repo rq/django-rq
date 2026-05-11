@@ -28,7 +28,7 @@
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
         <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
-        <a href="{% rq_url 'jobs' queue_index %}">{{ queue.name }}</a>
+        <a href="{% rq_url 'queue_details' queue_index %}">{{ queue.name }}</a>
     </div>
 {% endblock %}
 
@@ -40,6 +40,7 @@
 
     <div class="module" id="changelist">
         <div class="changelist-form-container">
+          <div>
             <form id="changelist-form" action="{% rq_url 'confirm_action' queue_index %}" method="post">
                 {% csrf_token %}
                 <div class="actions">
@@ -99,17 +100,17 @@
                                     </th>
                                     <td>
                                         {% if execution.created_at %}
-                                            {{ execution.created_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                            {{ execution.created_at|timestamp_tooltip }}
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if execution.last_heartbeat %}
-                                            {{ execution.last_heartbeat|to_localtime|date:"Y-m-d, H:i:s" }}
+                                            {{ execution.last_heartbeat|timestamp_tooltip }}
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if execution.job.enqueued_at %}
-                                            {{ execution.job.enqueued_at|to_localtime|date:"Y-m-d, H:i:s" }}
+                                            {{ execution.job.enqueued_at|timestamp_tooltip }}
                                         {% endif %}
                                     </td>
                                     <td>{{ execution.job|show_func_name }}</td>
@@ -133,6 +134,7 @@
                     {{ num_jobs }} jobs
                 </p>
             </form>
+          </div>
         </div>
     </div>
 </div>
