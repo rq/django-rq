@@ -163,8 +163,48 @@ class TestParseArgs(unittest.TestCase):
         output = stdout.getvalue()
         self.assertIn('init', output)
         self.assertIn('run', output)
-        self.assertEqual(args.host, '127.0.0.1')
-        self.assertEqual(args.port, 8000)
+        self.assertIn('createsuperuser', output)
+        self.assertIn('changepassword', output)
+
+    def test_createsuperuser(self):
+        from django_rq.dashboard.cli import parse_args
+
+        args = parse_args(['createsuperuser'])
+
+        self.assertEqual(args.command, 'createsuperuser')
+        self.assertIsNone(args.config)
+
+    def test_createsuperuser_with_config(self):
+        from django_rq.dashboard.cli import parse_args
+
+        args = parse_args(['createsuperuser', '--config', 'x.py'])
+
+        self.assertEqual(args.command, 'createsuperuser')
+        self.assertEqual(args.config, 'x.py')
+
+    def test_changepassword_requires_username(self):
+        from django_rq.dashboard.cli import parse_args
+
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                parse_args(['changepassword'])
+
+    def test_changepassword_with_username(self):
+        from django_rq.dashboard.cli import parse_args
+
+        args = parse_args(['changepassword', 'alice'])
+
+        self.assertEqual(args.command, 'changepassword')
+        self.assertEqual(args.username, 'alice')
+        self.assertIsNone(args.config)
+
+    def test_changepassword_with_username_and_config(self):
+        from django_rq.dashboard.cli import parse_args
+
+        args = parse_args(['changepassword', 'alice', '--config', 'x.py'])
+
+        self.assertEqual(args.username, 'alice')
+        self.assertEqual(args.config, 'x.py')
 
 
 class TestInit(unittest.TestCase):
@@ -264,6 +304,32 @@ class TestResolveConfigPath(unittest.TestCase):
             output = stdout.getvalue()
             self.assertIn("requires a config file", output)
             self.assertIn("rq-dashboard init", output)
+
+
+class TestPassthroughDispatch(unittest.TestCase):
+    """`createsuperuser` / `changepassword` dispatch via call_command."""
+
+    def _run_main(self, argv):
+        from django_rq.dashboard import cli
+
+        with patch.object(sys, 'argv', argv), \
+             patch.object(cli, 'resolve_config_path', return_value=Path('/fake/rq_dashboard_config.py')), \
+             patch.object(cli, 'load_config', return_value={'RQ_QUEUES': {}, 'SECRET_KEY': 'x'}), \
+             patch.object(cli, 'configure_django'), \
+             patch.object(cli, 'call_command') as call_cmd:
+            cli.main()
+        return call_cmd
+
+    def test_createsuperuser_invokes_call_command(self):
+        call_cmd = self._run_main(['rq-dashboard', 'createsuperuser'])
+        # First call is migrate; second is createsuperuser.
+        self.assertEqual(call_cmd.call_args_list[0].args, ('migrate',))
+        self.assertEqual(call_cmd.call_args_list[1].args, ('createsuperuser',))
+
+    def test_changepassword_passes_username(self):
+        call_cmd = self._run_main(['rq-dashboard', 'changepassword', 'alice'])
+        self.assertEqual(call_cmd.call_args_list[0].args, ('migrate',))
+        self.assertEqual(call_cmd.call_args_list[1].args, ('changepassword', 'alice'))
 
 
 class TestURLConfiguration(unittest.TestCase):

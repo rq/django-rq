@@ -7,6 +7,8 @@ Usage:
     rq-dashboard run                        # auto-detects ./rq_dashboard_config.py
     rq-dashboard run --config my_config.py
     rq-dashboard run --config my_config.py --host 0.0.0.0 --port 8080
+    rq-dashboard createsuperuser            # add a superuser
+    rq-dashboard changepassword <username>  # reset a password
 """
 
 import argparse
@@ -291,6 +293,24 @@ def build_parser() -> argparse.ArgumentParser:
         help='Port to bind the server to (default: 8000)',
     )
 
+    config_help = (
+        f'Path to a Python config file. Defaults to ./{SAMPLE_CONFIG_FILENAME} '
+        'if present in the current directory.'
+    )
+
+    create_parser = subparsers.add_parser(
+        'createsuperuser',
+        help='Create a new superuser (interactive).',
+    )
+    create_parser.add_argument('--config', '-c', help=config_help)
+
+    password_parser = subparsers.add_parser(
+        'changepassword',
+        help="Change a user's password (interactive).",
+    )
+    password_parser.add_argument('username', help='Username whose password should be changed.')
+    password_parser.add_argument('--config', '-c', help=config_help)
+
     return parser
 
 
@@ -301,15 +321,26 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
 
 def main() -> None:
     """Main entry point for the rq-dashboard CLI."""
-    parser = build_parser()
-    args = parser.parse_args()
+    args = parse_args()
 
     if args.command is None:
-        parser.print_help()
+        build_parser().print_help()
         sys.exit(0)
 
     if args.command == 'init':
         write_sample_config()
+        return
+
+    if args.command in ('createsuperuser', 'changepassword'):
+        config_path = resolve_config_path(args.config)
+        config = load_config(str(config_path))
+        configure_django(config, config_path)
+        # Ensure auth tables exist before the auth command runs.
+        call_command('migrate', verbosity=0)
+        if args.command == 'createsuperuser':
+            call_command('createsuperuser')
+        else:
+            call_command('changepassword', args.username)
         return
 
     # args.command == 'run'
