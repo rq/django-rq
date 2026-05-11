@@ -5,9 +5,10 @@ from django.db import connections
 from redis.sentinel import SentinelConnectionPool
 from rq.command import send_stop_job_command
 from rq.executions import Execution
-from rq.job import Job
+from rq.job import Job, JobStatus
 from rq.queue import Queue
 from rq.registry import (
+    BaseRegistry,
     DeferredJobRegistry,
     FailedJobRegistry,
     FinishedJobRegistry,
@@ -259,6 +260,31 @@ def stop_jobs(queue: Queue, job_ids: Union[str, list[str], tuple[str, ...]]) -> 
             continue
         stopped_job_ids.append(job_id)
     return stopped_job_ids, failed_to_stop_job_ids
+
+
+def requeue_job(queue: Queue, job: Job) -> None:
+    """Re-enqueue a job from any source registry (failed/finished/deferred/scheduled)."""
+    status = job.get_status(refresh=False)
+    registry: Optional[BaseRegistry] = None
+    if status == JobStatus.DEFERRED:
+        registry = DeferredJobRegistry(queue.name, queue.connection)
+    elif status == JobStatus.FINISHED:
+        registry = FinishedJobRegistry(queue.name, queue.connection)
+    elif status == JobStatus.SCHEDULED:
+        registry = ScheduledJobRegistry(queue.name, queue.connection)
+    elif status == JobStatus.FAILED:
+        registry = FailedJobRegistry(queue.name, queue.connection)
+
+    with queue.connection.pipeline() as pipeline:
+        try:
+            # _enqueue_job is new in RQ 1.14, this is used to enqueue
+            # job regardless of its dependencies
+            queue._enqueue_job(job, pipeline=pipeline)
+        except AttributeError:
+            queue.enqueue_job(job, pipeline=pipeline)
+        if registry is not None:
+            registry.remove(job, pipeline=pipeline)
+        pipeline.execute()
 
 
 def reset_db_connections() -> None:

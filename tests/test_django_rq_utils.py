@@ -1,16 +1,16 @@
 import datetime
-from unittest import TestCase, skip
-from unittest.mock import PropertyMock, patch
+from unittest import TestCase
 from uuid import uuid4
 
 from django.test import override_settings
-from rq.registry import ScheduledJobRegistry
+from rq.job import JobStatus
+from rq.registry import DeferredJobRegistry, FailedJobRegistry, FinishedJobRegistry, ScheduledJobRegistry
 
 from django_rq.cron import DjangoCronScheduler
 from django_rq.queues import get_queue
-from django_rq.utils import get_cron_schedulers, get_jobs, get_statistics
+from django_rq.utils import get_cron_schedulers, get_jobs, get_statistics, requeue_job
 from django_rq.workers import get_worker
-from tests.fixtures import access_self
+from tests.fixtures import access_self, failing_job
 from tests.redis_config import REDIS_CONFIG_1
 from tests.utils import flush_registry
 
@@ -95,3 +95,56 @@ class UtilsTest(TestCase):
         queue.connection.delete(job2.key)
         self.assertEqual(get_jobs(queue, [job.id, job2.id], registry), [])
         self.assertEqual(len(registry), 0)
+
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_requeue_job(self):
+        """requeue_job re-enqueues jobs from any source registry and removes them from it."""
+        queue = get_queue('django_rq_test')
+        queue.connection.flushdb()
+
+        # FAILED -> requeued
+        failed_job = queue.enqueue(failing_job)
+        get_worker('django_rq_test').work(burst=True)
+        failed_job.refresh()
+        self.assertEqual(failed_job.get_status(), JobStatus.FAILED)
+        requeue_job(queue, failed_job)
+        failed_job.refresh()
+        self.assertEqual(failed_job.get_status(), JobStatus.QUEUED)
+        self.assertIn(failed_job.id, queue.job_ids)
+        self.assertNotIn(failed_job.id, FailedJobRegistry(queue.name, queue.connection).get_job_ids())
+
+        queue.empty()
+
+        # FINISHED -> requeued
+        finished_job = queue.enqueue(access_self, result_ttl=500)
+        get_worker('django_rq_test').work(burst=True)
+        finished_job.refresh()
+        self.assertEqual(finished_job.get_status(), JobStatus.FINISHED)
+        requeue_job(queue, finished_job)
+        finished_job.refresh()
+        self.assertEqual(finished_job.get_status(), JobStatus.QUEUED)
+        self.assertIn(finished_job.id, queue.job_ids)
+        self.assertNotIn(finished_job.id, FinishedJobRegistry(queue.name, queue.connection).get_job_ids())
+
+        queue.empty()
+
+        # SCHEDULED -> requeued
+        scheduled_job = queue.enqueue_in(datetime.timedelta(seconds=60), access_self)
+        self.assertEqual(scheduled_job.get_status(), JobStatus.SCHEDULED)
+        requeue_job(queue, scheduled_job)
+        scheduled_job.refresh()
+        self.assertEqual(scheduled_job.get_status(), JobStatus.QUEUED)
+        self.assertIn(scheduled_job.id, queue.job_ids)
+        self.assertNotIn(scheduled_job.id, ScheduledJobRegistry(queue.name, queue.connection).get_job_ids())
+
+        queue.empty()
+
+        # DEFERRED -> requeued (job depending on an unfinished parent)
+        parent = queue.enqueue_in(datetime.timedelta(seconds=60), access_self)
+        deferred_job = queue.enqueue(access_self, depends_on=parent)
+        self.assertEqual(deferred_job.get_status(), JobStatus.DEFERRED)
+        requeue_job(queue, deferred_job)
+        deferred_job.refresh()
+        self.assertEqual(deferred_job.get_status(), JobStatus.QUEUED)
+        self.assertIn(deferred_job.id, queue.job_ids)
+        self.assertNotIn(deferred_job.id, DeferredJobRegistry(queue.name, queue.connection).get_job_ids())

@@ -10,7 +10,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from rq import requeue_job
 from rq.exceptions import NoSuchJobError
-from rq.job import Job, JobStatus
+from rq.job import Job
 from rq.registry import (
     DeferredJobRegistry,
     FailedJobRegistry,
@@ -23,7 +23,16 @@ from rq.worker_registration import clean_worker_registry
 
 from .queues import get_queue_by_index, get_scheduler_by_index
 from .settings import get_queues_list, get_queues_map
-from .utils import get_displayable_connection_kwargs, get_executions, get_jobs, get_scheduler_pid, stop_jobs
+from .utils import (
+    get_displayable_connection_kwargs,
+    get_executions,
+    get_jobs,
+    get_scheduler_pid,
+    stop_jobs,
+)
+from .utils import (
+    requeue_job as _requeue_job,
+)
 
 
 def rq_viewname(request: HttpRequest, viewname: str) -> str:
@@ -612,9 +621,18 @@ def actions(request: HttpRequest, queue_index: int) -> HttpResponse:
                     job.delete()
                 messages.info(request, f'You have successfully deleted {len(job_ids)} jobs!')
             elif request.POST['action'] == 'requeue':
+                requeued = 0
                 for job_id in job_ids:
-                    requeue_job(job_id, connection=queue.connection, serializer=queue.serializer)
-                messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
+                    try:
+                        job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
+                    except NoSuchJobError:
+                        continue
+                    _requeue_job(queue, job)
+                    requeued += 1
+                messages.info(
+                    request,
+                    'You have successfully requeued %d job%s!' % (requeued, '' if requeued == 1 else 's'),
+                )
             elif request.POST['action'] == 'stop':
                 stopped, failed_to_stop = stop_jobs(queue, job_ids)
                 if len(stopped) > 0:
@@ -633,25 +651,7 @@ def enqueue_job(request: HttpRequest, queue_index: int, job_id: str) -> HttpResp
     job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
 
     if request.method == 'POST':
-        try:
-            # _enqueue_job is new in RQ 1.14, this is used to enqueue
-            # job regardless of its dependencies
-            queue._enqueue_job(job)
-        except AttributeError:
-            queue.enqueue_job(job)
-
-        # Remove job from correct registry if needed
-        registry: Any
-        if job.get_status() == JobStatus.DEFERRED:
-            registry = DeferredJobRegistry(queue.name, queue.connection)
-            registry.remove(job)
-        elif job.get_status() == JobStatus.FINISHED:
-            registry = FinishedJobRegistry(queue.name, queue.connection)
-            registry.remove(job)
-        elif job.get_status() == JobStatus.SCHEDULED:
-            registry = ScheduledJobRegistry(queue.name, queue.connection)
-            registry.remove(job)
-
+        _requeue_job(queue, job)
         messages.info(request, f'You have successfully enqueued {job.id}')
         return redirect(rq_viewname(request, "job_detail"), queue_index, job_id)
 

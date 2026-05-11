@@ -310,7 +310,13 @@ class ViewTest(TestCase):
         for job in jobs:
             self.assertTrue(job.is_failed)
 
-        # renqueue failed jobs from failed queue
+        # also enqueue a job that will succeed and land in the FinishedJobRegistry
+        finished_job = queue.enqueue(access_self, result_ttl=500)
+        worker.work(burst=True)
+        self.assertEqual(finished_job.get_status(), JobStatus.FINISHED)
+        job_ids.append(finished_job.id)
+
+        # renqueue failed and finished jobs via the bulk action
         self.client.post(
             reverse('admin:django_rq_actions', args=[queue_index]), {'action': 'requeue', 'job_ids': job_ids}
         )
@@ -318,6 +324,11 @@ class ViewTest(TestCase):
         # check if we requeue all failed jobs
         for job in jobs:
             self.assertFalse(job.is_failed)
+
+        # finished job should be back on the queue and removed from the FinishedJobRegistry
+        finished_job.refresh()
+        self.assertEqual(finished_job.get_status(), JobStatus.QUEUED)
+        self.assertNotIn(finished_job.id, FinishedJobRegistry(queue.name, queue.connection).get_job_ids())
 
     def test_clear_queue(self):
         """Test that the queue clear actually clears the queue."""
