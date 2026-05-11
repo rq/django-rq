@@ -42,7 +42,7 @@ prometheus = ["prometheus_client >= 0.4.0"]
 testing = ["pytest>=7.0", "pytest-django>=4.5"]
 
 [project.scripts]
-rqdashboard = "django_rq.dashboard:main"
+rq-dashboard = "django_rq.dashboard:main"
 
 [project.urls]
 changelog = "https://github.com/rq/django-rq/blob/master/CHANGELOG.md"

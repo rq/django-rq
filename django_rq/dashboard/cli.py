@@ -3,8 +3,8 @@
 Standalone RQ Dashboard CLI.
 
 Usage:
-    rqdashboard --config my_config.py
-    rqdashboard --config my_config.py --host 0.0.0.0 --port 8080
+    rq-dashboard --config my_config.py
+    rq-dashboard --config my_config.py --host 0.0.0.0 --port 8080
 """
 
 import argparse
