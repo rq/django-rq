@@ -147,22 +147,22 @@ class TestURLConfiguration(unittest.TestCase):
     """Tests for the dashboard URL configuration."""
 
     def test_url_namespace_registration(self):
-        """Test that django_rq URLs are properly registered in dashboard URLs."""
+        """Test that django_rq URLs are registered under the django_rq namespace in dashboard URLs."""
         from django.test import override_settings
         from django.urls import clear_url_caches, reverse
 
-        # Test with dashboard_urls (which includes django_rq URLs directly)
+        # Test with dashboard_urls (which includes the django_rq.urls module so app_name applies)
         with override_settings(ROOT_URLCONF='django_rq.dashboard.urls'):
             clear_url_caches()
 
-            # Test that URLs can be reversed without namespace
-            url = reverse('rq_home')
+            # Test that URLs can be reversed under the django_rq namespace
+            url = reverse('django_rq:home')
             self.assertEqual(url, '/')
 
-            url = reverse('rq_jobs', kwargs={'queue_index': 0})
+            url = reverse('django_rq:jobs', kwargs={'queue_index': 0})
             self.assertEqual(url, '/queues/0/')
 
-            url = reverse('rq_failed_jobs', kwargs={'queue_index': 0})
+            url = reverse('django_rq:failed_jobs', kwargs={'queue_index': 0})
             self.assertEqual(url, '/queues/0/failed/')
 
             # Test admin namespace
