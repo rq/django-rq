@@ -24,7 +24,7 @@
 {% block object-tools %}{% endblock %}
 
 {% block content %}
-{% with status=job.get_status.value %}
+{% with status=job|job_status %}
 <div id="content-main">
 
     <div class="rq-title-row">

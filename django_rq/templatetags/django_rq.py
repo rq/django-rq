@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.utils import dateformat, timezone
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
+from rq.exceptions import InvalidJobOperation
 
 register = template.Library()
 
@@ -51,6 +52,16 @@ def show_func_name(job):
         return job.func_name
     except Exception as e:
         return repr(e)
+
+
+@register.filter
+def job_status(job):
+    """Shows job status and handles stale scheduler/job registry entries."""
+    try:
+        status = job.get_status()
+    except InvalidJobOperation:
+        return 'unknown'
+    return getattr(status, 'value', status)
 
 
 @register.filter
