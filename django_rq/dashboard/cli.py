@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Standalone RQ Dashboard CLI.
 
@@ -21,7 +20,6 @@ import django
 from django.conf import settings
 from django.core.management import call_command
 from django.core.management.utils import get_random_secret_key
-
 
 SAMPLE_CONFIG_FILENAME = 'rq_dashboard_config.py'
 
@@ -59,31 +57,27 @@ RQ_QUEUES = {
 '''
 
 
-def load_config(config_path: str) -> dict[str, Any]:
+def load_config(config_path: str | Path) -> dict[str, Any]:
     """Load RQ configuration from a Python file."""
-    config_path = str(Path(config_path).resolve())
-    if not Path(config_path).exists():
-        print(f"Error: Config file not found: {config_path}")
-        sys.exit(1)
+    config_path = Path(config_path).resolve()
+    if not config_path.exists():
+        sys.exit(f"Error: Config file not found: {config_path}")
 
     spec = importlib.util.spec_from_file_location("rq_config", config_path)
     if spec is None or spec.loader is None:
-        print(f"Error: Could not load config file: {config_path}")
-        sys.exit(1)
+        sys.exit(f"Error: Could not load config file: {config_path}")
 
     config_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(config_module)
 
     if not hasattr(config_module, 'RQ_QUEUES'):
-        print("Error: Config file must define RQ_QUEUES")
-        sys.exit(1)
+        sys.exit("Error: Config file must define RQ_QUEUES")
 
     if not hasattr(config_module, 'SECRET_KEY'):
-        print(
+        sys.exit(
             "Error: Config file must define SECRET_KEY. "
             "Run `rq-dashboard init` to generate a fresh config with a random key."
         )
-        sys.exit(1)
 
     config = {
         'RQ_QUEUES': config_module.RQ_QUEUES,
@@ -109,25 +103,21 @@ def resolve_config_path(explicit: Optional[str]) -> Path:
     if cwd_config.exists():
         return cwd_config
 
-    print("rq-dashboard requires a config file.")
-    print()
-    print(
+    sys.exit(
+        "rq-dashboard requires a config file.\n"
+        "\n"
         f"It looks for `{SAMPLE_CONFIG_FILENAME}` in the current directory, "
-        "or a path passed via `--config`."
+        "or a path passed via `--config`.\n"
+        "\n"
+        "To generate a starter config in this directory, run: `rq-dashboard init`"
     )
-    print()
-    print("To generate a starter config in this directory, run:")
-    print()
-    print("    rq-dashboard init")
-    sys.exit(1)
 
 
 def write_sample_config() -> None:
     """Write a starter rq_dashboard_config.py into the current directory."""
     path = Path.cwd() / SAMPLE_CONFIG_FILENAME
     if path.exists():
-        print(f"{path} already exists. Refusing to overwrite.")
-        sys.exit(1)
+        sys.exit(f"{path} already exists. Refusing to overwrite.")
 
     body = SAMPLE_CONFIG_TEMPLATE.replace("__SECRET_KEY__", get_random_secret_key())
     path.write_text(body)
@@ -276,8 +266,7 @@ def build_parser() -> argparse.ArgumentParser:
         '--config',
         '-c',
         help=(
-            f'Path to a Python config file. Defaults to ./{SAMPLE_CONFIG_FILENAME} '
-            'if present in the current directory.'
+            f'Path to a Python config file. Defaults to ./{SAMPLE_CONFIG_FILENAME} if present in the current directory.'
         ),
     )
     run_parser.add_argument(
@@ -294,8 +283,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     config_help = (
-        f'Path to a Python config file. Defaults to ./{SAMPLE_CONFIG_FILENAME} '
-        'if present in the current directory.'
+        f'Path to a Python config file. Defaults to ./{SAMPLE_CONFIG_FILENAME} if present in the current directory.'
     )
 
     create_parser = subparsers.add_parser(
@@ -331,25 +319,20 @@ def main() -> None:
         write_sample_config()
         return
 
-    if args.command in ('createsuperuser', 'changepassword'):
-        config_path = resolve_config_path(args.config)
-        config = load_config(str(config_path))
-        configure_django(config, config_path)
-        # Ensure auth tables exist before the auth command runs.
-        call_command('migrate', verbosity=0)
-        if args.command == 'createsuperuser':
-            call_command('createsuperuser')
-        else:
-            call_command('changepassword', args.username)
+    config_path = resolve_config_path(args.config)
+    config = load_config(config_path)
+    configure_django(config, config_path)
+    call_command('migrate', verbosity=0)
+
+    if args.command == 'createsuperuser':
+        call_command('createsuperuser')
+        return
+
+    if args.command == 'changepassword':
+        call_command('changepassword', args.username)
         return
 
     # args.command == 'run'
-    config_path = resolve_config_path(args.config)
-    config = load_config(str(config_path))
-
-    configure_django(config, config_path)
-
-    call_command('migrate', verbosity=0)
     collect_static_files()
     check_or_create_superuser()
     run_server(args.host, args.port)
