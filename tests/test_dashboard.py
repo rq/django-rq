@@ -9,7 +9,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-
 VALID_CONFIG_BODY = """
 SECRET_KEY = 'test-secret-key'
 RQ_QUEUES = {
@@ -89,11 +88,9 @@ class TestLoadConfig(unittest.TestCase):
             config_path = f.name
 
         try:
-            stderr = io.StringIO()
-            with contextlib.redirect_stdout(stderr):
-                with self.assertRaises(SystemExit):
-                    load_config(config_path)
-            self.assertIn('SECRET_KEY', stderr.getvalue())
+            with self.assertRaises(SystemExit) as cm:
+                load_config(config_path)
+            self.assertIn('SECRET_KEY', str(cm.exception))
         finally:
             os.unlink(config_path)
 
@@ -116,11 +113,11 @@ class TestParseArgs(unittest.TestCase):
     def test_run_with_all_options(self):
         from django_rq.dashboard.cli import parse_args
 
-        args = parse_args(['run', '--config', 'test.py', '--host', '0.0.0.0', '--port', '9000'])
+        args = parse_args(['run', '--config', 'test.py', '--host', 'localhost', '--port', '9000'])
 
         self.assertEqual(args.command, 'run')
         self.assertEqual(args.config, 'test.py')
-        self.assertEqual(args.host, '0.0.0.0')
+        self.assertEqual(args.host, 'localhost')
         self.assertEqual(args.port, 9000)
 
     def test_run_with_short_options(self):
@@ -253,12 +250,10 @@ class TestInit(unittest.TestCase):
             existing = Path(tmpdir) / SAMPLE_CONFIG_FILENAME
             existing.write_text("# pre-existing user file\n")
 
-            stdout = io.StringIO()
-            with contextlib.redirect_stdout(stdout):
-                with self.assertRaises(SystemExit):
-                    self._run_init_in(tmpdir)
+            with self.assertRaises(SystemExit) as cm:
+                self._run_init_in(tmpdir)
 
-            self.assertIn("already exists", stdout.getvalue())
+            self.assertIn("already exists", str(cm.exception))
             self.assertEqual(existing.read_text(), "# pre-existing user file\n")
 
 
@@ -294,16 +289,14 @@ class TestResolveConfigPath(unittest.TestCase):
             original = Path.cwd()
             os.chdir(tmpdir)
             try:
-                stdout = io.StringIO()
-                with contextlib.redirect_stdout(stdout):
-                    with self.assertRaises(SystemExit):
-                        resolve_config_path(None)
+                with self.assertRaises(SystemExit) as cm:
+                    resolve_config_path(None)
             finally:
                 os.chdir(original)
 
-            output = stdout.getvalue()
-            self.assertIn("requires a config file", output)
-            self.assertIn("rq-dashboard init", output)
+            msg = str(cm.exception)
+            self.assertIn("requires a config file", msg)
+            self.assertIn("rq-dashboard init", msg)
 
 
 class TestPassthroughDispatch(unittest.TestCase):
@@ -312,11 +305,13 @@ class TestPassthroughDispatch(unittest.TestCase):
     def _run_main(self, argv):
         from django_rq.dashboard import cli
 
-        with patch.object(sys, 'argv', argv), \
-             patch.object(cli, 'resolve_config_path', return_value=Path('/fake/rq_dashboard_config.py')), \
-             patch.object(cli, 'load_config', return_value={'RQ_QUEUES': {}, 'SECRET_KEY': 'x'}), \
-             patch.object(cli, 'configure_django'), \
-             patch.object(cli, 'call_command') as call_cmd:
+        with (
+            patch.object(sys, 'argv', argv),
+            patch.object(cli, 'resolve_config_path', return_value=Path('/fake/rq_dashboard_config.py')),
+            patch.object(cli, 'load_config', return_value={'RQ_QUEUES': {}, 'SECRET_KEY': 'x'}),
+            patch.object(cli, 'configure_django'),
+            patch.object(cli, 'call_command') as call_cmd,
+        ):
             cli.main()
         return call_cmd
 

@@ -5,7 +5,7 @@ Usage:
     rq-dashboard init                       # generate ./rq_dashboard_config.py
     rq-dashboard run                        # auto-detects ./rq_dashboard_config.py
     rq-dashboard run --config my_config.py
-    rq-dashboard run --config my_config.py --host 0.0.0.0 --port 8080
+    rq-dashboard run --config my_config.py --host 127.0.0.1 --port 8080
     rq-dashboard createsuperuser            # add a superuser
     rq-dashboard changepassword <username>  # reset a password
 """
@@ -234,7 +234,7 @@ def collect_static_files() -> None:
 def run_server(host: str, port: int) -> None:
     """Run the Django development server."""
     print(f"Starting RQ Dashboard at http://{host}:{port}/")
-    print("Log in with your superuser credentials.")
+    print("WARNING: do not expose this dashboard directly to the public internet.")
     print("Press Ctrl+C to stop.")
     print()
 
@@ -260,7 +260,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     run_parser = subparsers.add_parser(
         'run',
-        help='Start the dashboard server.',
+        help='Start the dashboard development server.',
+        description=(
+            "Start the dashboard development server. "
+            "For public access, put a production web server in front of it."
+        ),
     )
     run_parser.add_argument(
         '--config',
