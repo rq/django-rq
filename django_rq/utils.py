@@ -40,13 +40,9 @@ def get_scheduler_pid(queue: Queue) -> Union[bool, int, None]:
     except ImproperlyConfigured:
         from rq.scheduler import RQScheduler
 
-        # When a scheduler acquires a lock it adds an expiring key: (e.g: rq:scheduler-lock:<queue.name>)
-        # TODO: (RQ>= 1.13) return queue.scheduler_pid
-        pid = queue.connection.get(RQScheduler.get_locking_key(queue.name))
-        return int(pid.decode()) if pid is not None else None
+        return queue.scheduler_pid
     except Exception:
-        pass  # Return None
-    return None
+        return None
 
 
 _DISPLAYABLE_CONNECTION_KWARGS = (
