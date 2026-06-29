@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.test.client import Client
@@ -56,6 +57,12 @@ class ViewTest(TestCase):
         self.assertEqual(response.context['num_jobs'], 1)
         self.assertIn('host', response.context['connection_kwargs'])
         self.assertNotIn('password', response.context['connection_kwargs'])
+
+    def test_queue_details_404_for_missing_queue(self):
+        """Queue detail page returns 404 when queue does not exist."""
+        queue_count = len(settings.RQ_QUEUES)
+        response = self.client.get(reverse('admin:django_rq_queue_details', args=[queue_count]))
+        self.assertEqual(response.status_code, 404)
 
     def test_job_details(self):
         """Job data is displayed properly"""
