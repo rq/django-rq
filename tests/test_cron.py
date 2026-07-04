@@ -42,6 +42,15 @@ class CronTest(TestCase):
         self.assertIsNone(cron_job.interval)
         # self.assertIsNotNone(cron_job.next_run_time)
 
+    def test_register_with_webhooks(self):
+        """webhooks passed to register() are forwarded to the underlying CronJob."""
+        from rq.webhook import Webhook
+
+        webhook = Webhook('https://example.com/hook', 'finished')
+        scheduler = DjangoCronScheduler()
+        cron_job = scheduler.register(say_hello, 'default', interval=60, webhooks=[webhook])
+        self.assertEqual(cron_job.job_options['webhooks'], [webhook])
+
     def test_connection_validation(self):
         """Test connection validation for same, compatible, and incompatible queues."""
         # Start with test3 queue (secondary Redis DB configured for tests)
