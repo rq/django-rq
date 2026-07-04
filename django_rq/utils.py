@@ -38,8 +38,6 @@ def get_scheduler_pid(queue: Queue) -> Union[bool, int, None]:
         get_scheduler(queue.name)  # should fail if rq_scheduler not present
         return False  # Not possible to give useful information without creating a performance issue (redis.keys())
     except ImproperlyConfigured:
-        from rq.scheduler import RQScheduler
-
         return queue.scheduler_pid
     except Exception:
         return None

@@ -23,12 +23,21 @@ def _is_buggy_retry(kwargs: dict[str, Any]) -> bool:
     )
 
 
+# redis-py >= 8 puts per-pool maintenance-notification objects in connection_kwargs;
+# they lack __eq__ so two pools to the same Redis never compare equal
+_INCOMPARABLE_KWARGS = ('maint_notifications_pool_handler', 'maint_notifications_config')
+
+
+def _comparable_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in kwargs.items() if key not in _INCOMPARABLE_KWARGS}
+
+
 def get_queue_index(name='default'):
     """
     Returns the position of Queue for the named queue in QUEUES_LIST
     """
     connection = get_connection(name)
-    connection_kwargs = connection.connection_pool.connection_kwargs
+    connection_kwargs = _comparable_kwargs(connection.connection_pool.connection_kwargs)
 
     for i in range(0, 100):
         try:
@@ -37,7 +46,7 @@ def get_queue_index(name='default'):
             continue
         if q.name == name:
             # assert that the connection is correct
-            pool_kwargs = q.connection.connection_pool.connection_kwargs
+            pool_kwargs = _comparable_kwargs(q.connection.connection_pool.connection_kwargs)
             if not _is_buggy_retry(pool_kwargs) or not _is_buggy_retry(connection_kwargs):
                 assert pool_kwargs == connection_kwargs
             else:

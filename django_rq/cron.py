@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Sequence
 from functools import cached_property
 from typing import Any, Callable, Optional, cast
 
@@ -77,6 +78,7 @@ class DjangoCronScheduler(CronScheduler):
         ttl: Optional[int] = None,
         failure_ttl: Optional[int] = None,
         meta: Optional[dict[str, Any]] = None,
+        webhooks: Optional[Sequence[Any]] = None,
     ):
         """
         Register a function to be run at regular intervals.
@@ -96,6 +98,7 @@ class DjangoCronScheduler(CronScheduler):
             ttl: Job time-to-live
             failure_ttl: How long to keep failed job info
             meta: Additional job metadata
+            webhooks: Webhooks to attach to the job (requires rq >= 2.10)
 
         Returns:
             CronJob instance
@@ -123,7 +126,9 @@ class DjangoCronScheduler(CronScheduler):
             if 'connection_index' in self.__dict__:
                 del self.__dict__['connection_index']
 
-        # Now call parent register method
+        # Now call parent register method. `webhooks` is only passed along when set,
+        # since CronScheduler.register() only accepts it on rq >= 2.10
+        extra_kwargs = {} if webhooks is None else {'webhooks': webhooks}
         return super().register(
             func=func,
             queue_name=queue_name,
@@ -136,6 +141,7 @@ class DjangoCronScheduler(CronScheduler):
             ttl=ttl,
             failure_ttl=failure_ttl,
             meta=meta,
+            **extra_kwargs,
         )
 
     @cached_property
