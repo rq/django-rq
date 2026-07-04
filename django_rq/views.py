@@ -82,7 +82,11 @@ def jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
 @never_cache
 @staff_member_required
 def queue_details(request: HttpRequest, queue_index: int) -> HttpResponse:
-    queue = get_queue_by_index(queue_index)
+    try:
+        queue = get_queue_by_index(queue_index)
+    except IndexError:
+        raise Http404(f"Couldn't find queue with this ID: {queue_index}")
+
     connection = queue.connection
     queue_config = get_queues_list()[queue_index]['connection_config']
 
