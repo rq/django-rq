@@ -1,4 +1,5 @@
 import datetime
+import os
 import sys
 import time
 from typing import Any, cast
@@ -701,7 +702,6 @@ class SchedulerPIDTest(TestCase):
         self.assertIs(get_scheduler_pid(get_queue(scheduler.queue_name)), False)
 
     @skipIf(RQ_SCHEDULER_INSTALLED is True, 'RQ Scheduler installed (no worker--with-scheduler)')
-    @patch('rq.scheduler.RQScheduler.release_locks')
     @override_settings(
         RQ_QUEUES={
             'worker_scheduler_active_test': {
@@ -711,16 +711,20 @@ class SchedulerPIDTest(TestCase):
             }
         }
     )
-    def test_worker_scheduler_pid_active(self, mock_release_locks):
-        '''The worker works as scheduler too if RQ Scheduler not installed, and the pid scheduler_pid is correct'''
+    def test_worker_scheduler_pid_active(self):
+        '''get_scheduler_pid returns the PID of a running built-in RQ scheduler'''
+        from rq.scheduler import RQScheduler
+
         test_queue = 'worker_scheduler_active_test'
         queue = get_queue(test_queue)
-        worker = get_worker(test_queue, name=uuid4().hex)
-        worker.work(with_scheduler=True, burst=True)  # force the worker to acquire a scheduler lock
-        pid = get_scheduler_pid(queue)
-        self.assertIsNotNone(pid)
-        self.assertIsNot(pid, False)
-        self.assertIsInstance(pid, int)
+        scheduler = RQScheduler([queue.name], connection=queue.connection)
+        scheduler.acquire_locks()
+        scheduler.register_birth()
+        try:
+            self.assertEqual(get_scheduler_pid(queue), os.getpid())
+        finally:
+            scheduler.release_locks()
+            scheduler.register_death()
 
     @skipIf(RQ_SCHEDULER_INSTALLED is True, 'RQ Scheduler installed (no worker--with-scheduler)')
     @override_settings(
