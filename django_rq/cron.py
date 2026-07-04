@@ -1,11 +1,14 @@
 import logging
 from functools import cached_property
-from typing import Any, Callable, Optional, cast
+from typing import Any, Callable, Optional, Sequence, TYPE_CHECKING, cast
 
 from redis import Redis
 from rq.cron import CronScheduler
 
 from .connection_utils import get_connection, get_redis_connection, get_unique_connection_configs
+
+if TYPE_CHECKING:
+    from rq.webhook import Webhook
 
 
 class DjangoCronScheduler(CronScheduler):
@@ -77,6 +80,7 @@ class DjangoCronScheduler(CronScheduler):
         ttl: Optional[int] = None,
         failure_ttl: Optional[int] = None,
         meta: Optional[dict[str, Any]] = None,
+        webhooks: Sequence['Webhook'] | None = None,
     ):
         """
         Register a function to be run at regular intervals.
@@ -96,6 +100,7 @@ class DjangoCronScheduler(CronScheduler):
             ttl: Job time-to-live
             failure_ttl: How long to keep failed job info
             meta: Additional job metadata
+            webhooks: Webhooks to perform when a job reaches a terminal state
 
         Returns:
             CronJob instance
@@ -136,6 +141,7 @@ class DjangoCronScheduler(CronScheduler):
             ttl=ttl,
             failure_ttl=failure_ttl,
             meta=meta,
+            webhooks=webhooks,
         )
 
     @cached_property
