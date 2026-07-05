@@ -51,9 +51,10 @@ RQ_QUEUES = {
     # },
 }
 
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]  # add your hostname for remote access
+
 # Optional settings — uncomment to use:
 # DEBUG = True
-# ALLOWED_HOSTS = ["dashboard.example.com"]  # default: ["127.0.0.1", "localhost"]
 '''
 
 

@@ -186,23 +186,6 @@ class TestParseArgs(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 parse_args(['changepassword'])
 
-    def test_changepassword_with_username(self):
-        from django_rq.dashboard.cli import parse_args
-
-        args = parse_args(['changepassword', 'alice'])
-
-        self.assertEqual(args.command, 'changepassword')
-        self.assertEqual(args.username, 'alice')
-        self.assertIsNone(args.config)
-
-    def test_changepassword_with_username_and_config(self):
-        from django_rq.dashboard.cli import parse_args
-
-        args = parse_args(['changepassword', 'alice', '--config', 'x.py'])
-
-        self.assertEqual(args.username, 'alice')
-        self.assertEqual(args.config, 'x.py')
-
 
 class TestInit(unittest.TestCase):
     """Tests for the `init` subcommand."""
@@ -217,30 +200,28 @@ class TestInit(unittest.TestCase):
         finally:
             os.chdir(original)
 
-    def test_init_writes_config_with_secret_key(self):
+    def test_init_writes_config_with_unique_secret_key(self):
         from django_rq.dashboard.cli import SAMPLE_CONFIG_FILENAME
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with contextlib.redirect_stdout(io.StringIO()):
-                self._run_init_in(tmpdir)
+            dir_a = Path(tmpdir) / 'a'
+            dir_b = Path(tmpdir) / 'b'
+            dir_a.mkdir()
+            dir_b.mkdir()
 
-            written = Path(tmpdir) / SAMPLE_CONFIG_FILENAME
+            with contextlib.redirect_stdout(io.StringIO()):
+                self._run_init_in(dir_a)
+                self._run_init_in(dir_b)
+
+            written = dir_a / SAMPLE_CONFIG_FILENAME
             self.assertTrue(written.exists())
-            body = written.read_text()
-            self.assertIn('RQ_QUEUES', body)
-            self.assertIn('SECRET_KEY', body)
-            self.assertNotIn('__SECRET_KEY__', body)
+            body_a = written.read_text()
+            self.assertIn('RQ_QUEUES', body_a)
+            self.assertIn('SECRET_KEY', body_a)
+            self.assertNotIn('__SECRET_KEY__', body_a)
 
-    def test_init_generates_unique_secret_keys(self):
-        from django_rq.dashboard.cli import SAMPLE_CONFIG_FILENAME
-
-        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
-            with contextlib.redirect_stdout(io.StringIO()):
-                self._run_init_in(a)
-                self._run_init_in(b)
-
-            body_a = (Path(a) / SAMPLE_CONFIG_FILENAME).read_text()
-            body_b = (Path(b) / SAMPLE_CONFIG_FILENAME).read_text()
+            # Each init generates a fresh random SECRET_KEY
+            body_b = (dir_b / SAMPLE_CONFIG_FILENAME).read_text()
             self.assertNotEqual(body_a, body_b)
 
     def test_init_refuses_to_overwrite(self):
@@ -307,24 +288,26 @@ class TestPassthroughDispatch(unittest.TestCase):
 
         with (
             patch.object(sys, 'argv', argv),
-            patch.object(cli, 'resolve_config_path', return_value=Path('/fake/rq_dashboard_config.py')),
+            patch.object(cli, 'resolve_config_path', return_value=Path('/fake/rq_dashboard_config.py')) as resolve,
             patch.object(cli, 'load_config', return_value={'RQ_QUEUES': {}, 'SECRET_KEY': 'x'}),
             patch.object(cli, 'configure_django'),
             patch.object(cli, 'call_command') as call_cmd,
         ):
             cli.main()
-        return call_cmd
+        return call_cmd, resolve
 
     def test_createsuperuser_invokes_call_command(self):
-        call_cmd = self._run_main(['rq-dashboard', 'createsuperuser'])
+        call_cmd, resolve = self._run_main(['rq-dashboard', 'createsuperuser'])
         # First call is migrate; second is createsuperuser.
         self.assertEqual(call_cmd.call_args_list[0].args, ('migrate',))
         self.assertEqual(call_cmd.call_args_list[1].args, ('createsuperuser',))
+        resolve.assert_called_once_with(None)
 
     def test_changepassword_passes_username(self):
-        call_cmd = self._run_main(['rq-dashboard', 'changepassword', 'alice'])
+        call_cmd, resolve = self._run_main(['rq-dashboard', 'changepassword', 'alice', '--config', 'x.py'])
         self.assertEqual(call_cmd.call_args_list[0].args, ('migrate',))
         self.assertEqual(call_cmd.call_args_list[1].args, ('changepassword', 'alice'))
+        resolve.assert_called_once_with('x.py')
 
 
 class TestURLConfiguration(unittest.TestCase):
