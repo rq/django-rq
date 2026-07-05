@@ -111,6 +111,7 @@
                         <th><div class="text"><span>Kwargs</span></div></th>
                         <th><div class="text"><span>Meta</span></div></th>
                         <th><div class="text"><span>Options</span></div></th>
+                        <th><div class="text"><span>Webhooks</span></div></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -139,6 +140,13 @@
                         <td>
                             {% for option in cron_job.options %}
                                 {{ option }}{% if not forloop.last %}<br>{% endif %}
+                            {% empty %}
+                                -
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for webhook in cron_job.webhooks %}
+                                {{ webhook.job_status }}: {{ webhook.method }} {{ webhook.url }}{% if not forloop.last %}<br>{% endif %}
                             {% empty %}
                                 -
                             {% endfor %}

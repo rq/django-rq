@@ -209,6 +209,7 @@ class DjangoCronScheduler(CronScheduler):
                     "kwargs": job.kwargs,
                     "meta": job_options.get('meta'),
                     "options": options,
+                    "webhooks": job_options.get('webhooks') or [],
                 }
             )
 
