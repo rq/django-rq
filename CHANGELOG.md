@@ -1,4 +1,6 @@
-### Unreleased
+### Version 4.1.1 (2026-07-04)
+* Added support for `webhooks` argument when registering cron jobs. Thanks @selwin!
+* Fixed `get_scheduler_pid()` on rq >= 2.10. Thanks @terencehonles!
 * `stats.json` and `rqstats --json/--yaml` now expose safe Redis connection metadata instead of raw redis-py connection kwargs. Secret values and redis-py internals are omitted. Thanks @selwin!
 
 ### Version 4.1 (2026-04-05)

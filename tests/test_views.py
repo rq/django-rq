@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.test.client import Client
@@ -57,6 +58,12 @@ class ViewTest(TestCase):
         self.assertIn('host', response.context['connection_kwargs'])
         self.assertNotIn('password', response.context['connection_kwargs'])
 
+    def test_queue_details_404_for_missing_queue(self):
+        """Queue detail page returns 404 when queue does not exist."""
+        queue_count = len(settings.RQ_QUEUES)
+        response = self.client.get(reverse('admin:django_rq_queue_details', args=[queue_count]))
+        self.assertEqual(response.status_code, 404)
+
     def test_job_details(self):
         """Job data is displayed properly"""
         queue = get_queue('default')
@@ -72,6 +79,26 @@ class ViewTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'DeserializationError')
+
+    def test_job_details_with_webhooks(self):
+        """Job webhooks are displayed on the job detail page (and hidden when absent)"""
+        from rq.webhook import Webhook
+
+        queue = get_queue('default')
+        queue_index = get_queue_index('default')
+
+        webhook = Webhook('https://example.com/hook', 'finished', method='POST', timeout=30)
+        job = queue.enqueue(access_self, webhooks=[webhook])
+        response = self.client.get(reverse('admin:django_rq_job_detail', args=[queue_index, job.id]))
+        self.assertContains(response, 'Webhooks')
+        self.assertContains(response, 'https://example.com/hook')
+        self.assertContains(response, 'finished')
+        self.assertContains(response, 'POST')
+
+        # A job without webhooks doesn't render the panel
+        plain_job = queue.enqueue(access_self)
+        response = self.client.get(reverse('admin:django_rq_job_detail', args=[queue_index, plain_job.id]))
+        self.assertNotContains(response, 'Webhooks')
 
     def test_job_details_with_results(self):
         """Job with results is displayed properly"""

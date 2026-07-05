@@ -176,6 +176,32 @@
             </div>
             {% endif %}
 
+            {% if job.webhooks %}
+            <div class="rq-panel">
+                <div class="rq-panel-header">Webhooks</div>
+                <table class="rq-table">
+                    <thead>
+                        <tr>
+                            <th>URL</th>
+                            <th>Trigger</th>
+                            <th>Method</th>
+                            <th>Timeout</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for webhook in job.webhooks %}
+                        <tr>
+                            <td class="rq-mono">{{ webhook.url }}</td>
+                            <td>{{ webhook.job_status }}</td>
+                            <td>{{ webhook.method }}</td>
+                            <td>{{ webhook.timeout }}s</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
             {% if exc_info and job.exc_info %}
             <div class="rq-callout rq-callout-error">
                 <div class="rq-callout-head">
