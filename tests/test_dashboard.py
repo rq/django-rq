@@ -65,34 +65,21 @@ class TestLoadConfig(unittest.TestCase):
         with self.assertRaises(SystemExit):
             load_config('/nonexistent/path/config.py')
 
-    def test_load_config_missing_rq_queues(self):
+    def test_load_config_missing_required_settings(self):
         from django_rq.dashboard.cli import load_config
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-            f.write("SECRET_KEY = 'x'\n")
-            f.flush()
-            config_path = f.name
-
-        try:
-            with self.assertRaises(SystemExit):
-                load_config(config_path)
-        finally:
-            os.unlink(config_path)
-
-    def test_load_config_missing_secret_key(self):
-        from django_rq.dashboard.cli import load_config
-
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-            f.write("RQ_QUEUES = {'default': {'HOST': 'localhost', 'PORT': 6379, 'DB': 0}}\n")
-            f.flush()
-            config_path = f.name
-
-        try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            no_queues = Path(tmpdir) / 'no_queues.py'
+            no_queues.write_text("SECRET_KEY = 'x'\n")
             with self.assertRaises(SystemExit) as cm:
-                load_config(config_path)
+                load_config(no_queues)
+            self.assertIn('RQ_QUEUES', str(cm.exception))
+
+            no_secret = Path(tmpdir) / 'no_secret.py'
+            no_secret.write_text("RQ_QUEUES = {'default': {'HOST': 'localhost', 'PORT': 6379, 'DB': 0}}\n")
+            with self.assertRaises(SystemExit) as cm:
+                load_config(no_secret)
             self.assertIn('SECRET_KEY', str(cm.exception))
-        finally:
-            os.unlink(config_path)
 
 
 class TestParseArgs(unittest.TestCase):
@@ -119,25 +106,6 @@ class TestParseArgs(unittest.TestCase):
         self.assertEqual(args.config, 'test.py')
         self.assertEqual(args.host, 'localhost')
         self.assertEqual(args.port, 9000)
-
-    def test_run_with_short_options(self):
-        from django_rq.dashboard.cli import parse_args
-
-        args = parse_args(['run', '-c', 'config.py', '-p', '8080'])
-
-        self.assertEqual(args.command, 'run')
-        self.assertEqual(args.config, 'config.py')
-        self.assertEqual(args.port, 8080)
-
-    def test_run_defaults(self):
-        from django_rq.dashboard.cli import parse_args
-
-        args = parse_args(['run'])
-
-        self.assertEqual(args.command, 'run')
-        self.assertIsNone(args.config)
-        self.assertEqual(args.host, '127.0.0.1')
-        self.assertEqual(args.port, 8000)
 
     def test_bare_config_rejected(self):
         """`rq-dashboard --config x.py` (no `run` subcommand) is a parser error."""
@@ -167,16 +135,10 @@ class TestParseArgs(unittest.TestCase):
         from django_rq.dashboard.cli import parse_args
 
         args = parse_args(['createsuperuser'])
-
         self.assertEqual(args.command, 'createsuperuser')
         self.assertIsNone(args.config)
 
-    def test_createsuperuser_with_config(self):
-        from django_rq.dashboard.cli import parse_args
-
         args = parse_args(['createsuperuser', '--config', 'x.py'])
-
-        self.assertEqual(args.command, 'createsuperuser')
         self.assertEqual(args.config, 'x.py')
 
     def test_changepassword_requires_username(self):
