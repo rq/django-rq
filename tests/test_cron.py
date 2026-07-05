@@ -202,7 +202,10 @@ class CronViewTest(TestCase):
             ttl=60,
             failure_ttl=120,
         )
-        scheduler.register(say_hello, "default", cron="*/5 * * * *")
+        from rq.webhook import Webhook
+
+        webhook = Webhook('https://example.com/hook', 'failed')
+        scheduler.register(say_hello, "default", cron="*/5 * * * *", webhooks=[webhook])
         scheduler.register_birth()
 
         for prefix in ('admin:django_rq_', 'django_rq:'):
@@ -230,6 +233,12 @@ class CronViewTest(TestCase):
             self.assertContains(response, 'result_ttl=500')
             self.assertContains(response, 'ttl=60')
             self.assertContains(response, 'failure_ttl=120')
+
+            # Webhooks: first job has none, second job's webhook is displayed
+            self.assertEqual(first_cron_job['webhooks'], [])
+            self.assertEqual(response.context['cron_jobs'][1]['webhooks'], [webhook])
+            self.assertContains(response, 'Webhooks')
+            self.assertContains(response, 'failed: GET https://example.com/hook')
 
             # Test 2: Non-existent scheduler returns 404
             url = reverse(f'{prefix}cron_scheduler_detail', args=[connection_index, 'nonexistent-scheduler'])
