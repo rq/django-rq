@@ -18,6 +18,8 @@ class Dashboard(models.Model):
     class Meta:
         managed = False  # No database table - admin integration only
         default_permissions = ()
-        permissions = [['view', 'Access admin page']]
+        permissions = (
+            ('admin', 'Access admin page'),
+        )
         verbose_name = 'Django-RQ'
         verbose_name_plural = 'Django-RQ'
