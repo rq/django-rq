@@ -23,9 +23,10 @@ def _is_buggy_retry(kwargs: dict[str, Any]) -> bool:
     )
 
 
-# redis-py >= 8 puts per-pool maintenance-notification objects in connection_kwargs;
-# they lack __eq__ so two pools to the same Redis never compare equal
-_INCOMPARABLE_KWARGS = ('maint_notifications_pool_handler', 'maint_notifications_config')
+# redis-py >= 8 puts per-pool maintenance-notification objects in connection_kwargs,
+# and redis-py >= 8.1 adds a per-pool HImportRegistry; none define __eq__, so two
+# pools to the same Redis never compare equal
+_INCOMPARABLE_KWARGS = ('maint_notifications_pool_handler', 'maint_notifications_config', 'himport_registry')
 
 
 def _comparable_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:

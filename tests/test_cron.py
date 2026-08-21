@@ -1,5 +1,6 @@
 from contextlib import suppress
 from io import StringIO
+from unittest import skipIf
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -10,8 +11,17 @@ from django.urls import reverse
 from rq.cron import CronJob
 
 from django_rq import get_connection
-from django_rq.cron import DjangoCronScheduler, get_cron_job_history, get_cron_job_history_count
+from django_rq.cron import (
+    CRON_JOB_HISTORY_SUPPORTED,
+    DjangoCronScheduler,
+    get_cron_job_history,
+    get_cron_job_history_count,
+)
 from tests.fixtures import say_hello
+
+# `CronJob.name`, `job_history_key` and `get_job_ids()` were added in RQ 2.11, but django-rq
+# still supports older versions and degrades gracefully
+requires_job_history = skipIf(not CRON_JOB_HISTORY_SUPPORTED, 'requires RQ >= 2.11')
 
 
 class CronTest(TestCase):
@@ -51,6 +61,7 @@ class CronTest(TestCase):
         cron_job = scheduler.register(say_hello, 'default', interval=60, webhooks=[webhook])
         self.assertEqual(cron_job.job_options['webhooks'], [webhook])
 
+    @requires_job_history
     def test_register_with_name(self):
         """A cron job's name defaults to the function's import path and can be overridden."""
         scheduler = DjangoCronScheduler()
@@ -60,6 +71,7 @@ class CronTest(TestCase):
         self.assertEqual(default_name.name, 'tests.fixtures.say_hello')
         self.assertEqual(named.name, 'nightly-report')
 
+    @requires_job_history
     def test_cron_job_history(self):
         """Job history returns (job_id, enqueued_at) pairs, newest first."""
         scheduler = DjangoCronScheduler()
@@ -261,14 +273,15 @@ class CronViewTest(TestCase):
             self.assertContains(response, 'Every 60 seconds')
             self.assertContains(response, 'Cron: */5 * * * *')
 
-            # Each cron job's name links to its job history
-            self.assertContains(
-                response,
-                reverse(
-                    f'{prefix}cron_job_detail',
-                    args=[connection_index, 'test-scheduler', 'tests.fixtures.say_hello'],
-                ),
-            )
+            # Each cron job's name links to its job history, where RQ provides one
+            if CRON_JOB_HISTORY_SUPPORTED:
+                self.assertContains(
+                    response,
+                    reverse(
+                        f'{prefix}cron_job_detail',
+                        args=[connection_index, 'test-scheduler', 'tests.fixtures.say_hello'],
+                    ),
+                )
 
             # Webhooks: first job has none, second job's webhook is exposed in the context
             self.assertEqual(first_cron_job['webhooks'], [])
@@ -302,6 +315,7 @@ class CronViewTest(TestCase):
 
         scheduler.register_death()
 
+    @requires_job_history
     def test_cron_job_detail_view(self):
         """Cron job detail lists spawned jobs, including those whose job data is gone."""
         scheduler = DjangoCronScheduler(name='job-history-scheduler')
@@ -346,20 +360,22 @@ class CronViewTest(TestCase):
     def test_cron_job_detail_view_404s(self):
         """Cron job detail 404s on unknown cron jobs, schedulers and connection indexes."""
         scheduler = DjangoCronScheduler(name='job-history-404-scheduler')
-        scheduler.register(say_hello, 'default', interval=60, name='known-cron-job')
+        scheduler.register(say_hello, 'default', interval=60)
         scheduler.register_birth()
         self.addCleanup(scheduler.register_death)
         connection_index = scheduler.connection_index
+        known = 'tests.fixtures.say_hello'
 
         for prefix in ('admin:django_rq_', 'django_rq:'):
             for args in (
                 [connection_index, 'job-history-404-scheduler', 'unknown-cron-job'],
-                [connection_index, 'nonexistent-scheduler', 'known-cron-job'],
-                [999, 'job-history-404-scheduler', 'known-cron-job'],
+                [connection_index, 'nonexistent-scheduler', known],
+                [999, 'job-history-404-scheduler', known],
             ):
                 response = self.client.get(reverse(f'{prefix}cron_job_detail', args=args))
                 self.assertEqual(response.status_code, 404)
 
+    @requires_job_history
     def test_cron_job_detail_view_with_no_jobs(self):
         """Cron job detail gracefully handles a cron job that hasn't run yet."""
         scheduler = DjangoCronScheduler(name='no-history-scheduler')

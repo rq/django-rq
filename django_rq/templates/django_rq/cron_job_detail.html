@@ -71,19 +71,19 @@
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">Timeout</div>
-                        <div class="rq-field-value">{{ cron_job.job_timeout|default:"—" }}{% if cron_job.job_timeout %}s{% endif %}</div>
+                        <div class="rq-field-value">{{ cron_job.job_timeout|default_if_none:"—" }}{% if cron_job.job_timeout %}s{% endif %}</div>
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">Result TTL</div>
-                        <div class="rq-field-value">{{ cron_job.result_ttl|default:"—" }}</div>
+                        <div class="rq-field-value">{{ cron_job.result_ttl|default_if_none:"—" }}</div>
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">TTL</div>
-                        <div class="rq-field-value">{{ cron_job.ttl|default:"—" }}</div>
+                        <div class="rq-field-value">{{ cron_job.ttl|default_if_none:"—" }}</div>
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">Failure TTL</div>
-                        <div class="rq-field-value">{{ cron_job.failure_ttl|default:"—" }}</div>
+                        <div class="rq-field-value">{{ cron_job.failure_ttl|default_if_none:"—" }}</div>
                     </div>
                 </div>
             </div>
