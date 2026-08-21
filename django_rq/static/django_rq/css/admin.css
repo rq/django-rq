@@ -156,6 +156,8 @@ html[data-theme="dark"] {
     border: 1px solid var(--hairline-color);
     margin-bottom: 16px;
 }
+/* Wrapper for tables too wide to fit — scrolls the table, not the page. */
+.rq-table-scroll { overflow-x: auto; }
 .rq-table {
     width: 100%;
     border-collapse: collapse;
@@ -190,6 +192,19 @@ html[data-theme="dark"] {
 
 .rq-panel > .rq-table th,
 .rq-panel > .rq-table td { padding-left: 16px; padding-right: 16px; }
+.rq-panel > .rq-table-scroll > .rq-table th,
+.rq-panel > .rq-table-scroll > .rq-table td { padding-left: 16px; padding-right: 16px; }
+
+/* Footer strip below a table: pagination, counts, explanatory notes. */
+.rq-table-foot {
+    padding: 10px 16px;
+    border-top: 1px solid var(--hairline-color);
+    font-size: 11.5px;
+    color: var(--body-quiet-color);
+}
+.rq-table-foot + .rq-table-foot { border-top: 0; padding-top: 0; }
+.rq-table-foot a { color: var(--link-fg); text-decoration: none; padding: 0 4px; }
+.rq-table-foot .rq-this-page { padding: 0 4px; font-weight: 700; color: var(--body-fg); }
 
 .rq-table .rq-cell-action { text-align: right; }
 .rq-table .rq-cell-action a {
@@ -260,3 +275,4 @@ html[data-theme="dark"] {
 .rq-mono   { font-family: var(--rq-mono); }
 .rq-nowrap { white-space: nowrap; }
 .rq-num    { text-align: right; font-family: var(--rq-mono); font-variant-numeric: tabular-nums; }
+.rq-quiet  { color: var(--body-quiet-color); }
