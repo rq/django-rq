@@ -253,13 +253,13 @@ class CronViewTest(TestCase):
             first_cron_job = response.context['cron_jobs'][0]
             self.assertEqual(first_cron_job['func_name'], 'tests.fixtures.say_hello')
             self.assertEqual(first_cron_job['queue_name'], 'default')
-            self.assertEqual(first_cron_job['schedule'], 'every 60 seconds')
+            self.assertEqual(first_cron_job['schedule'], 'Every 60 seconds')
             self.assertContains(response, 'test-scheduler')
             self.assertContains(response, 'Cron Jobs')
             self.assertContains(response, 'tests.fixtures.say_hello')
             self.assertContains(response, 'default')
-            self.assertContains(response, 'every 60 seconds')
-            self.assertContains(response, 'cron: */5 * * * *')
+            self.assertContains(response, 'Every 60 seconds')
+            self.assertContains(response, 'Cron: */5 * * * *')
 
             # Each cron job's name links to its job history
             self.assertContains(
