@@ -49,9 +49,9 @@ def get_cron_job_data(cron_job: CronJob, queues_map: Optional[dict[str, int]] = 
         queues_map = get_queues_map()
 
     if cron_job.cron:
-        schedule = f"cron: {cron_job.cron}"
+        schedule = f"Cron: {cron_job.cron}"
     elif cron_job.interval is not None:
-        schedule = f"every {cron_job.interval} seconds"
+        schedule = f"Every {cron_job.interval} seconds"
     else:
         schedule = "-"
 

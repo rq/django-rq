@@ -116,11 +116,6 @@
                             <th>Schedule</th>
                             <th>Next enqueue</th>
                             <th>Latest enqueue</th>
-                            <th>Args</th>
-                            <th>Kwargs</th>
-                            <th>Meta</th>
-                            <th>Options</th>
-                            <th>Webhooks</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -144,31 +139,11 @@
                             <td class="rq-nowrap">{{ cron_job.schedule }}</td>
                             <td class="rq-nowrap">{{ cron_job.next_enqueue_time|timestamp_tooltip }}</td>
                             <td class="rq-nowrap">{{ cron_job.latest_enqueue_time|timestamp_tooltip }}</td>
-                            <td class="rq-mono">{{ cron_job.args|default_if_none:"-" }}</td>
-                            <td class="rq-mono">{{ cron_job.kwargs|default_if_none:"-" }}</td>
-                            <td class="rq-mono">{{ cron_job.meta|default_if_none:"-" }}</td>
-                            <td class="rq-mono rq-nowrap">
-                                {% for option in cron_job.options %}
-                                    {{ option }}{% if not forloop.last %}<br>{% endif %}
-                                {% empty %}
-                                    -
-                                {% endfor %}
-                            </td>
-                            <td class="rq-nowrap">
-                                {% for webhook in cron_job.webhooks %}
-                                    {{ webhook.job_status }}: {{ webhook.method }} {{ webhook.url }}{% if not forloop.last %}<br>{% endif %}
-                                {% empty %}
-                                    -
-                                {% endfor %}
-                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            {% if job_history_supported %}
-            <div class="rq-table-foot">Follow a cron job's name to see the jobs it has spawned.</div>
-            {% endif %}
         {% else %}
             <div class="rq-table-foot">No persisted cron jobs found</div>
         {% endif %}
