@@ -195,16 +195,16 @@ html[data-theme="dark"] {
 .rq-panel > .rq-table-scroll > .rq-table th,
 .rq-panel > .rq-table-scroll > .rq-table td { padding-left: 16px; padding-right: 16px; }
 
-/* Footer strip below a table: pagination, counts, explanatory notes. */
+/* Muted strip below a table, for empty states and status messages. */
 .rq-table-foot {
     padding: 10px 16px;
     border-top: 1px solid var(--hairline-color);
     font-size: 11.5px;
     color: var(--body-quiet-color);
 }
-.rq-table-foot + .rq-table-foot { border-top: 0; padding-top: 0; }
-.rq-table-foot a { color: var(--link-fg); text-decoration: none; padding: 0 4px; }
-.rq-table-foot .rq-this-page { padding: 0 4px; font-weight: 700; color: var(--body-fg); }
+
+/* Django admin's stock paginator, indented to line up with the panel's contents. */
+.rq-panel > .paginator { padding-left: 16px; padding-right: 16px; }
 
 .rq-table .rq-cell-action { text-align: right; }
 .rq-table .rq-cell-action a {

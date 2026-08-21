@@ -27,11 +27,7 @@
 <div id="content-main">
 
     <div class="rq-title-row">
-        <h1>
-            Cron Job
-            {{ cron_job.name }}
-            <span class="rq-pill">{{ cron_job.schedule }}</span>
-        </h1>
+        <h1>Cron Job {{ cron_job.name }}</h1>
     </div>
 
     <div class="rq-grid">
@@ -57,6 +53,12 @@
             <div class="rq-panel">
                 <div class="rq-panel-header">Configuration</div>
                 <div class="rq-panel-body">
+                    <div class="rq-field">
+                        <div class="rq-field-label">Scheduler</div>
+                        <div class="rq-field-value">
+                            <a href="{% rq_url 'cron_scheduler_detail' connection_index scheduler.name %}">{{ scheduler.name }}</a>
+                        </div>
+                    </div>
                     <div class="rq-field">
                         <div class="rq-field-label">Queue</div>
                         <div class="rq-field-value">
@@ -85,31 +87,11 @@
                     </div>
                 </div>
             </div>
-
-            <div class="rq-panel">
-                <div class="rq-panel-header">Scheduler</div>
-                <div class="rq-panel-body">
-                    <div class="rq-field">
-                        <div class="rq-field-label">Name</div>
-                        <div class="rq-field-value">
-                            <a href="{% rq_url 'cron_scheduler_detail' connection_index scheduler.name %}">{{ scheduler.name }}</a>
-                        </div>
-                    </div>
-                    <div class="rq-field">
-                        <div class="rq-field-label">Hostname</div>
-                        <div class="rq-field-value">{{ scheduler.hostname|default:"—" }}</div>
-                    </div>
-                    <div class="rq-field">
-                        <div class="rq-field-label">PID</div>
-                        <div class="rq-field-value">{{ scheduler.pid|default:"—" }}</div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div class="rq-col">
             <div class="rq-panel">
-                <div class="rq-panel-header">Payload</div>
+                <div class="rq-panel-header">Function</div>
                 <div class="rq-panel-body">
                     <div class="rq-field">
                         <div class="rq-field-label">Callable</div>
@@ -191,22 +173,20 @@
                             <th>Enqueued</th>
                             <th>Ended</th>
                             <th>Status</th>
-                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for entry in history %}
                             {% if entry.job and queue_index is not None %}
                                 {% with status=entry.job|job_status %}
-                                <tr class="rq-clickable{% if forloop.first %} rq-row-recent{% endif %}" onclick="window.location='{% rq_url 'job_detail' queue_index entry.job_id %}'">
-                                    <td class="rq-mono rq-nowrap">{{ entry.job_id }}</td>
+                                <tr{% if forloop.first %} class="rq-row-recent"{% endif %}>
+                                    <td class="rq-mono rq-nowrap">
+                                        <a href="{% rq_url 'job_detail' queue_index entry.job_id %}">{{ entry.job_id }}</a>
+                                    </td>
                                     <td class="rq-nowrap">{{ entry.enqueued_at|timestamp_tooltip }}</td>
                                     <td class="rq-nowrap">{{ entry.job.ended_at|timestamp_tooltip }}</td>
                                     <td>
                                         <span class="rq-pill rq-pill-dense rq-state-{% if status == 'queued' or status == 'finished' or status == 'failed' or status == 'started' or status == 'deferred' or status == 'scheduled' %}{{ status }}{% else %}deferred{% endif %}">{{ status }}</span>
-                                    </td>
-                                    <td class="rq-cell-action">
-                                        <a href="{% rq_url 'job_detail' queue_index entry.job_id %}" onclick="event.stopPropagation();">View &rarr;</a>
                                     </td>
                                 </tr>
                                 {% endwith %}
@@ -216,33 +196,29 @@
                                     <td class="rq-nowrap">{{ entry.enqueued_at|timestamp_tooltip }}</td>
                                     <td class="rq-quiet">—</td>
                                     <td class="rq-quiet rq-nowrap">expired or deleted</td>
-                                    <td class="rq-cell-action"></td>
                                 </tr>
                             {% endif %}
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <div class="rq-table-foot">
+            <p class="paginator">
                 {% if page_range|length > 1 %}
                     {% for p in page_range %}
                         {% if p == page %}
-                            <span class="rq-this-page">{{ p }}</span>
+                            <span class="this-page">{{ p }}</span>
+                        {% elif forloop.last %}
+                            <a href="?page={{ p }}" class="end">{{ p }}</a>
                         {% else %}
                             <a href="?page={{ p }}">{{ p }}</a>
                         {% endif %}
                     {% endfor %}
                 {% endif %}
                 {{ num_jobs }} job{{ num_jobs|pluralize }}
-            </div>
+            </p>
         {% else %}
             <div class="rq-table-foot">No jobs recorded for this cron job</div>
         {% endif %}
-        <div class="rq-table-foot">
-            Job data is deleted once its <code>result_ttl</code> expires, while this history keeps the
-            newest 1000 entries for up to a year, so older runs show up without their job data.
-            History is keyed by cron job name, so cron jobs registered under the same name share it.
-        </div>
     </div>
 
 </div>
