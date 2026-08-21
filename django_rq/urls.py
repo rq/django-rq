@@ -87,6 +87,12 @@ def get_admin_urlpatterns(name_prefix: str = '', view_wrapper: Optional[Callable
             maybe_wrap(cron_views.cron_scheduler_detail),
             name=f'{name_prefix}cron_scheduler_detail',
         ),
+        # `path` rather than `str` because a cron job's name is user supplied and may contain slashes
+        path(
+            'cron-schedulers/<int:connection_index>/<str:scheduler_name>/jobs/<path:cron_job_name>/',
+            maybe_wrap(cron_views.cron_job_detail),
+            name=f'{name_prefix}cron_job_detail',
+        ),
     ]
 
 

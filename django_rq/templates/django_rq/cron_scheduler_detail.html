@@ -2,163 +2,151 @@
 
 {% load static django_rq %}
 
+{% block title %}Cron Scheduler {{ scheduler.name }} {{ block.super }}{% endblock %}
+
 {% block extrastyle %}
     {{ block.super }}
-    <link rel="stylesheet" href="{% static 'admin/css/forms.css' %}">
-    <link rel="stylesheet" href="{% static 'admin/css/changelists.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/forms.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'django_rq/css/admin.css' %}">
 {% endblock %}
-
-{% block title %}Cron Scheduler: {{ scheduler.name }}{% endblock %}
-
-{% block content_title %}<h1>Cron Scheduler: {{ scheduler.name }}</h1>{% endblock %}
 
 {% block breadcrumbs %}
     <div class="breadcrumbs">
         <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
         <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
-        Cron Scheduler: {{ scheduler.name }}
+        <span>{{ scheduler.name }}</span>
     </div>
 {% endblock %}
+
+{% block content_title %}{% endblock %}
 
 {% block content %}
 <div id="content-main">
 
-    <fieldset class="module aligned">
+    <div class="rq-title-row">
+        <h1>Cron Scheduler {{ scheduler.name }}</h1>
+    </div>
 
-        <div class="form-row">
-            <div>
-                <div class="flex-container">
-                    <label>Name:</label>
-                    <div class="readonly">{{ scheduler.name }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div>
-                <div class="flex-container">
-                    <label>Hostname:</label>
-                    <div class="readonly">{{ scheduler.hostname }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div>
-                <div class="flex-container">
-                    <label>PID:</label>
-                    <div class="readonly">{{ scheduler.pid }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div>
-                <div class="flex-container">
-                    <label>Created At:</label>
-                    <div class="readonly">
-                        {% if scheduler.created_at %}
-                            {{ scheduler.created_at|timestamp_tooltip }}
-                        {% else %}
-                            -
-                        {% endif %}
+    <div class="rq-grid">
+        <div class="rq-col">
+            <div class="rq-panel">
+                <div class="rq-panel-header">Process</div>
+                <div class="rq-panel-body">
+                    <div class="rq-field">
+                        <div class="rq-field-label">Hostname</div>
+                        <div class="rq-field-value">{{ scheduler.hostname|default:"—" }}</div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">PID</div>
+                        <div class="rq-field-value">{{ scheduler.pid|default:"—" }}</div>
+                    </div>
+                    {% if scheduler.config_file %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Config file</div>
+                        <div class="rq-field-value rq-mono">{{ scheduler.config_file }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Started</div>
+                        <div class="rq-field-value">{{ scheduler.created_at|timestamp_tooltip }}</div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Last heartbeat</div>
+                        <div class="rq-field-value">{{ scheduler.last_heartbeat|timestamp_tooltip }}</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="form-row">
-            <div>
-                <div class="flex-container">
-                    <label>Last Heartbeat:</label>
-                    <div class="readonly">
-                        {% if scheduler.last_heartbeat %}
-                            {{ scheduler.last_heartbeat|timestamp_tooltip }}
-                        {% else %}
-                            -
-                        {% endif %}
+        <div class="rq-col">
+            <div class="rq-panel">
+                <div class="rq-panel-header">Connection</div>
+                <div class="rq-panel-body">
+                    <div class="rq-field">
+                        <div class="rq-field-label">Host</div>
+                        <div class="rq-field-value">{{ connection_kwargs.host|default_if_none:"—" }}</div>
                     </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Port</div>
+                        <div class="rq-field-value">{{ connection_kwargs.port|default_if_none:"—" }}</div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">DB</div>
+                        <div class="rq-field-value">{{ connection_kwargs.db|default_if_none:"—" }}</div>
+                    </div>
+                    {% if connection_kwargs.username %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Username</div>
+                        <div class="rq-field-value">{{ connection_kwargs.username }}</div>
+                    </div>
+                    {% endif %}
+                    {% if connection_kwargs.service_name %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Service name</div>
+                        <div class="rq-field-value">{{ connection_kwargs.service_name }}</div>
+                    </div>
+                    {% endif %}
+                    {% if connection_kwargs.sentinels %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Sentinels</div>
+                        <div class="rq-field-value">{% for host, port in connection_kwargs.sentinels %}{{ host }}:{{ port }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+                    </div>
+                    {% endif %}
+                    {% if connection_kwargs.unix_socket_path or connection_kwargs.path %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Unix socket</div>
+                        <div class="rq-field-value">{{ connection_kwargs.unix_socket_path|default:connection_kwargs.path }}</div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
+    </div>
 
-        {% if scheduler.config_file %}
-        <div class="form-row">
-            <div>
-                <div class="flex-container">
-                    <label>Config File:</label>
-                    <div class="readonly">{{ scheduler.config_file }}</div>
-                </div>
+    <div class="rq-panel">
+        <div class="rq-panel-header">Cron Jobs</div>
+        {% if cron_jobs %}
+            <div class="rq-table-scroll">
+                <table class="rq-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Function</th>
+                            <th>Queue</th>
+                            <th>Schedule</th>
+                            <th>Next enqueue</th>
+                            <th>Latest enqueue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cron_job in cron_jobs %}
+                        <tr>
+                            <td class="rq-nowrap">
+                                {% if job_history_supported %}
+                                    <a href="{% rq_url 'cron_job_detail' connection_index scheduler.name cron_job.name %}">{{ cron_job.name }}</a>
+                                {% else %}
+                                    {{ cron_job.name }}
+                                {% endif %}
+                            </td>
+                            <td class="rq-mono">{{ cron_job.func_name|default:"-" }}</td>
+                            <td>
+                                {% if cron_job.queue_index is not None %}
+                                    <a href="{% rq_url 'queue_details' cron_job.queue_index %}">{{ cron_job.queue_name }}</a>
+                                {% else %}
+                                    {{ cron_job.queue_name|default:"-" }}
+                                {% endif %}
+                            </td>
+                            <td class="rq-nowrap">{{ cron_job.schedule }}</td>
+                            <td class="rq-nowrap">{{ cron_job.next_enqueue_time|timestamp_tooltip }}</td>
+                            <td class="rq-nowrap">{{ cron_job.latest_enqueue_time|timestamp_tooltip }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-        </div>
+        {% else %}
+            <div class="rq-table-foot">No persisted cron jobs found</div>
         {% endif %}
-
-    </fieldset>
-
-    <div class="module" id="changelist">
-        <h2>Cron Jobs</h2>
-        <div class="results">
-            {% if cron_jobs %}
-            <table id="result_list">
-                <thead>
-                    <tr>
-                        <th><div class="text"><span>Callable</span></div></th>
-                        <th><div class="text"><span>Queue</span></div></th>
-                        <th><div class="text"><span>Schedule</span></div></th>
-                        <th><div class="text"><span>Next Enqueue</span></div></th>
-                        <th><div class="text"><span>Latest Enqueue</span></div></th>
-                        <th><div class="text"><span>Args</span></div></th>
-                        <th><div class="text"><span>Kwargs</span></div></th>
-                        <th><div class="text"><span>Meta</span></div></th>
-                        <th><div class="text"><span>Options</span></div></th>
-                        <th><div class="text"><span>Webhooks</span></div></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cron_job in cron_jobs %}
-                    <tr class="{% cycle 'row1' 'row2' %}">
-                        <td>{{ cron_job.func_name|default:"-" }}</td>
-                        <td>{{ cron_job.queue_name|default:"-" }}</td>
-                        <td>{{ cron_job.schedule }}</td>
-                        <td>
-                            {% if cron_job.next_enqueue_time %}
-                                {{ cron_job.next_enqueue_time|timestamp_tooltip }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if cron_job.latest_enqueue_time %}
-                                {{ cron_job.latest_enqueue_time|timestamp_tooltip }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>{{ cron_job.args|default_if_none:"-" }}</td>
-                        <td>{{ cron_job.kwargs|default_if_none:"-" }}</td>
-                        <td>{{ cron_job.meta|default_if_none:"-" }}</td>
-                        <td>
-                            {% for option in cron_job.options %}
-                                {{ option }}{% if not forloop.last %}<br>{% endif %}
-                            {% empty %}
-                                -
-                            {% endfor %}
-                        </td>
-                        <td>
-                            {% for webhook in cron_job.webhooks %}
-                                {{ webhook.job_status }}: {{ webhook.method }} {{ webhook.url }}{% if not forloop.last %}<br>{% endif %}
-                            {% empty %}
-                                -
-                            {% endfor %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p class="paginator">No persisted cron jobs found</p>
-            {% endif %}
-        </div>
     </div>
 
 </div>

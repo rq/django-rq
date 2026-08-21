@@ -4,6 +4,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import connections
 from redis.sentinel import SentinelConnectionPool
 from rq.command import send_stop_job_command
+from rq.cron import CronScheduler
 from rq.executions import Execution
 from rq.job import Job, JobStatus
 from rq.queue import Queue
@@ -63,17 +64,19 @@ _DISPLAYABLE_CONNECTION_KWARGS = (
 )
 
 
-def get_displayable_connection_kwargs(queue: Queue) -> dict[str, Any]:
+def get_displayable_connection_kwargs(obj: Union[Queue, CronScheduler]) -> dict[str, Any]:
     """Return safe Redis connection metadata for templates and JSON output.
 
     Only operationally meaningful fields are returned. Secret-bearing values
     and redis-py internals are excluded by the allowlist.
 
+    Accepts anything holding a Redis connection: a queue or a cron scheduler.
+
     For Sentinel-backed queues, host and port reflect the first sentinel
     endpoint; sentinels lists all known endpoints; service_name identifies the
     master.
     """
-    pool = queue.connection.connection_pool
+    pool = obj.connection.connection_pool
     connection_kwargs = pool.connection_kwargs.copy()
 
     if isinstance(pool, SentinelConnectionPool):
