@@ -1,6 +1,7 @@
 import datetime
 
 from django import template
+from django.core.paginator import Paginator
 from django.urls import reverse
 from django.utils import dateformat, timezone
 from django.utils.html import escape
@@ -62,6 +63,12 @@ def job_status(job):
     except InvalidJobOperation:
         return 'unknown'
     return getattr(status, 'value', status)
+
+
+@register.filter
+def is_ellipsis(page_number):
+    """True for the gap markers in an elided page range, which are text rather than links."""
+    return page_number == Paginator.ELLIPSIS
 
 
 @register.filter

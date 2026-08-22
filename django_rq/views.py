@@ -1,4 +1,3 @@
-from math import ceil
 from typing import Any, cast
 
 from django.contrib import admin, messages
@@ -24,10 +23,12 @@ from rq.worker_registration import clean_worker_registry
 from .queues import get_queue_by_index, get_scheduler_by_index
 from .settings import get_queues_list, get_queues_map
 from .utils import (
+    DEFAULT_ITEMS_PER_PAGE,
     get_displayable_connection_kwargs,
     get_executions,
     get_jobs,
     get_scheduler_pid,
+    paginate,
     stop_jobs,
 )
 from .utils import (
@@ -53,18 +54,13 @@ def each_context(request: HttpRequest) -> dict[str, Any]:
 def jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
     queue = get_queue_by_index(queue_index)
 
-    items_per_page = 100
     num_jobs = queue.count
-    page = int(request.GET.get('page', 1))
+    page, page_range, offset = paginate(request, num_jobs)
 
     if num_jobs > 0:
-        last_page = int(ceil(num_jobs / items_per_page))
-        page_range = list(range(1, last_page + 1))
-        offset = items_per_page * (page - 1)
-        jobs = queue.get_jobs(offset, items_per_page)
+        jobs = queue.get_jobs(offset, DEFAULT_ITEMS_PER_PAGE)
     else:
         jobs = []
-        page_range = []
 
     context_data = {
         **each_context(request),
@@ -122,9 +118,8 @@ def finished_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
 
     registry = FinishedJobRegistry(queue.name, queue.connection)
 
-    items_per_page = 100
     num_jobs = len(registry)
-    page = int(request.GET.get('page', 1))
+    page, page_range, offset = paginate(request, num_jobs)
 
     if request.GET.get('desc', '1') == '1':
         sort_direction = 'descending'
@@ -134,14 +129,8 @@ def finished_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
     jobs = []
 
     if num_jobs > 0:
-        last_page = int(ceil(num_jobs / items_per_page))
-        page_range = list(range(1, last_page + 1))
-        offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=sort_direction == 'descending')
+        job_ids = registry.get_job_ids(offset, offset + DEFAULT_ITEMS_PER_PAGE - 1, desc=sort_direction == 'descending')
         jobs = get_jobs(queue, job_ids, registry)
-
-    else:
-        page_range = []
 
     context_data = {
         **each_context(request),
@@ -164,9 +153,8 @@ def failed_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
 
     registry = FailedJobRegistry(queue.name, queue.connection)
 
-    items_per_page = 100
     num_jobs = len(registry)
-    page = int(request.GET.get('page', 1))
+    page, page_range, offset = paginate(request, num_jobs)
 
     if request.GET.get('desc', '1') == '1':
         sort_direction = 'descending'
@@ -176,14 +164,8 @@ def failed_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
     jobs = []
 
     if num_jobs > 0:
-        last_page = int(ceil(num_jobs / items_per_page))
-        page_range = list(range(1, last_page + 1))
-        offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=sort_direction == 'descending')
+        job_ids = registry.get_job_ids(offset, offset + DEFAULT_ITEMS_PER_PAGE - 1, desc=sort_direction == 'descending')
         jobs = get_jobs(queue, job_ids, registry)
-
-    else:
-        page_range = []
 
     context_data = {
         **each_context(request),
@@ -206,9 +188,8 @@ def scheduled_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
 
     registry = ScheduledJobRegistry(queue.name, queue.connection)
 
-    items_per_page = 100
     num_jobs = len(registry)
-    page = int(request.GET.get('page', 1))
+    page, page_range, offset = paginate(request, num_jobs)
     jobs = []
 
     if request.GET.get('desc', '1') == '1':
@@ -217,15 +198,10 @@ def scheduled_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
         sort_direction = 'ascending'
 
     if num_jobs > 0:
-        last_page = int(ceil(num_jobs / items_per_page))
-        page_range = list(range(1, last_page + 1))
-        offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=sort_direction == 'descending')
+        job_ids = registry.get_job_ids(offset, offset + DEFAULT_ITEMS_PER_PAGE - 1, desc=sort_direction == 'descending')
         jobs = get_jobs(queue, job_ids, registry)
         for job in jobs:
             job.scheduled_at = registry.get_scheduled_time(job)  # type: ignore[attr-defined]
-    else:
-        page_range = []
 
     context_data = {
         **each_context(request),
@@ -248,30 +224,22 @@ def started_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
 
     registry = StartedJobRegistry(queue.name, queue.connection)
 
-    items_per_page = 100
     num_jobs = len(registry)
-    page = int(request.GET.get('page', 1))
+    page, page_range, offset = paginate(request, num_jobs)
     jobs = []
     executions = []
 
     if num_jobs > 0:
-        last_page = int(ceil(num_jobs / items_per_page))
-        page_range = list(range(1, last_page + 1))
-        offset = items_per_page * (page - 1)
-
         try:
-            composite_keys = registry.get_job_and_execution_ids(offset, offset + items_per_page - 1)
+            composite_keys = registry.get_job_and_execution_ids(offset, offset + DEFAULT_ITEMS_PER_PAGE - 1)
         except AttributeError:
             composite_keys = [
                 cast(tuple[str, str], key.split(':'))
-                for key in registry.get_job_ids(offset, offset + items_per_page - 1)
+                for key in registry.get_job_ids(offset, offset + DEFAULT_ITEMS_PER_PAGE - 1)
             ]
 
         jobs = get_jobs(queue, [i[0] for i in composite_keys], registry)
         executions = get_executions(queue, composite_keys)
-
-    else:
-        page_range = []
 
     context_data = {
         **each_context(request),
@@ -334,9 +302,8 @@ def deferred_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
 
     registry = DeferredJobRegistry(queue.name, queue.connection)
 
-    items_per_page = 100
     num_jobs = len(registry)
-    page = int(request.GET.get('page', 1))
+    page, page_range, offset = paginate(request, num_jobs)
     jobs = []
 
     if request.GET.get('desc', '1') == '1':
@@ -345,18 +312,12 @@ def deferred_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
         sort_direction = 'ascending'
 
     if num_jobs > 0:
-        last_page = int(ceil(num_jobs / items_per_page))
-        page_range = list(range(1, last_page + 1))
-        offset = items_per_page * (page - 1)
-        job_ids = registry.get_job_ids(offset, offset + items_per_page - 1, desc=sort_direction == 'descending')
+        job_ids = registry.get_job_ids(offset, offset + DEFAULT_ITEMS_PER_PAGE - 1, desc=sort_direction == 'descending')
         for job_id in job_ids:
             try:
                 jobs.append(Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer))
             except NoSuchJobError:
                 pass
-
-    else:
-        page_range = []
 
     context_data = {
         **each_context(request),
@@ -688,16 +649,12 @@ def stop_job(request: HttpRequest, queue_index: int, job_id: str) -> HttpRespons
 def scheduler_jobs(request: HttpRequest, scheduler_index: int) -> HttpResponse:
     scheduler = get_scheduler_by_index(scheduler_index)
 
-    items_per_page = 100
     num_jobs = scheduler.count()
-    page = int(request.GET.get('page', 1))
+    page, page_range, offset = paginate(request, num_jobs)
     jobs = []
 
     if num_jobs > 0:
-        last_page = int(ceil(num_jobs / items_per_page))
-        page_range = list(range(1, last_page + 1))
-        offset = items_per_page * (page - 1)
-        jobs_times = scheduler.get_jobs(with_times=True, offset=offset, length=items_per_page)
+        jobs_times = scheduler.get_jobs(with_times=True, offset=offset, length=DEFAULT_ITEMS_PER_PAGE)
         for job, time in jobs_times:
             job.next_run = time
             job.queue_index = get_queues_map().get(job.origin, 0)
@@ -710,8 +667,6 @@ def scheduler_jobs(request: HttpRequest, scheduler_index: int) -> HttpResponse:
             else:
                 job.schedule = 'unknown'
             jobs.append(job)
-    else:
-        page_range = []
 
     context_data = {
         **each_context(request),

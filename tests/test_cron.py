@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.management import call_command
+from django.core.paginator import Paginator
 from django.test import TestCase, override_settings
 from django.test.client import Client
 from django.urls import reverse
@@ -17,6 +18,7 @@ from django_rq.cron import (
     get_cron_job_history,
     get_cron_job_history_count,
 )
+from django_rq.cron_views import ITEMS_PER_PAGE
 from tests.fixtures import say_hello
 
 # `CronJob.name`, `job_history_key` and `get_job_ids()` were added in RQ 2.11, but django-rq
@@ -374,6 +376,52 @@ class CronViewTest(TestCase):
             ):
                 response = self.client.get(reverse(f'{prefix}cron_job_detail', args=args))
                 self.assertEqual(response.status_code, 404)
+
+    @requires_job_history
+    def test_cron_job_detail_view_pagination(self):
+        """An unusable page number shows a valid page, not the wrong end of the history."""
+        scheduler = DjangoCronScheduler(name='paginated-scheduler')
+        cron_job = scheduler.register(say_hello, 'default', interval=60, name='paginated-history')
+        scheduler.register_birth()
+        self.addCleanup(scheduler.register_death)
+
+        connection = scheduler.connection
+        self.addCleanup(connection.delete, cron_job.job_history_key)
+
+        # Enough entries to span 13 pages, so the page range is elided. History entries outlive
+        # the jobs themselves, so recording IDs scored by enqueue time is all
+        # `CronJob.enqueue()` leaves behind.
+        last_page = 13
+        num_entries = ITEMS_PER_PAGE * (last_page - 1) + 5
+        connection.zadd(cron_job.job_history_key, {f'job-{i:03}': float(i) for i in range(num_entries)})
+        newest_job_id = f'job-{num_entries - 1:03}'
+
+        url = reverse(
+            'django_rq:cron_job_detail',
+            args=[scheduler.connection_index, 'paginated-scheduler', 'paginated-history'],
+        )
+
+        # `?page=0` used to slice from the end of the history and quietly render the oldest jobs
+        for page in ('0', '-1', 'abc', ''):
+            response = self.client.get(url, {'page': page})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.context['page'], 1)
+            history = response.context['history']
+            self.assertEqual(len(history), ITEMS_PER_PAGE)
+            self.assertEqual(history[0]['job_id'], newest_job_id)
+
+        # Only a handful of the 13 pages are linked, and the gap marker isn't itself a link
+        page_range = response.context['page_range']
+        self.assertIn(Paginator.ELLIPSIS, page_range)
+        self.assertLess(len(page_range), last_page)
+        self.assertNotContains(response, f'?page={Paginator.ELLIPSIS}')
+
+        # A page past the end, including one too large for a Redis index, shows the last page
+        for page in ('999', '9' * 30):
+            response = self.client.get(url, {'page': page})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.context['page'], last_page)
+            self.assertEqual(response.context['history'][-1]['job_id'], 'job-000')
 
     @requires_job_history
     def test_cron_job_detail_view_with_no_jobs(self):
