@@ -130,7 +130,9 @@
                 </div>
                 <p class="paginator">
                     {% for p in page_range %}
-                        {% if p == page %}
+                        {% if p|is_ellipsis %}
+                            {{ p }}
+                        {% elif p == page %}
                             <span class="this-page">{{ p }}</span>
                         {% elif forloop.last %}
                             <a href="?page={{ p }}" class="end">{{ p }}</a>

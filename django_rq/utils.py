@@ -1,7 +1,9 @@
 from typing import Any, Optional, Union
 
 from django.core.exceptions import ImproperlyConfigured
+from django.core.paginator import Paginator
 from django.db import connections
+from django.http import HttpRequest
 from redis.sentinel import SentinelConnectionPool
 from rq.command import send_stop_job_command
 from rq.cron import CronScheduler
@@ -25,6 +27,42 @@ from .cron import DjangoCronScheduler
 from .queues import get_queue_by_index, get_scheduler
 from .settings import get_queues_list
 from .templatetags.django_rq import to_localtime
+
+DEFAULT_ITEMS_PER_PAGE = 100
+
+
+def paginate(
+    request: HttpRequest, num_items: int, items_per_page: int = DEFAULT_ITEMS_PER_PAGE
+) -> tuple[int, list[Union[int, str]], int]:
+    """Returns (page, page_range, offset) for a paginated view.
+
+    The page number comes from user input, so it is validated rather than trusted: an
+    unparseable or out of range page would otherwise become a negative or oversized Redis
+    offset, which silently returns the wrong slice.
+
+    `page_range` is elided around the current page, so a queue holding a million jobs links to
+    a dozen pages rather than ten thousand. Gaps are marked with `Paginator.ELLIPSIS`, which
+    templates render as plain text via the `is_ellipsis` filter.
+    """
+    if num_items <= 0:
+        return 1, [], 0
+
+    # Paginator only needs a sized sequence to count pages, not the items themselves.
+    # `range()` is lazy, so nothing extra is read from Redis.
+    paginator = Paginator(range(num_items), items_per_page)
+
+    try:
+        # Page numbers below 1 are clamped to the first page. `get_page()` would send them
+        # to the *last* page, which is a surprising place to land from `?page=0`.
+        number = max(1, int(request.GET.get('page', 1)))
+    except (TypeError, ValueError):
+        number = 1
+
+    # `get_page()` clamps a page past the end to the last page and never raises.
+    page = paginator.get_page(number)
+    # Up to 10 pages are listed in full; beyond that the range elides to `1 2 … 8 9 10 … 99 100`
+    page_range = list(paginator.get_elided_page_range(page.number))
+    return page.number, page_range, items_per_page * (page.number - 1)
 
 
 def get_scheduler_pid(queue: Queue) -> Union[bool, int, None]:

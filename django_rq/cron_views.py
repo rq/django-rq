@@ -1,4 +1,3 @@
-from math import ceil
 from typing import Any
 
 from django.contrib.admin.views.decorators import staff_member_required
@@ -16,7 +15,7 @@ from .cron import (
     get_cron_job_history_count,
 )
 from .queues import get_queue_by_index
-from .utils import get_displayable_connection_kwargs
+from .utils import get_displayable_connection_kwargs, paginate
 from .views import each_context
 
 ITEMS_PER_PAGE = 20
@@ -109,15 +108,11 @@ def cron_job_detail(
         connection, serializer = scheduler.connection, None
 
     num_jobs = get_cron_job_history_count(cron_job, scheduler.connection)
-    page = int(request.GET.get('page', 1))
+    page, page_range, offset = paginate(request, num_jobs, ITEMS_PER_PAGE)
 
     history: list[dict[str, Any]] = []
-    page_range: list[int] = []
 
     if num_jobs > 0:
-        last_page = int(ceil(num_jobs / ITEMS_PER_PAGE))
-        page_range = list(range(1, last_page + 1))
-        offset = ITEMS_PER_PAGE * (page - 1)
         entries = get_cron_job_history(cron_job, scheduler.connection, offset, offset + ITEMS_PER_PAGE - 1)
 
         # A job's data is deleted when its result_ttl expires, long before its history entry
