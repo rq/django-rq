@@ -1,3 +1,11 @@
+### Version 4.2 (2026-08-30)
+* *Backwards incompatible*: admin permission was renamed from `view` to `admin`, since the permission allows data modification. Run `./manage.py migrate` to update existing permissions. If you reference the codename directly (e.g. `user.has_perm('django_rq.view')`, update it to `django_rq.admin` Thanks @terencehonles!
+* Added support for RQ v2.11's CronScheduler. Thanks @selwin!
+* Added a cron job detail page showing the job's configuration and its past runs. Thanks @selwin!
+* Job detail and cron pages now display webhooks. Thanks @selwin!
+* Better pagination handling. Thanks @selwin!
+* Queue detail views now return a 404 for missing queues instead of raising an error. Thanks @bennylope!
+
 ### Version 4.1.1 (2026-07-04)
 * Added support for `webhooks` argument when registering cron jobs. Thanks @selwin!
 * Fixed `get_scheduler_pid()` on rq >= 2.10. Thanks @terencehonles!
