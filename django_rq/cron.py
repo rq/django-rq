@@ -3,16 +3,58 @@ from collections.abc import Sequence
 from datetime import datetime, timezone
 from functools import cached_property
 from typing import Any, Callable, Optional, cast
+from zoneinfo import ZoneInfo
 
+from django.conf import settings
+from django.utils.timezone import get_default_timezone
 from redis import Redis
-from rq.cron import CronJob, CronScheduler
-from rq.utils import as_text
+from rq.cron import CronJob, CronScheduler, croniter
+from rq.utils import as_text, now
 
 from .connection_utils import get_connection, get_redis_connection, get_unique_connection_configs
 from .settings import get_queues_map
 
 # `CronJob.get_job_ids()` and the job history sorted set backing it were added in RQ 2.11
 CRON_JOB_HISTORY_SUPPORTED = hasattr(CronJob, 'get_job_ids')
+
+
+def get_cron_timezone():
+    """Return the timezone used to evaluate cron expressions."""
+    configured_timezone = getattr(settings, 'RQ_CRON_TIMEZONE', None)
+    if configured_timezone is None:
+        return get_default_timezone()
+    if isinstance(configured_timezone, str):
+        return ZoneInfo(configured_timezone)
+    return configured_timezone
+
+
+class DjangoCronJob(CronJob):
+    """An RQ cron job whose cron expressions are evaluated in Django's timezone."""
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        if self.cron:
+            next_time = self._get_next_cron_time(now())
+            if hasattr(self, 'next_enqueue_time'):
+                self.next_enqueue_time = next_time
+            else:  # RQ < 2.11
+                self.next_run_time = next_time
+
+    def _get_next_cron_time(self, base_time: datetime) -> datetime:
+        local_time = base_time.astimezone(get_cron_timezone())
+        return croniter(self.cron, local_time).get_next(datetime).astimezone(timezone.utc)
+
+    def get_next_enqueue_time(self) -> datetime:
+        """Calculate the next enqueue time, evaluating cron expressions in local time."""
+        if self.cron:
+            return self._get_next_cron_time(self.latest_enqueue_time or now())
+        return super().get_next_enqueue_time()
+
+    def get_next_run_time(self) -> datetime:
+        """RQ < 2.11 compatibility alias for timezone-aware cron evaluation."""
+        if self.cron:
+            return self._get_next_cron_time(getattr(self, 'latest_run_time', None) or now())
+        return super().get_next_run_time()  # type: ignore[misc]
 
 
 def get_cron_job_history(
@@ -221,9 +263,9 @@ class DjangoCronScheduler(CronScheduler):
             extra_kwargs['webhooks'] = webhooks
         if name:
             extra_kwargs['name'] = name
-        return super().register(
-            func=func,
+        cron_job = DjangoCronJob(
             queue_name=queue_name,
+            func=func,
             args=args,
             kwargs=kwargs,
             interval=interval,
@@ -235,6 +277,15 @@ class DjangoCronScheduler(CronScheduler):
             meta=meta,
             **extra_kwargs,
         )
+        self._cron_jobs.append(cron_job)
+
+        job_key = f'{func.__module__}.{func.__name__}'
+        if interval:
+            self.log.info(f"Registered '{job_key}' to run on {queue_name} every {interval} seconds")
+        elif cron:
+            self.log.info(f"Registered '{job_key}' to run on {queue_name} with cron schedule '{cron}'")
+
+        return cron_job
 
     @cached_property
     def connection_index(self) -> int:

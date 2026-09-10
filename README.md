@@ -283,6 +283,10 @@ Then start the cron scheduler:
 python manage.py rqcron cron_config.py
 ```
 
+Cron expressions are evaluated in Django's configured `TIME_ZONE`. To use a
+different timezone for cron schedules, set `RQ_CRON_TIMEZONE` to an IANA
+timezone name such as `"Asia/Jakarta"`.
+
 For more options, visit [RQ's CronScheduler documentation](https://python-rq.org/docs/cron/).
 
 ### Support for django-redis and django-redis-cache

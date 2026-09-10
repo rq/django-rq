@@ -1,4 +1,5 @@
 from contextlib import suppress
+from datetime import datetime, timezone
 from io import StringIO
 from unittest import skipIf
 from unittest.mock import patch
@@ -53,6 +54,26 @@ class CronTest(TestCase):
         self.assertEqual(cron_job.cron, "* * * * *")
         self.assertIsNone(cron_job.interval)
         # self.assertIsNotNone(cron_job.next_run_time)
+
+    @override_settings(TIME_ZONE='Asia/Jakarta')
+    @patch('django_rq.cron.now', return_value=datetime(2026, 9, 10, tzinfo=timezone.utc))
+    def test_cron_uses_django_timezone(self, mock_now):
+        scheduler = DjangoCronScheduler()
+
+        cron_job = scheduler.register(say_hello, 'default', cron='25 8 * * *')
+
+        self.assertEqual(cron_job.next_enqueue_time, datetime(2026, 9, 10, 1, 25, tzinfo=timezone.utc))
+        cron_job.set_enqueue_time(cron_job.next_enqueue_time)
+        self.assertEqual(cron_job.next_enqueue_time, datetime(2026, 9, 11, 1, 25, tzinfo=timezone.utc))
+
+    @override_settings(TIME_ZONE='UTC', RQ_CRON_TIMEZONE='Asia/Jakarta')
+    @patch('django_rq.cron.now', return_value=datetime(2026, 9, 10, tzinfo=timezone.utc))
+    def test_cron_timezone_can_be_configured(self, mock_now):
+        scheduler = DjangoCronScheduler()
+
+        cron_job = scheduler.register(say_hello, 'default', cron='25 8 * * *')
+
+        self.assertEqual(cron_job.next_enqueue_time, datetime(2026, 9, 10, 1, 25, tzinfo=timezone.utc))
 
     def test_register_with_webhooks(self):
         """webhooks passed to register() are forwarded to the underlying CronJob."""
