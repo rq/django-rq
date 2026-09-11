@@ -3,10 +3,14 @@ from collections.abc import Sequence
 from datetime import datetime, timezone
 from functools import cached_property
 from typing import Any, Callable, Optional, cast
+from zoneinfo import ZoneInfo
 
+from croniter import croniter
+from django.conf import settings
+from django.utils.timezone import get_default_timezone
 from redis import Redis
 from rq.cron import CronJob, CronScheduler
-from rq.utils import as_text
+from rq.utils import as_text, now
 
 from .connection_utils import get_connection, get_redis_connection, get_unique_connection_configs
 from .settings import get_queues_map
@@ -14,6 +18,34 @@ from .settings import get_queues_map
 # `CronJob.get_job_ids()` and the job history sorted set backing it were added in RQ 2.11
 CRON_JOB_HISTORY_SUPPORTED = hasattr(CronJob, 'get_job_ids')
 
+
+def get_cron_timezone():
+    """Return the timezone used to evaluate cron expressions."""
+    configured_timezone = getattr(settings, 'RQ_CRON_TIMEZONE', None)
+    if configured_timezone is None:
+        return get_default_timezone()
+    if isinstance(configured_timezone, str):
+        return ZoneInfo(configured_timezone)
+    return configured_timezone
+
+
+class DjangoCronJob(CronJob):
+    """An RQ cron job whose cron expressions are evaluated in Django's timezone."""
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        if self.cron:
+            self.next_enqueue_time = self._get_next_cron_time(now())
+
+    def _get_next_cron_time(self, base_time: datetime) -> datetime:
+        local_time = base_time.astimezone(get_cron_timezone())
+        return croniter(self.cron, local_time).get_next(datetime).astimezone(timezone.utc)
+
+    def get_next_enqueue_time(self) -> datetime:
+        """Calculate the next enqueue time, evaluating cron expressions in local time."""
+        if self.cron:
+            return self._get_next_cron_time(self.latest_enqueue_time or now())
+        return super().get_next_enqueue_time()
 
 def get_cron_job_history(
     cron_job: CronJob, connection: Redis, start: int = 0, end: int = -1
@@ -184,9 +216,9 @@ class DjangoCronScheduler(CronScheduler):
             ttl: Job time-to-live
             failure_ttl: How long to keep failed job info
             meta: Additional job metadata
-            webhooks: Webhooks to attach to the job (requires rq >= 2.10)
-            name: Optional name identifying this cron job (requires rq >= 2.11). Defaults to
-                the function's import path. Cron jobs sharing a name share a job history.
+            webhooks: Webhooks to attach to the job
+            name: Optional name identifying this cron job. Defaults to the function's import path.
+                Cron jobs sharing a name share a job history.
 
         Returns:
             CronJob instance
@@ -214,16 +246,15 @@ class DjangoCronScheduler(CronScheduler):
             if 'connection_index' in self.__dict__:
                 del self.__dict__['connection_index']
 
-        # Now call parent register method. `webhooks` and `name` are only passed along when
-        # set, since CronScheduler.register() only accepts them on rq >= 2.10 and >= 2.11
+        # Only pass optional arguments when explicitly set so RQ can apply its defaults.
         extra_kwargs: dict[str, Any] = {}
         if webhooks is not None:
             extra_kwargs['webhooks'] = webhooks
         if name:
             extra_kwargs['name'] = name
-        return super().register(
-            func=func,
+        cron_job = DjangoCronJob(
             queue_name=queue_name,
+            func=func,
             args=args,
             kwargs=kwargs,
             interval=interval,
@@ -235,6 +266,15 @@ class DjangoCronScheduler(CronScheduler):
             meta=meta,
             **extra_kwargs,
         )
+        self._cron_jobs.append(cron_job)
+
+        job_key = f'{func.__module__}.{func.__name__}'
+        if interval:
+            self.log.info(f"Registered '{job_key}' to run on {queue_name} every {interval} seconds")
+        elif cron:
+            self.log.info(f"Registered '{job_key}' to run on {queue_name} with cron schedule '{cron}'")
+
+        return cron_job
 
     @cached_property
     def connection_index(self) -> int:

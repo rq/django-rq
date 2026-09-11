@@ -11,7 +11,7 @@ license = "MIT"
 license-files = ["LICENSE.txt"]
 authors = [{ name = "Selwin Ong", email = "selwin.ong@gmail.com" }]
 requires-python = ">=3.10"
-dependencies = ["django>=4.2", "rq>=2.6.1", "redis>=3.5"]
+dependencies = ["django>=4.2", "rq>=2.11", "redis>=3.5"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Web Environment",
@@ -64,6 +64,10 @@ warn_unreachable = true
 
 [[tool.mypy.overrides]]
 module = "django_redis.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "croniter.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
