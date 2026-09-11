@@ -5,10 +5,11 @@ from functools import cached_property
 from typing import Any, Callable, Optional, cast
 from zoneinfo import ZoneInfo
 
+from croniter import croniter
 from django.conf import settings
 from django.utils.timezone import get_default_timezone
 from redis import Redis
-from rq.cron import CronJob, CronScheduler, croniter
+from rq.cron import CronJob, CronScheduler
 from rq.utils import as_text, now
 
 from .connection_utils import get_connection, get_redis_connection, get_unique_connection_configs
@@ -34,11 +35,7 @@ class DjangoCronJob(CronJob):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         if self.cron:
-            next_time = self._get_next_cron_time(now())
-            if hasattr(self, 'next_enqueue_time'):
-                self.next_enqueue_time = next_time
-            else:  # RQ < 2.11
-                self.next_run_time = next_time
+            self.next_enqueue_time = self._get_next_cron_time(now())
 
     def _get_next_cron_time(self, base_time: datetime) -> datetime:
         local_time = base_time.astimezone(get_cron_timezone())
@@ -49,13 +46,6 @@ class DjangoCronJob(CronJob):
         if self.cron:
             return self._get_next_cron_time(self.latest_enqueue_time or now())
         return super().get_next_enqueue_time()
-
-    def get_next_run_time(self) -> datetime:
-        """RQ < 2.11 compatibility alias for timezone-aware cron evaluation."""
-        if self.cron:
-            return self._get_next_cron_time(getattr(self, 'latest_run_time', None) or now())
-        return super().get_next_run_time()  # type: ignore[misc]
-
 
 def get_cron_job_history(
     cron_job: CronJob, connection: Redis, start: int = 0, end: int = -1
@@ -226,9 +216,9 @@ class DjangoCronScheduler(CronScheduler):
             ttl: Job time-to-live
             failure_ttl: How long to keep failed job info
             meta: Additional job metadata
-            webhooks: Webhooks to attach to the job (requires rq >= 2.10)
-            name: Optional name identifying this cron job (requires rq >= 2.11). Defaults to
-                the function's import path. Cron jobs sharing a name share a job history.
+            webhooks: Webhooks to attach to the job
+            name: Optional name identifying this cron job. Defaults to the function's import path.
+                Cron jobs sharing a name share a job history.
 
         Returns:
             CronJob instance
@@ -256,8 +246,7 @@ class DjangoCronScheduler(CronScheduler):
             if 'connection_index' in self.__dict__:
                 del self.__dict__['connection_index']
 
-        # Now call parent register method. `webhooks` and `name` are only passed along when
-        # set, since CronScheduler.register() only accepts them on rq >= 2.10 and >= 2.11
+        # Only pass optional arguments when explicitly set so RQ can apply its defaults.
         extra_kwargs: dict[str, Any] = {}
         if webhooks is not None:
             extra_kwargs['webhooks'] = webhooks
