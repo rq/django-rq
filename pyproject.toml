@@ -67,6 +67,10 @@ module = "django_redis.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
+module = "croniter.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
 module = "prometheus_client.*"
 ignore_missing_imports = true
 
