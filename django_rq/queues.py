@@ -1,4 +1,5 @@
 import warnings
+from functools import partial
 from typing import Any, Callable, Optional, Union, cast
 
 from django.conf import settings
@@ -95,22 +96,48 @@ class DjangoRQ(Queue):
 
         super().__init__(*args, **kwargs)
 
-    def original_enqueue_call(self, *args, **kwargs):
-        queue_name = kwargs.get('queue_name') or self.name
-        kwargs['result_ttl'] = kwargs.get('result_ttl', get_result_ttl(queue_name))
+    def enqueue_now(self, django_rq_method: str, *args: Any, **kwargs: Any) -> Job:
+        """
+        Run RQ's own ``enqueue_job`` or ``enqueue_at`` right away, bypassing the
+        commit mode. Used to flush deferred calls (see ``thread_queue``).
+        """
+        return getattr(super(), django_rq_method)(*args, **kwargs)
 
-        return super().enqueue_call(*args, **kwargs)
+    def _enqueue_or_defer(self, django_rq_method: str, *args: Any, **kwargs: Any) -> Optional[Job]:
+        """
+        Run the named RQ method now, or defer it according to this queue's commit mode.
+
+        A caller-supplied ``pipeline`` is never deferred: the caller decides when
+        it executes, and commands appended from a commit hook would land after
+        ``pipeline.execute()`` has already run.
+        """
+        if self._commit_mode == 'auto' or kwargs.get('pipeline') is not None:
+            return self.enqueue_now(django_rq_method, *args, **kwargs)
+        if self._commit_mode == 'on_db_commit':
+            if connection.in_atomic_block:
+                transaction.on_commit(partial(self.enqueue_now, django_rq_method, *args, **kwargs))
+                return None
+            return self.enqueue_now(django_rq_method, *args, **kwargs)
+        thread_queue.add(self, django_rq_method, args, kwargs)
+        return None
 
     def enqueue_call(self, *args, **kwargs):
-        if self._commit_mode == 'auto':
-            return self.original_enqueue_call(*args, **kwargs)
-        elif self._commit_mode == 'on_db_commit':
-            if connection.in_atomic_block:
-                transaction.on_commit(lambda: self.original_enqueue_call(*args, **kwargs))
-            else:
-                return self.original_enqueue_call(*args, **kwargs)
-        else:
-            thread_queue.add(self, args, kwargs)
+        # Only inject the DEFAULT_RESULT_TTL default here. RQ's enqueue_call
+        # creates the job and hands it to enqueue_job, where deferral happens.
+        queue_name = kwargs.get('queue_name') or self.name
+        kwargs['result_ttl'] = kwargs.get('result_ttl', get_result_ttl(queue_name))
+        return super().enqueue_call(*args, **kwargs)
+
+    def enqueue_job(self, job, pipeline=None, at_front=False, unique=False, **kwargs):
+        # Mirror RQ's signature so every argument may arrive positionally, then forward
+        # them all by keyword: _enqueue_or_defer only recognises a pipeline passed as a keyword.
+        return self._enqueue_or_defer('enqueue_job', job, pipeline=pipeline, at_front=at_front, unique=unique, **kwargs)
+
+    def enqueue_at(self, *args, **kwargs):
+        # Also covers enqueue_in(): RQ implements it as self.enqueue_at(now() + delta, ...), so the
+        # target time is resolved here, at call time, and the deferred entry is recorded as 'enqueue_at'.
+        # Positional args after the function are job arguments; pipeline can only be a keyword.
+        return self._enqueue_or_defer('enqueue_at', *args, **kwargs)
 
 
 def get_queue(
