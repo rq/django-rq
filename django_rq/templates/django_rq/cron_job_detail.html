@@ -162,9 +162,7 @@
 
     <div class="rq-panel">
         <div class="rq-panel-header">Jobs</div>
-        {% if not job_history_supported %}
-            <div class="rq-table-foot">Job history requires RQ &gt;= 2.11</div>
-        {% elif history %}
+        {% if history %}
             <div class="rq-table-scroll">
                 <table class="rq-table">
                     <thead>

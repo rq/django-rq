@@ -7,13 +7,7 @@ from django.views.decorators.cache import never_cache
 from rq.job import Job
 
 from .connection_utils import get_connection_by_index
-from .cron import (
-    CRON_JOB_HISTORY_SUPPORTED,
-    DjangoCronScheduler,
-    get_cron_job_data,
-    get_cron_job_history,
-    get_cron_job_history_count,
-)
+from .cron import DjangoCronScheduler, get_cron_job_data, get_cron_job_history, get_cron_job_history_count
 from .queues import get_queue_by_index
 from .utils import get_displayable_connection_kwargs, paginate
 from .views import each_context
@@ -62,7 +56,6 @@ def cron_scheduler_detail(request: HttpRequest, connection_index: int, scheduler
         "connection_index": connection_index,
         "connection_kwargs": get_displayable_connection_kwargs(scheduler),
         "cron_jobs": scheduler.get_jobs_data(),
-        "job_history_supported": CRON_JOB_HISTORY_SUPPORTED,
     }
 
     return render(request, 'django_rq/cron_scheduler_detail.html', context_data)
@@ -134,7 +127,6 @@ def cron_job_detail(
         'num_jobs': num_jobs,
         'page': page,
         'page_range': page_range,
-        'job_history_supported': CRON_JOB_HISTORY_SUPPORTED,
     }
 
     return render(request, 'django_rq/cron_job_detail.html', context_data)

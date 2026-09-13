@@ -1,6 +1,6 @@
 from contextlib import suppress
+from datetime import datetime, timezone
 from io import StringIO
-from unittest import skipIf
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -12,18 +12,9 @@ from django.urls import reverse
 from rq.cron import CronJob
 
 from django_rq import get_connection
-from django_rq.cron import (
-    CRON_JOB_HISTORY_SUPPORTED,
-    DjangoCronScheduler,
-    get_cron_job_history,
-    get_cron_job_history_count,
-)
+from django_rq.cron import DjangoCronScheduler, get_cron_job_history, get_cron_job_history_count
 from django_rq.cron_views import ITEMS_PER_PAGE
 from tests.fixtures import say_hello
-
-# `CronJob.name`, `job_history_key` and `get_job_ids()` were added in RQ 2.11, but django-rq
-# still supports older versions and degrades gracefully
-requires_job_history = skipIf(not CRON_JOB_HISTORY_SUPPORTED, 'requires RQ >= 2.11')
 
 
 class CronTest(TestCase):
@@ -52,7 +43,41 @@ class CronTest(TestCase):
         # Verify cron expression is set correctly
         self.assertEqual(cron_job.cron, "* * * * *")
         self.assertIsNone(cron_job.interval)
-        # self.assertIsNotNone(cron_job.next_run_time)
+
+    @override_settings(TIME_ZONE='Asia/Jakarta')
+    @patch('django_rq.cron.now', return_value=datetime(2026, 9, 10, tzinfo=timezone.utc))
+    def test_cron_uses_django_timezone(self, mock_now):
+        """Cron expressions use Django's configured timezone and persist UTC times."""
+        scheduler = DjangoCronScheduler()
+
+        cron_job = scheduler.register(say_hello, 'default', cron='25 8 * * *')
+
+        self.assertEqual(cron_job.next_enqueue_time, datetime(2026, 9, 10, 1, 25, tzinfo=timezone.utc))
+        cron_job.set_enqueue_time(cron_job.next_enqueue_time)
+        self.assertEqual(cron_job.next_enqueue_time, datetime(2026, 9, 11, 1, 25, tzinfo=timezone.utc))
+
+    @override_settings(TIME_ZONE='Europe/Berlin')
+    def test_cron_handles_daylight_saving_transitions(self):
+        """Daily cron jobs keep their local wall-clock time across both DST transitions."""
+        transitions = (
+            (
+                datetime(2026, 3, 28, 8, tzinfo=timezone.utc),
+                datetime(2026, 3, 29, 7, tzinfo=timezone.utc),
+            ),
+            (
+                datetime(2026, 10, 24, 7, tzinfo=timezone.utc),
+                datetime(2026, 10, 25, 8, tzinfo=timezone.utc),
+            ),
+        )
+
+        for previous_enqueue_time, expected_enqueue_time in transitions:
+            with self.subTest(previous_enqueue_time=previous_enqueue_time):
+                scheduler = DjangoCronScheduler()
+                cron_job = scheduler.register(say_hello, 'default', cron='0 9 * * *')
+
+                cron_job.set_enqueue_time(previous_enqueue_time)
+
+                self.assertEqual(cron_job.next_enqueue_time, expected_enqueue_time)
 
     def test_register_with_webhooks(self):
         """webhooks passed to register() are forwarded to the underlying CronJob."""
@@ -63,7 +88,6 @@ class CronTest(TestCase):
         cron_job = scheduler.register(say_hello, 'default', interval=60, webhooks=[webhook])
         self.assertEqual(cron_job.job_options['webhooks'], [webhook])
 
-    @requires_job_history
     def test_register_with_name(self):
         """A cron job's name defaults to the function's import path and can be overridden."""
         scheduler = DjangoCronScheduler()
@@ -73,7 +97,6 @@ class CronTest(TestCase):
         self.assertEqual(default_name.name, 'tests.fixtures.say_hello')
         self.assertEqual(named.name, 'nightly-report')
 
-    @requires_job_history
     def test_cron_job_history(self):
         """Job history returns (job_id, enqueued_at) pairs, newest first."""
         scheduler = DjangoCronScheduler()
@@ -275,15 +298,14 @@ class CronViewTest(TestCase):
             self.assertContains(response, 'Every 60 seconds')
             self.assertContains(response, 'Cron: */5 * * * *')
 
-            # Each cron job's name links to its job history, where RQ provides one
-            if CRON_JOB_HISTORY_SUPPORTED:
-                self.assertContains(
-                    response,
-                    reverse(
-                        f'{prefix}cron_job_detail',
-                        args=[connection_index, 'test-scheduler', 'tests.fixtures.say_hello'],
-                    ),
-                )
+            # Each cron job's name links to its job history
+            self.assertContains(
+                response,
+                reverse(
+                    f'{prefix}cron_job_detail',
+                    args=[connection_index, 'test-scheduler', 'tests.fixtures.say_hello'],
+                ),
+            )
 
             # Webhooks: first job has none, second job's webhook is exposed in the context
             self.assertEqual(first_cron_job['webhooks'], [])
@@ -317,7 +339,6 @@ class CronViewTest(TestCase):
 
         scheduler.register_death()
 
-    @requires_job_history
     def test_cron_job_detail_view(self):
         """Cron job detail lists spawned jobs, including those whose job data is gone."""
         scheduler = DjangoCronScheduler(name='job-history-scheduler')
@@ -377,7 +398,6 @@ class CronViewTest(TestCase):
                 response = self.client.get(reverse(f'{prefix}cron_job_detail', args=args))
                 self.assertEqual(response.status_code, 404)
 
-    @requires_job_history
     def test_cron_job_detail_view_pagination(self):
         """An unusable page number shows a valid page, not the wrong end of the history."""
         scheduler = DjangoCronScheduler(name='paginated-scheduler')
@@ -423,7 +443,6 @@ class CronViewTest(TestCase):
             self.assertEqual(response.context['page'], last_page)
             self.assertEqual(response.context['history'][-1]['job_id'], 'job-000')
 
-    @requires_job_history
     def test_cron_job_detail_view_with_no_jobs(self):
         """Cron job detail gracefully handles a cron job that hasn't run yet."""
         scheduler = DjangoCronScheduler(name='no-history-scheduler')

@@ -122,11 +122,7 @@
                         {% for cron_job in cron_jobs %}
                         <tr>
                             <td class="rq-nowrap">
-                                {% if job_history_supported %}
-                                    <a href="{% rq_url 'cron_job_detail' connection_index scheduler.name cron_job.name %}">{{ cron_job.name }}</a>
-                                {% else %}
-                                    {{ cron_job.name }}
-                                {% endif %}
+                                <a href="{% rq_url 'cron_job_detail' connection_index scheduler.name cron_job.name %}">{{ cron_job.name }}</a>
                             </td>
                             <td class="rq-mono">{{ cron_job.func_name|default:"-" }}</td>
                             <td>
