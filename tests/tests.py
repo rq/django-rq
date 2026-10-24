@@ -396,6 +396,25 @@ class DecoratorTest(TestCase):
         self.assertEqual(result.result_ttl, 60)
         result.delete()
 
+    @override_settings(RQ={'AUTOCOMMIT': True, 'DEFAULT_RESULT_TTL': 60})
+    def test_job_decorator_queue_object_result_ttl(self):
+        # Ensure the queue's DEFAULT_RESULT_TTL is used when a Queue object is
+        # passed to the decorator (not 'default' queue's TTL)
+        queue_name = 'test3'
+        config = QUEUES[queue_name]
+        queue = get_queue(queue_name)
+
+        @job(queue)
+        def test():
+            pass
+
+        result = test.delay()
+        self.assertEqual(result.origin, queue_name)
+        self.assertEqual(result.result_ttl, config['DEFAULT_RESULT_TTL'])
+        # make sure this test can actually catch the bug
+        self.assertNotEqual(config['DEFAULT_RESULT_TTL'], QUEUES['default']['DEFAULT_RESULT_TTL'])
+        result.delete()
+
     def test_job_decorator_default_queue_result_ttl(self):
         # Ensure the default queue DEFAULT_RESULT_TTL is used when queue name is not passed
 

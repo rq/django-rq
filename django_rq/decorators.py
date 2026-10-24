@@ -63,6 +63,7 @@ def job(
         except KeyError:
             pass
     else:
+        queue_name = queue.name
         if connection is None:
             connection = queue.connection
 
