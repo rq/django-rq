@@ -323,7 +323,7 @@ def requeue_job(queue: Queue, job: Job) -> None:
             running or canceled, or if it was requeued concurrently.
     """
     status = job.get_status(refresh=False)
-    if not status or status not in REQUEUEABLE_STATUSES:
+    if status not in REQUEUEABLE_STATUSES:
         # Enqueueing a job that is already queued or running would duplicate it, and a
         # canceled or stopped one would come back from the dead.
         allowed = ', '.join(sorted(requeueable.value for requeueable in REQUEUEABLE_STATUSES))
@@ -332,12 +332,10 @@ def requeue_job(queue: Queue, job: Job) -> None:
             + f'only {allowed} jobs can be requeued.'
         )
 
-    source_registry = REGISTRY_BY_STATUS[status](queue.name, queue.connection)
+    registry = REGISTRY_BY_STATUS[status](queue.name, queue.connection)
 
-    # Claim the job by removing it from its source registry first. The ZREM is atomic and
-    # returns 0 once the job is gone, so a repeat or concurrent request cannot requeue it a
-    # second time. This is how RQ's own `BaseRegistry.requeue()` guards the same operation.
-    if not source_registry.remove(job):
+    # The atomic ZREM claims the job, so a repeat or concurrent request cannot requeue it twice.
+    if not registry.remove(job):
         raise ValueError(f'Cannot requeue job {job.id}: it was already requeued.')
 
     # `_enqueue_job` puts the job straight onto the queue, ignoring its dependencies.
