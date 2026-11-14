@@ -9,7 +9,15 @@ from rq.registry import DeferredJobRegistry, FailedJobRegistry, FinishedJobRegis
 
 from django_rq.cron import DjangoCronScheduler
 from django_rq.queues import get_queue
-from django_rq.utils import get_cron_schedulers, get_jobs, get_statistics, paginate, requeue_job
+from django_rq.utils import (
+    REGISTRY_BY_STATUS,
+    REQUEUEABLE_STATUSES,
+    get_cron_schedulers,
+    get_jobs,
+    get_statistics,
+    paginate,
+    requeue_job,
+)
 from django_rq.workers import get_worker
 from tests.fixtures import access_self, failing_job
 from tests.redis_config import REDIS_CONFIG_1
@@ -184,6 +192,9 @@ class UtilsTest(TestCase):
     @override_settings(RQ={'COMMIT_MODE': 'auto'})
     def test_requeue_job_rejects_jobs_that_are_not_waiting(self):
         """Only a job waiting in a registry can be requeued; the rest would be duplicated."""
+        # Requeueing claims the job out of its registry, so every requeueable status needs one
+        self.assertLessEqual(REQUEUEABLE_STATUSES, set(REGISTRY_BY_STATUS))
+
         queue = get_queue('django_rq_test')
         queue.connection.flushdb()
 

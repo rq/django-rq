@@ -31,15 +31,19 @@ from .templatetags.django_rq import to_localtime
 DEFAULT_ITEMS_PER_PAGE = 100
 
 # The registry a job waits in, keyed by the status that puts it there.
-_SOURCE_REGISTRIES: dict[JobStatus, type[BaseRegistry]] = {
+REGISTRY_BY_STATUS: dict[JobStatus, type[BaseRegistry]] = {
     JobStatus.DEFERRED: DeferredJobRegistry,
     JobStatus.FINISHED: FinishedJobRegistry,
     JobStatus.SCHEDULED: ScheduledJobRegistry,
     JobStatus.FAILED: FailedJobRegistry,
 }
 
-# Only a job waiting in one of the registries above has anything to requeue.
-REQUEUEABLE_STATUSES = frozenset(_SOURCE_REGISTRIES)
+REQUEUEABLE_STATUSES = {
+    JobStatus.DEFERRED,
+    JobStatus.FINISHED,
+    JobStatus.SCHEDULED,
+    JobStatus.FAILED,
+}
 
 
 def paginate(
@@ -308,14 +312,6 @@ def stop_jobs(queue: Queue, job_ids: Union[str, list[str], tuple[str, ...]]) -> 
     return stopped_job_ids, failed_to_stop_job_ids
 
 
-def _source_registry(queue: Queue, status: Optional[JobStatus]) -> Optional[BaseRegistry]:
-    """Returns the registry a job in `status` waits in, or None if it waits in none."""
-    registry_class = _SOURCE_REGISTRIES.get(status) if status is not None else None
-    if registry_class is None:
-        return None
-    return registry_class(queue.name, queue.connection)
-
-
 def requeue_job(queue: Queue, job: Job) -> None:
     """Re-enqueue a job waiting in one of RQ's registries.
 
@@ -323,18 +319,20 @@ def requeue_job(queue: Queue, job: Job) -> None:
     "run this now".
 
     Raises:
-        ValueError: if the job has nothing to requeue, because it is already queued, running
-            or canceled rather than waiting in a registry, or if it was requeued concurrently.
+        ValueError: if the job's status is not requeueable, because it is already queued,
+            running or canceled, or if it was requeued concurrently.
     """
     status = job.get_status(refresh=False)
-    source_registry = _source_registry(queue, status)
-    if source_registry is None:
+    if not status or status not in REQUEUEABLE_STATUSES:
         # Enqueueing a job that is already queued or running would duplicate it, and a
         # canceled or stopped one would come back from the dead.
+        allowed = ', '.join(sorted(requeueable.value for requeueable in REQUEUEABLE_STATUSES))
         raise ValueError(
-            f'Cannot requeue job {job.id} with status "{getattr(status, "value", status)}": only deferred, '
-            + 'scheduled, finished and failed jobs can be requeued.'
+            f'Cannot requeue job {job.id} with status "{getattr(status, "value", status)}": '
+            + f'only {allowed} jobs can be requeued.'
         )
+
+    source_registry = REGISTRY_BY_STATUS[status](queue.name, queue.connection)
 
     # Claim the job by removing it from its source registry first. The ZREM is atomic and
     # returns 0 once the job is gone, so a repeat or concurrent request cannot requeue it a
