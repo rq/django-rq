@@ -103,6 +103,7 @@ class UtilsTest(TestCase):
         self.assertEqual(data['workers'], 1)
         worker.register_death()
 
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
     def test_get_jobs(self):
         """get_jobs() works properly"""
         queue = get_queue('django_rq_test')

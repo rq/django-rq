@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from unittest import mock
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -13,7 +14,6 @@ from rq.registry import (
     FailedJobRegistry,
     FinishedJobRegistry,
     ScheduledJobRegistry,
-    StartedJobRegistry,
 )
 
 from django_rq import get_queue
@@ -514,39 +514,16 @@ class ViewTest(TestCase):
             self.assertEqual(response.status_code, 401)
 
     def test_action_stop_jobs(self):
+        """Stopping jobs sends RQ's stop-job command for each selected job."""
         queue = get_queue('django_rq_test')
         queue_index = get_queue_index('django_rq_test')
+        job_ids = [queue.enqueue(access_self).id for _ in range(3)]
 
-        # Enqueue some jobs
-        job_ids, jobs = [], []
-        worker = get_worker('django_rq_test')
-        # Due to implementation details in RQ v2.x, this test only works
-        # with a single job. This test should be changed to use mocks
-        for _ in range(1):
-            job = queue.enqueue(access_self)
-            job_ids.append(job.id)
-            jobs.append(job)
-            worker.prepare_job_execution(job)
-            worker.prepare_execution(job)
-
-        # Check if the jobs are started
-        for job_id in job_ids:
-            job = Job.fetch(job_id, connection=queue.connection)
-            self.assertEqual(job.get_status(), JobStatus.STARTED)
-
-        # Stop those jobs using the view
-        started_job_registry = StartedJobRegistry(queue.name, connection=queue.connection)
-        self.assertEqual(len(started_job_registry), len(job_ids))
-        self.client.post(reverse('admin:django_rq_actions', args=[queue_index]), {'action': 'stop', 'job_ids': job_ids})
-        for job in jobs:
-            worker.monitor_work_horse(job, queue)  # Sets the job as Failed and removes from Started
-        self.assertEqual(len(started_job_registry), 0)
-
-        canceled_job_registry = FailedJobRegistry(queue.name, connection=queue.connection)
-        self.assertEqual(len(canceled_job_registry), len(job_ids))
-
-        for job_id in job_ids:
-            self.assertTrue(job_id in canceled_job_registry)
+        with mock.patch('django_rq.utils.send_stop_job_command') as send_stop_job_command:
+            self.client.post(
+                reverse('admin:django_rq_actions', args=[queue_index]), {'action': 'stop', 'job_ids': job_ids}
+            )
+        self.assertEqual([call.args[1] for call in send_stop_job_command.call_args_list], job_ids)
 
     # def test_scheduler_jobs(self):
     #     # Override testing RQ_QUEUES
