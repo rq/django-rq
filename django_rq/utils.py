@@ -30,6 +30,17 @@ from .templatetags.django_rq import to_localtime
 
 DEFAULT_ITEMS_PER_PAGE = 100
 
+# The registry a job waits in, keyed by the status that puts it there.
+_SOURCE_REGISTRIES: dict[JobStatus, type[BaseRegistry]] = {
+    JobStatus.DEFERRED: DeferredJobRegistry,
+    JobStatus.FINISHED: FinishedJobRegistry,
+    JobStatus.SCHEDULED: ScheduledJobRegistry,
+    JobStatus.FAILED: FailedJobRegistry,
+}
+
+# Only a job waiting in one of the registries above has anything to requeue.
+REQUEUEABLE_STATUSES = frozenset(_SOURCE_REGISTRIES)
+
 
 def paginate(
     request: HttpRequest, num_items: int, items_per_page: int = DEFAULT_ITEMS_PER_PAGE
@@ -297,29 +308,42 @@ def stop_jobs(queue: Queue, job_ids: Union[str, list[str], tuple[str, ...]]) -> 
     return stopped_job_ids, failed_to_stop_job_ids
 
 
-def requeue_job(queue: Queue, job: Job) -> None:
-    """Re-enqueue a job from any source registry (failed/finished/deferred/scheduled)."""
-    status = job.get_status(refresh=False)
-    registry: Optional[BaseRegistry] = None
-    if status == JobStatus.DEFERRED:
-        registry = DeferredJobRegistry(queue.name, queue.connection)
-    elif status == JobStatus.FINISHED:
-        registry = FinishedJobRegistry(queue.name, queue.connection)
-    elif status == JobStatus.SCHEDULED:
-        registry = ScheduledJobRegistry(queue.name, queue.connection)
-    elif status == JobStatus.FAILED:
-        registry = FailedJobRegistry(queue.name, queue.connection)
+def _source_registry(queue: Queue, status: Optional[JobStatus]) -> Optional[BaseRegistry]:
+    """Returns the registry a job in `status` waits in, or None if it waits in none."""
+    registry_class = _SOURCE_REGISTRIES.get(status) if status is not None else None
+    if registry_class is None:
+        return None
+    return registry_class(queue.name, queue.connection)
 
-    with queue.connection.pipeline() as pipeline:
-        try:
-            # _enqueue_job is new in RQ 1.14, this is used to enqueue
-            # job regardless of its dependencies
-            queue._enqueue_job(job, pipeline=pipeline)
-        except AttributeError:
-            queue.enqueue_job(job, pipeline=pipeline)
-        if registry is not None:
-            registry.remove(job, pipeline=pipeline)
-        pipeline.execute()
+
+def requeue_job(queue: Queue, job: Job) -> None:
+    """Re-enqueue a job waiting in one of RQ's registries.
+
+    Dependency checks are deliberately bypassed, since requeueing from the dashboard means
+    "run this now".
+
+    Raises:
+        ValueError: if the job has nothing to requeue, because it is already queued, running
+            or canceled rather than waiting in a registry, or if it was requeued concurrently.
+    """
+    status = job.get_status(refresh=False)
+    source_registry = _source_registry(queue, status)
+    if source_registry is None:
+        # Enqueueing a job that is already queued or running would duplicate it, and a
+        # canceled or stopped one would come back from the dead.
+        raise ValueError(
+            f'Cannot requeue job {job.id} with status "{getattr(status, "value", status)}": only deferred, '
+            + 'scheduled, finished and failed jobs can be requeued.'
+        )
+
+    # Claim the job by removing it from its source registry first. The ZREM is atomic and
+    # returns 0 once the job is gone, so a repeat or concurrent request cannot requeue it a
+    # second time. This is how RQ's own `BaseRegistry.requeue()` guards the same operation.
+    if not source_registry.remove(job):
+        raise ValueError(f'Cannot requeue job {job.id}: it was already requeued.')
+
+    # `_enqueue_job` puts the job straight onto the queue, ignoring its dependencies.
+    queue._enqueue_job(job)
 
 
 def reset_db_connections() -> None:

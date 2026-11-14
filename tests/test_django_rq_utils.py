@@ -180,3 +180,39 @@ class UtilsTest(TestCase):
         self.assertEqual(deferred_job.get_status(), JobStatus.QUEUED)
         self.assertIn(deferred_job.id, queue.job_ids)
         self.assertNotIn(deferred_job.id, DeferredJobRegistry(queue.name, queue.connection).get_job_ids())
+
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_requeue_job_rejects_jobs_that_are_not_waiting(self):
+        """Only a job waiting in a registry can be requeued; the rest would be duplicated."""
+        queue = get_queue('django_rq_test')
+        queue.connection.flushdb()
+
+        # Already queued: requeueing would put the same id on the queue list twice
+        queued_job = queue.enqueue(access_self)
+        with self.assertRaises(ValueError):
+            requeue_job(queue, queued_job)
+        self.assertEqual(queue.job_ids.count(queued_job.id), 1)
+
+        # Started: a worker is running it, so requeueing would run it a second time
+        started_job = queue.enqueue(access_self)
+        queue.connection.lrem(queue.key, 0, started_job.id)
+        started_job.set_status(JobStatus.STARTED)
+        with self.assertRaises(ValueError):
+            requeue_job(queue, started_job)
+        self.assertNotIn(started_job.id, queue.job_ids)
+
+        # Canceled: requeueing would bring it back from the dead
+        canceled_job = queue.enqueue(access_self)
+        canceled_job.cancel()
+        with self.assertRaises(ValueError):
+            requeue_job(queue, canceled_job)
+        self.assertNotIn(canceled_job.id, queue.job_ids)
+
+        # Requeueing twice is rejected the second time, so a repeat request cannot duplicate it
+        failed_job = queue.enqueue(failing_job)
+        get_worker('django_rq_test').work(burst=True)
+        failed_job.refresh()
+        requeue_job(queue, failed_job)
+        with self.assertRaises(ValueError):
+            requeue_job(queue, failed_job)
+        self.assertEqual(queue.job_ids.count(failed_job.id), 1)

@@ -235,7 +235,7 @@
                 <input type="submit" value="Requeue" class="default" name="requeue">
             </form>
         {% endif %}
-        {% if not job.is_queued and not job.is_failed %}
+        {% if can_enqueue %}
             <form method="POST" action="{% rq_url 'enqueue_job' queue_index job.id %}">
                 {% csrf_token %}
                 <input type="submit" value="Enqueue" class="default" name="Enqueue">
