@@ -9,7 +9,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from rq import requeue_job
 from rq.exceptions import NoSuchJobError
-from rq.job import Job
+from rq.job import Job, JobStatus
 from rq.registry import (
     DeferredJobRegistry,
     FailedJobRegistry,
@@ -24,6 +24,7 @@ from .queues import get_queue_by_index, get_scheduler_by_index
 from .settings import get_queues_list, get_queues_map
 from .utils import (
     DEFAULT_ITEMS_PER_PAGE,
+    REQUEUEABLE_STATUSES,
     get_displayable_connection_kwargs,
     get_executions,
     get_jobs,
@@ -34,6 +35,10 @@ from .utils import (
 from .utils import (
     requeue_job as _requeue_job,
 )
+
+# Failed jobs are requeueable but get their own Requeue button, so the Enqueue button covers
+# the rest: the jobs waiting in a registry with nothing running them yet.
+_ENQUEUEABLE_STATUSES = REQUEUEABLE_STATUSES - {JobStatus.FAILED}
 
 
 def rq_viewname(request: HttpRequest, viewname: str) -> str:
@@ -389,6 +394,7 @@ def job_detail(request: HttpRequest, queue_index: int, job_id: str) -> HttpRespo
         'exc_info': exc_info,
         'dependencies': dependencies,
         'dependents': dependents,
+        'can_enqueue': job.get_status() in _ENQUEUEABLE_STATUSES,
     }
     return render(request, 'django_rq/job_detail.html', context_data)
 
@@ -587,17 +593,27 @@ def actions(request: HttpRequest, queue_index: int) -> HttpResponse:
                 messages.info(request, f'You have successfully deleted {len(job_ids)} jobs!')
             elif request.POST['action'] == 'requeue':
                 requeued = 0
+                rejected = 0
                 for job_id in job_ids:
                     try:
                         job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
                     except NoSuchJobError:
                         continue
-                    _requeue_job(queue, job)
+                    try:
+                        _requeue_job(queue, job)
+                    except ValueError:
+                        # Nothing to requeue for this job. Report it at the end rather than
+                        # abandoning the rest of the batch.
+                        rejected += 1
+                        continue
                     requeued += 1
                 messages.info(
                     request,
                     'You have successfully requeued %d job%s!' % (requeued, '' if requeued == 1 else 's'),
                 )
+                if rejected > 0:
+                    suffix = '' if rejected == 1 else 's'
+                    messages.error(request, f'{rejected} job{suffix} could not be requeued!')
             elif request.POST['action'] == 'stop':
                 stopped, failed_to_stop = stop_jobs(queue, job_ids)
                 if len(stopped) > 0:
@@ -616,8 +632,12 @@ def enqueue_job(request: HttpRequest, queue_index: int, job_id: str) -> HttpResp
     job = Job.fetch(job_id, connection=queue.connection, serializer=queue.serializer)
 
     if request.method == 'POST':
-        _requeue_job(queue, job)
-        messages.info(request, f'You have successfully enqueued {job.id}')
+        try:
+            _requeue_job(queue, job)
+        except ValueError as exc:
+            messages.error(request, str(exc))
+        else:
+            messages.info(request, f'You have successfully enqueued {job.id}')
         return redirect(rq_viewname(request, "job_detail"), queue_index, job_id)
 
     context_data = {
