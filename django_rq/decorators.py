@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Any, Callable, Optional, Protocol, TypeVar, Union, overload
+from django.conf import settings
 
 from rq.decorators import job as _rq_job
 
@@ -63,6 +64,8 @@ def job(
         except KeyError:
             pass
     else:
+        if queue.name in settings.RQ_QUEUES:
+            queue_name = queue.name
         if connection is None:
             connection = queue.connection
 
