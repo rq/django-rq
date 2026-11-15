@@ -6,7 +6,7 @@ from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.paginator import Paginator
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from django.test.client import Client
 from django.urls import reverse
 from rq.cron import CronJob
@@ -19,6 +19,7 @@ from django_rq.cron import (
     get_cron_job_history_count,
 )
 from django_rq.cron_views import ITEMS_PER_PAGE
+from tests.base import DjangoRQTestCase
 from tests.fixtures import say_hello
 
 # `CronJob.name`, `job_history_key` and `get_job_ids()` were added in RQ 2.11, but django-rq
@@ -26,7 +27,7 @@ from tests.fixtures import say_hello
 requires_job_history = skipIf(not CRON_JOB_HISTORY_SUPPORTED, 'requires RQ >= 2.11')
 
 
-class CronTest(TestCase):
+class CronTest(DjangoRQTestCase):
     def test_django_cron_scheduler_init(self):
         """Test DjangoCronScheduler can be initialized without connection."""
         scheduler = DjangoCronScheduler()
@@ -151,7 +152,7 @@ class CronTest(TestCase):
         self.assertNotEqual(scheduler2.connection_index, scheduler.connection_index)
 
 
-class CronCommandTest(TestCase):
+class CronCommandTest(DjangoRQTestCase):
     @patch('django_rq.cron.DjangoCronScheduler.start')
     def test_rqcron_command(self, mock_start):
         """Test rqcron command execution: success and import errors from load_config_from_file."""
@@ -227,9 +228,10 @@ class CronCommandTest(TestCase):
 
 
 @override_settings(ROOT_URLCONF='tests.default_with_custom_mount_urls')
-class CronViewTest(TestCase):
+class CronViewTest(DjangoRQTestCase):
     def setUp(self):
         """Set up test user and client."""
+        super().setUp()
         self.user = User.objects.create_user('foo', password='pass', is_staff=True, is_active=True)
         self.client = Client()
         self.client.login(username=self.user.username, password='pass')

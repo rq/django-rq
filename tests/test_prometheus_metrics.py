@@ -2,13 +2,14 @@ from unittest import skipIf
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from django.test.client import Client
 from django.urls import NoReverseMatch, reverse
 
 from django_rq import get_queue, thread_queue
 from django_rq.workers import get_worker
 
+from .base import DjangoRQTestCase
 from .fixtures import access_self, failing_job
 from .redis_config import REDIS_CONFIG_1
 
@@ -31,8 +32,9 @@ RQ_QUEUES = {
     ROOT_URLCONF='tests.default_with_custom_mount_urls',
     RQ={'AUTOCOMMIT': True}
 )
-class PrometheusTest(TestCase):
+class PrometheusTest(DjangoRQTestCase):
     def setUp(self):
+        super().setUp()
         self.user = User.objects.create_user('foo', password='pass')
         self.user.is_staff = True
         self.user.is_active = True
@@ -134,7 +136,7 @@ class PrometheusTest(TestCase):
 
 @skipIf(prometheus_client is not None, 'prometheus_client is installed')
 @override_settings(ROOT_URLCONF='tests.default_with_custom_mount_urls')
-class NoPrometheusTest(TestCase):
+class NoPrometheusTest(DjangoRQTestCase):
     def test_no_metrics_without_prometheus_client(self):
         with self.assertRaises(NoReverseMatch):
             reverse('admin:django_rq_metrics')

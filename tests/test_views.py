@@ -4,7 +4,7 @@ from unittest import mock
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from django.test.client import Client
 from django.urls import reverse
 from django.utils.html import escape
@@ -19,14 +19,16 @@ from rq.registry import (
 from django_rq import get_queue
 from django_rq.workers import get_worker
 
+from .base import DjangoRQTestCase
 from .fixtures import access_self, failing_job, say_hello
 from .redis_config import REDIS_CONFIG_1
 from .utils import get_queue_index
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
-class ViewTest(TestCase):
+class ViewTest(DjangoRQTestCase):
     def setUp(self):
+        super().setUp()
         self.user = User.objects.create_user('foo', password='pass')
         self.user.is_staff = True
         self.user.is_active = True

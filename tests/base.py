@@ -3,9 +3,15 @@ from typing import Any
 from django.test import TestCase
 from redis import Redis
 
+from tests.redis_config import flush_test_databases
+
 
 class DjangoRQTestCase(TestCase):
-    """Base test case for django-rq tests with common assertion helpers."""
+    """Base test case for tests that use Redis."""
+
+    def setUp(self):
+        super().setUp()
+        self.addCleanup(flush_test_databases)
 
     def assert_connection_kwargs(self, connection: Redis, config: dict[str, Any]) -> None:
         """

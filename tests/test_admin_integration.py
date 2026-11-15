@@ -6,12 +6,13 @@ URLs without requiring manual URL configuration in urls.py.
 """
 
 from django.contrib.auth.models import User
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from django.test.client import Client
 from django.urls import reverse
 
 from django_rq import get_queue
 
+from .base import DjangoRQTestCase
 from .fixtures import say_hello
 from .redis_config import REDIS_CONFIG_1
 from .utils import get_queue_index
@@ -28,10 +29,11 @@ from .utils import get_queue_index
         }
     },
 )
-class AuthenticatedAdminURLTest(TestCase):
+class AuthenticatedAdminURLTest(DjangoRQTestCase):
     """Test Django-RQ views accessible via Django admin URLs with authenticated user"""
 
     def setUp(self):
+        super().setUp()
         self.client = Client()
         # Create superuser for admin access
         self.admin_user = User.objects.create_superuser(
@@ -117,10 +119,11 @@ class AuthenticatedAdminURLTest(TestCase):
         }
     },
 )
-class UnauthenticatedAdminURLTest(TestCase):
+class UnauthenticatedAdminURLTest(DjangoRQTestCase):
     """Test Django-RQ views accessible via Django admin URLs without authentication"""
 
     def setUp(self):
+        super().setUp()
         self.client = Client()
 
     def test_requires_staff_authentication(self):

@@ -11,7 +11,7 @@ import rq
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from django.urls import reverse
 from django.utils.safestring import SafeString
 from rq import Queue
@@ -56,7 +56,7 @@ def long_running_job(timeout=10):
     return 'Done sleeping...'
 
 
-class RqStatsTest(TestCase):
+class RqStatsTest(DjangoRQTestCase):
     @override_settings(
         RQ_QUEUES={
             'default': {
@@ -79,7 +79,7 @@ class RqStatsTest(TestCase):
 FORBIDDEN_CONNECTION_KEYS = ('password', 'credential_provider', 'connection_pool', 'parser_class', 'retry', 'driver_info')
 
 
-class DisplayableConnectionKwargsTest(TestCase):
+class DisplayableConnectionKwargsTest(DjangoRQTestCase):
     def test_returns_safe_connection_metadata(self):
         """get_displayable_connection_kwargs returns operationally meaningful
         fields and never leaks secrets or redis-py internals."""
@@ -326,7 +326,7 @@ class QueuesTest(DjangoRQTestCase):
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
-class DecoratorTest(TestCase):
+class DecoratorTest(DjangoRQTestCase):
     def test_job_decorator(self):
         # Ensure that decorator passes in the right queue from settings.py
         queue_name = 'test3'
@@ -409,7 +409,7 @@ class DecoratorTest(TestCase):
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
-class WorkersTest(TestCase):
+class WorkersTest(DjangoRQTestCase):
     def test_get_worker_default(self):
         """
         By default, ``get_worker`` should return worker for ``default`` queue.
@@ -475,7 +475,7 @@ class WorkersTest(TestCase):
 
 
 @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
-class SchedulerTest(TestCase):
+class SchedulerTest(DjangoRQTestCase):
     def test_get_scheduler(self):
         """
         Ensure get_scheduler creates a scheduler instance with the right
@@ -542,7 +542,7 @@ class SchedulerTest(TestCase):
         job.delete()
 
 
-class JobClassTest(TestCase):
+class JobClassTest(DjangoRQTestCase):
     def test_default_job_class(self):
         job_class = get_job_class()
         self.assertIs(job_class, Job)
@@ -556,7 +556,7 @@ class JobClassTest(TestCase):
         self.assertIs(get_job_class('tests.fixtures.DummyJob'), DummyJob)
 
 
-class SuspendResumeTest(TestCase):
+class SuspendResumeTest(DjangoRQTestCase):
     def test_suspend_and_resume_commands(self):
         connection = get_connection()
         self.assertEqual(is_suspended(connection), 0)
@@ -566,7 +566,7 @@ class SuspendResumeTest(TestCase):
         self.assertEqual(is_suspended(connection), 0)
 
 
-class QueueClassTest(TestCase):
+class QueueClassTest(DjangoRQTestCase):
     def test_default_queue_class(self):
         queue = get_queue('test')
         self.assertIsInstance(queue, DjangoRQ)
@@ -580,7 +580,7 @@ class QueueClassTest(TestCase):
         self.assertIsInstance(queue, DummyQueue)
 
 
-class WorkerClassTest(TestCase):
+class WorkerClassTest(DjangoRQTestCase):
     def test_default_worker_class(self):
         worker = get_worker()
         self.assertIsInstance(worker, Worker)
@@ -595,7 +595,7 @@ class WorkerClassTest(TestCase):
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
-class TemplateTagTest(TestCase):
+class TemplateTagTest(DjangoRQTestCase):
     def test_job_status(self):
         queue = get_queue()
         job = queue.enqueue(say_hello)
@@ -664,7 +664,7 @@ class TemplateTagTest(TestCase):
         self.assertEqual(escaped_string, expected)
 
 
-class SchedulerPIDTest(TestCase):
+class SchedulerPIDTest(DjangoRQTestCase):
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     @override_settings(
         RQ_QUEUES={

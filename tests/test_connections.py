@@ -3,7 +3,7 @@ from unittest import mock, skipIf
 from unittest.mock import MagicMock, patch
 
 from django.conf import settings
-from django.test import TestCase, override_settings
+from django.test import override_settings
 
 from django_rq.connection_utils import (
     get_connection,
@@ -224,7 +224,7 @@ class ConnectionTest(DjangoRQTestCase):
                 self.assertIsInstance(connection.connection_pool, SentinelConnectionPool)
 
 
-class RedisCacheTest(TestCase):
+class RedisCacheTest(DjangoRQTestCase):
     @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis', 'django-redis not installed')
     @patch('django_redis.get_redis_connection')
     def test_get_queue_django_redis(self, mocked):
