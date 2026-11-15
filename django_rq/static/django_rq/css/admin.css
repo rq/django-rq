@@ -147,7 +147,8 @@ html[data-theme="dark"] {
 .rq-state-finished  { color: var(--rq-finished-fg);    background: var(--message-success-bg); }
 .rq-state-started   { color: var(--link-fg);           background: var(--message-info-bg); }
 .rq-state-queued,
-.rq-state-scheduled { color: var(--rq-queued-fg);      background: var(--message-warning-bg); }
+.rq-state-scheduled,
+.rq-state-rate_limited { color: var(--rq-queued-fg);   background: var(--message-warning-bg); }
 .rq-state-deferred  { color: var(--body-quiet-color);  background: var(--message-debug-bg); }
 
 /* ── 5. Tables ─────────────────────────────────────────────────── */

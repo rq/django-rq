@@ -102,6 +102,25 @@ class ViewTest(DjangoRQTestCase):
         response = self.client.get(reverse('admin:django_rq_job_detail', args=[queue_index, plain_job.id]))
         self.assertNotContains(response, 'Webhooks')
 
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_job_details_with_rate_limit(self):
+        """A job's rate limit is displayed on the job detail page (and hidden when absent)"""
+        from rq.rate_limit import RateLimit
+
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        job = queue.enqueue(access_self, rate_limit=RateLimit('reports', 2))
+        response = self.client.get(reverse('admin:django_rq_job_detail', args=[queue_index, job.id]))
+        self.assertContains(response, 'Rate limit')
+        self.assertContains(response, 'reports')
+        self.assertContains(response, 'Configured concurrency')
+
+        # A job without a rate limit doesn't render the rows
+        plain_job = queue.enqueue(access_self)
+        response = self.client.get(reverse('admin:django_rq_job_detail', args=[queue_index, plain_job.id]))
+        self.assertNotContains(response, 'Rate limit')
+
     def test_job_details_with_results(self):
         """Job with results is displayed properly"""
         queue = get_queue('default')
