@@ -1,5 +1,4 @@
 import datetime
-from unittest import TestCase
 from uuid import uuid4
 
 from django.core.paginator import Paginator
@@ -19,12 +18,13 @@ from django_rq.utils import (
     requeue_job,
 )
 from django_rq.workers import get_worker
+from tests.base import DjangoRQTestCase
 from tests.fixtures import access_self, failing_job
 from tests.redis_config import REDIS_CONFIG_1
 from tests.utils import flush_registry
 
 
-class UtilsTest(TestCase):
+class UtilsTest(DjangoRQTestCase):
     def test_paginate(self):
         """Page numbers come from user input, so unusable ones must not become bad offsets."""
         factory = RequestFactory()

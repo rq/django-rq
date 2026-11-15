@@ -3,18 +3,20 @@ from unittest import mock
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
-from django.test import TestCase, TransactionTestCase, override_settings
+from django.test import TransactionTestCase, override_settings
 from django.urls import reverse
 from rq.registry import ScheduledJobRegistry
 
 from django_rq import thread_queue
 from django_rq.queues import get_commit_mode, get_queue
+from tests.base import DjangoRQTestCase
 from tests.fixtures import say_hello
+from tests.redis_config import flush_test_databases
 from tests.tests import divide
 from tests.utils import flush_registry
 
 
-class CommitModeTest(TestCase):
+class CommitModeTest(DjangoRQTestCase):
     @override_settings(RQ={})
     def test_default_commit_mode_is_on_db_commit(self):
         self.assertEqual(get_commit_mode(), 'on_db_commit')
@@ -64,10 +66,11 @@ def reset_state(queue):
     thread_queue.clear()
 
 
-class ThreadQueueTest(TestCase):
+class ThreadQueueTest(DjangoRQTestCase):
     """Tests for the request_finished commit mode (the test settings default via AUTOCOMMIT=False)."""
 
     def setUp(self):
+        super().setUp()
         queue = get_queue()
         reset_state(queue)
         self.addCleanup(reset_state, queue)
@@ -222,6 +225,7 @@ class OnDbCommitTest(TransactionTestCase):
     """
 
     def setUp(self):
+        self.addCleanup(flush_test_databases)
         self.queue = get_queue()
         self.registry = ScheduledJobRegistry(queue=self.queue)
         reset_state(self.queue)
