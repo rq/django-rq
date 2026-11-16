@@ -68,6 +68,10 @@
                                     <div class="clear"></div>
                                 </th>
                                 <th scope="col" class="sortable">
+                                    <div class='text'><span>Callable</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable">
                                     <div class='text'><span>Created</span></div>
                                     <div class="clear"></div>
                                 </th>
@@ -77,10 +81,6 @@
                                 </th>
                                 <th scope="col" class="sortable">
                                     <div class='text'><span>Enqueued</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class='text'><span>Callable</span></div>
                                     <div class="clear"></div>
                                 </th>
                                 {% block extra_columns %}
@@ -98,6 +98,7 @@
                                             {{ execution.id }}
                                         </a>
                                     </th>
+                                    <td>{{ execution.job|show_func_name }}</td>
                                     <td>
                                         {% if execution.created_at %}
                                             {{ execution.created_at|timestamp_tooltip }}
@@ -113,7 +114,6 @@
                                             {{ execution.job.enqueued_at|timestamp_tooltip }}
                                         {% endif %}
                                     </td>
-                                    <td>{{ execution.job|show_func_name }}</td>
                                     {% block extra_columns_values %}
                                     {% endblock extra_columns_values %}
                                 </tr>

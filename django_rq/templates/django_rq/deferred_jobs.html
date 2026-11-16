@@ -71,6 +71,14 @@
                                     <div class='text'><span>ID</span></div>
                                     <div class="clear"></div>
                                 </th>
+                                <th scope="col" class="sortable">
+                                    <div class='text'><span>Callable</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable">
+                                    <div class='text'><span>Status</span></div>
+                                    <div class="clear"></div>
+                                </th>
                                 <th scope="col" class="sortable sorted {{ sort_direction }}">
                                     <div class="sortoptions">
                                         {% if sort_direction == 'ascending' %}
@@ -91,14 +99,6 @@
 
                                     <div class="clear"></div>
                                 </th>
-                                <th scope="col" class="sortable">
-                                    <div class='text'><span>Status</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class='text'><span>Callable</span></div>
-                                    <div class="clear"></div>
-                                </th>
                                 {% block extra_columns %}
                                 {% endblock extra_columns %}
                             </tr>
@@ -114,13 +114,13 @@
                                             {{ job.id }}
                                         </a>
                                     </th>
+                                    <td>{{ job|show_func_name }}</td>
+                                    <td>{{ job|job_status }}</td>
                                     <td>
                                         {% if job.created_at %}
                                             {{ job.created_at|timestamp_tooltip }}
                                         {% endif %}
                                     </td>
-                                    <td>{{ job|job_status }}</td>
-                                    <td>{{ job|show_func_name }}</td>
                                     {% block extra_columns_values %}
                                     {% endblock extra_columns_values %}
                                 </tr>
