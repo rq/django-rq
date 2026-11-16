@@ -189,6 +189,21 @@ html[data-theme="dark"] {
 .rq-table tbody tr.rq-clickable { cursor: pointer; }
 
 .rq-table .rq-col-job-id { width: 320px; }
+/* Widths, not content, decide where these columns start, so two stacked tables line up. */
+.rq-table .rq-col-callable { width: 250px; min-width: 250px; }
+/* Truncation lives on an inner block because CSS leaves max-width on table cells undefined,
+   and a browser that ignores it would widen the column instead of clipping. */
+.rq-table .rq-col-callable .rq-truncate {
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* Measured to fit their content, with the cells' 16px side padding on top of these widths:
+   96px for the `rate_limited` pill, the longest status these pages show in practice, and
+   92px for a queue name of ~14 characters. Longer values widen the column rather than wrap. */
+.rq-table .rq-col-queue  { width: 100px; min-width: 100px; }
+.rq-table .rq-col-status { width: 100px; min-width: 100px; }
 
 .rq-panel > .rq-table th,
 .rq-panel > .rq-table td { padding-left: 16px; padding-right: 16px; }
