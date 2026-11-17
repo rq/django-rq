@@ -415,7 +415,6 @@ class DecoratorTest(TestCase):
         self.assertNotEqual(config['DEFAULT_RESULT_TTL'], QUEUES['default']['DEFAULT_RESULT_TTL'])
         result.delete()
 
-    def test_job_decorator_unconfigured_queue_object(self):
         # A Queue object not in RQ_QUEUES must not raise and falls back to the default queue's TTL
         queue = Queue('hello_world', connection=get_connection())
 
