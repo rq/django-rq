@@ -86,8 +86,11 @@
                 </table>
             </div>
             <div class="rq-table-foot">A job holds its slot from admission until it finishes, so queued and executing jobs both count.</div>
-        {% else %}
+        {% elif not slot_holder_count %}
             <div class="rq-table-foot">No jobs are holding a slot</div>
+        {% endif %}
+        {% if expired_slot_count %}
+            <div class="rq-table-foot">{{ expired_slot_count }} slot{{ expired_slot_count|pluralize }} {{ expired_slot_count|pluralize:"is,are" }} held by {{ expired_slot_count|pluralize:"a job,jobs" }} that no longer {{ expired_slot_count|pluralize:"exists,exist" }}. Workers release {{ expired_slot_count|pluralize:"it,them" }} during maintenance.</div>
         {% endif %}
     </div>
 
@@ -132,6 +135,10 @@
                     </tbody>
                 </table>
             </div>
+        {% elif waiting_count %}
+            <div class="rq-table-foot">The jobs on this page no longer exist. RQ drops them when they reach the front of the queue.</div>
+        {% endif %}
+        {% if waiting_count %}
             <p class="paginator">
                 {% if page_range|length > 1 %}
                     {% for p in page_range %}

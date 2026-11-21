@@ -422,6 +422,7 @@ def rate_limit_detail(request: HttpRequest, queue_index: int, rate_limit_key: st
         'concurrency_limit': registry.concurrency,
         'slot_holders': slot_holders,
         'slot_holder_count': slot_holder_count,
+        'expired_slot_count': slot_holder_count - len(slot_holders),
         'waiting_jobs': waiting_jobs,
         'waiting_count': waiting_count,
         'page': page,

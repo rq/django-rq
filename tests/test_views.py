@@ -156,6 +156,35 @@ class ViewTest(DjangoRQTestCase):
         self.assertIsNone(response.context['slot_holders'][0]['enqueued_at'])
 
     @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_rate_limit_detail_with_expired_jobs(self):
+        """Registry entries whose job has expired keep the counts honest and the pages reachable"""
+        from rq.rate_limit import RateLimit, RateLimitRegistry
+
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        # One job holds the only slot; 101 wait, so one of them is alone on page 2. Read which from
+        # the registry, since jobs enqueued in the same instant are ordered by id, not by enqueue.
+        rate_limit = RateLimit('reports', 1)
+        slot_holder = queue.enqueue(access_self, rate_limit=rate_limit)
+        for _ in range(101):
+            queue.enqueue(access_self, rate_limit=rate_limit)
+        registry = RateLimitRegistry('reports', queue.connection)
+        (page_two_id,) = queue.connection.zrange(registry.rate_limited_key, 100, 100)
+        queue.connection.delete(slot_holder.key, Job.key_for(page_two_id.decode()))
+
+        url = reverse('admin:django_rq_rate_limit_detail', args=[queue_index, 'reports'])
+        response = self.client.get(url, {'page': 2})
+        self.assertEqual(response.context['waiting_jobs'], [])
+        self.assertContains(response, 'The jobs on this page no longer exist')
+        self.assertContains(response, 'href="?page=1"')
+        self.assertNotContains(response, 'No jobs are waiting for a slot')
+
+        self.assertEqual(response.context['expired_slot_count'], 1)
+        self.assertContains(response, '1 slot is held by a job that no longer exists')
+        self.assertNotContains(response, 'No jobs are holding a slot')
+
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
     def test_rate_limit_detail_404s_for_unusable_keys(self):
         """Missing, unregistered and type-clashing keys 404 rather than rendering an empty page"""
         from rq.rate_limit import RateLimit
