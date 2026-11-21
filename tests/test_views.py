@@ -121,6 +121,96 @@ class ViewTest(DjangoRQTestCase):
         response = self.client.get(reverse('admin:django_rq_job_detail', args=[queue_index, plain_job.id]))
         self.assertNotContains(response, 'Rate limit')
 
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_rate_limit_detail(self):
+        """The rate limit page lists the jobs holding a slot and those waiting for one"""
+        from rq.rate_limit import RateLimit
+
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        # concurrency=1: the first job takes the only slot, the second waits for it.
+        rate_limit = RateLimit('reports', 1)
+        slot_holder = queue.enqueue(access_self, rate_limit=rate_limit)
+        waiting_job = queue.enqueue(access_self, rate_limit=rate_limit)
+
+        url = reverse('admin:django_rq_rate_limit_detail', args=[queue_index, 'reports'])
+        response = self.client.get(url)
+        self.assertEqual(response.context['concurrency_limit'], 1)
+        self.assertEqual([job['id'] for job in response.context['slot_holders']], [slot_holder.id])
+        self.assertEqual(response.context['slot_holder_count'], 1)
+        self.assertEqual([job['id'] for job in response.context['waiting_jobs']], [waiting_job.id])
+        self.assertEqual(response.context['waiting_count'], 1)
+        # Jobs link through their own queue, which here is the one in the URL
+        self.assertEqual(response.context['slot_holders'][0]['queue_index'], queue_index)
+        self.assertEqual(response.context['slot_holders'][0]['callable'], 'tests.fixtures.access_self')
+        self.assertContains(response, 'tests.fixtures.access_self')
+
+        # Unreadable fields cost the value, not the page: a payload this queue's serializer cannot
+        # read, and a timestamp in no format RQ knows.
+        queue.connection.hset(waiting_job.key, 'data', b'not a payload')
+        queue.connection.hset(slot_holder.key, 'enqueued_at', 'garbage')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['waiting_jobs'][0]['callable'])
+        self.assertIsNone(response.context['slot_holders'][0]['enqueued_at'])
+
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_rate_limit_detail_404s_for_unusable_keys(self):
+        """Missing, unregistered and type-clashing keys 404 rather than rendering an empty page"""
+        from rq.rate_limit import RateLimit
+
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+        queue.enqueue(access_self, rate_limit=RateLimit('reports', 1))
+
+        unknown = reverse('admin:django_rq_rate_limit_detail', args=[queue_index, 'nope'])
+        self.assertEqual(self.client.get(unknown).status_code, 404)
+        # `rq:rl:reports:allowed` is an existing sorted set, so reading it as this key's config
+        # hash would raise WRONGTYPE if membership weren't checked first.
+        clashing = reverse('admin:django_rq_rate_limit_detail', args=[queue_index, 'reports:allowed'])
+        self.assertEqual(self.client.get(clashing).status_code, 404)
+
+        missing_queue = reverse('admin:django_rq_rate_limit_detail', args=[len(settings.RQ_QUEUES), 'reports'])
+        self.assertEqual(self.client.get(missing_queue).status_code, 404)
+
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_rate_limit_key_is_only_linked_while_its_registry_exists(self):
+        """The job detail page keeps showing a key whose registry has gone, without a link"""
+        from rq.rate_limit import RateLimit, RateLimitRegistry
+
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+        job = queue.enqueue(access_self, rate_limit=RateLimit('reports', 1))
+
+        url = reverse('admin:django_rq_job_detail', args=[queue_index, job.id])
+        rate_limit_url = reverse('admin:django_rq_rate_limit_detail', args=[queue_index, 'reports'])
+        self.assertContains(self.client.get(url), rate_limit_url)
+
+        queue.connection.srem(RateLimitRegistry.rl_keys_key, 'reports')
+        response = self.client.get(url)
+        self.assertContains(response, 'reports')
+        self.assertNotContains(response, rate_limit_url)
+
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_rate_limit_keys_with_awkward_characters(self):
+        """A key with a slash resolves; one a URL path can't carry leaves the page link-free"""
+        from rq.rate_limit import RateLimit
+
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        queue.enqueue(access_self, rate_limit=RateLimit('tenant/42', 1))
+        url = reverse('admin:django_rq_rate_limit_detail', args=[queue_index, 'tenant/42'])
+        self.assertEqual(self.client.get(url).context['rate_limit_key'], 'tenant/42')
+
+        # A newline can't be reversed into a path, so job detail still renders, just without
+        # the link, rather than raising NoReverseMatch.
+        job = queue.enqueue(access_self, rate_limit=RateLimit('two\nlines', 1))
+        response = self.client.get(reverse('admin:django_rq_job_detail', args=[queue_index, job.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['rate_limit_url'])
+
     def test_job_details_with_results(self):
         """Job with results is displayed properly"""
         queue = get_queue('default')

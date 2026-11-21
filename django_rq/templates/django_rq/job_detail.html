@@ -55,7 +55,13 @@
                     {% if job.rate_limit_key %}
                     <div class="rq-field">
                         <div class="rq-field-label">Rate limit</div>
-                        <div class="rq-field-value rq-mono">{{ job.rate_limit_key }}</div>
+                        <div class="rq-field-value rq-mono">
+                            {% if rate_limit_url %}
+                                <a href="{{ rate_limit_url }}">{{ job.rate_limit_key }}</a>
+                            {% else %}
+                                {{ job.rate_limit_key }}
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">Configured concurrency</div>

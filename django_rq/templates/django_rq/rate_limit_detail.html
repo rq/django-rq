@@ -1,0 +1,157 @@
+{% extends "admin/base_site.html" %}
+
+{% load static django_rq %}
+
+{% block title %}Rate limit {{ rate_limit_key }} {{ block.super }}{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/forms.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'django_rq/css/admin.css' %}">
+{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+        <a href="{% rq_url 'home' %}">Django RQ</a> &rsaquo;
+        <a href="{% rq_url 'queue_details' queue_index %}">{{ queue.name }}</a> &rsaquo;
+        <span>{{ rate_limit_key }}</span>
+    </div>
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block object-tools %}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+
+    <div class="rq-title-row">
+        <h1>Rate limit <span class="rq-mono">{{ rate_limit_key }}</span></h1>
+    </div>
+
+    <div class="rq-panel">
+        <div class="rq-panel-header">Rate limit</div>
+        <div class="rq-panel-body">
+            <div class="rq-field">
+                <div class="rq-field-label">Slots in use</div>
+                <div class="rq-field-value">{{ slot_holder_count }} of {{ concurrency_limit }}</div>
+            </div>
+            <div class="rq-field">
+                <div class="rq-field-label">Jobs Waiting</div>
+                <div class="rq-field-value">{{ waiting_count }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rq-panel">
+        <div class="rq-panel-header">Jobs holding a slot</div>
+        {% if slot_holders %}
+            <div class="rq-table-scroll">
+                <table class="rq-table">
+                    <thead>
+                        <tr>
+                            <th class="rq-col-job-id">Job ID</th>
+                            <th class="rq-col-callable">Callable</th>
+                            <th class="rq-col-queue">Queue</th>
+                            <th class="rq-col-status">Status</th>
+                            <th>Enqueued</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in slot_holders %}
+                        <tr>
+                            <td class="rq-mono rq-nowrap">
+                                {% if job.queue_index is not None %}
+                                    <a href="{% rq_url 'job_detail' job.queue_index job.id %}">{{ job.id }}</a>
+                                {% else %}
+                                    {{ job.id }}
+                                {% endif %}
+                            </td>
+                            <td class="rq-col-callable rq-mono"><div class="rq-truncate" title="{{ job.callable|default:'' }}">{{ job.callable|default:"—" }}</div></td>
+                            <td class="rq-nowrap">
+                                {% if job.queue_index is not None %}
+                                    <a href="{% rq_url 'queue_details' job.queue_index %}">{{ job.origin }}</a>
+                                {% else %}
+                                    {{ job.origin }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="rq-pill rq-pill-dense rq-state-{% if job.status == 'queued' or job.status == 'finished' or job.status == 'failed' or job.status == 'started' or job.status == 'deferred' or job.status == 'scheduled' or job.status == 'rate_limited' %}{{ job.status }}{% else %}deferred{% endif %}">{{ job.status }}</span>
+                            </td>
+                            <td class="rq-nowrap">{{ job.enqueued_at|timestamp_tooltip }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="rq-table-foot">A job holds its slot from admission until it finishes, so queued and executing jobs both count.</div>
+        {% else %}
+            <div class="rq-table-foot">No jobs are holding a slot</div>
+        {% endif %}
+    </div>
+
+    <div class="rq-panel">
+        <div class="rq-panel-header">Jobs waiting for a slot</div>
+        {% if waiting_jobs %}
+            <div class="rq-table-scroll">
+                <table class="rq-table">
+                    <thead>
+                        <tr>
+                            <th class="rq-col-job-id">Job ID</th>
+                            <th class="rq-col-callable">Callable</th>
+                            <th class="rq-col-queue">Queue</th>
+                            <th class="rq-col-status">Status</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in waiting_jobs %}
+                        <tr>
+                            <td class="rq-mono rq-nowrap">
+                                {% if job.queue_index is not None %}
+                                    <a href="{% rq_url 'job_detail' job.queue_index job.id %}">{{ job.id }}</a>
+                                {% else %}
+                                    {{ job.id }}
+                                {% endif %}
+                            </td>
+                            <td class="rq-col-callable rq-mono"><div class="rq-truncate" title="{{ job.callable|default:'' }}">{{ job.callable|default:"—" }}</div></td>
+                            <td class="rq-nowrap">
+                                {% if job.queue_index is not None %}
+                                    <a href="{% rq_url 'queue_details' job.queue_index %}">{{ job.origin }}</a>
+                                {% else %}
+                                    {{ job.origin }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="rq-pill rq-pill-dense rq-state-{% if job.status == 'queued' or job.status == 'finished' or job.status == 'failed' or job.status == 'started' or job.status == 'deferred' or job.status == 'scheduled' or job.status == 'rate_limited' %}{{ job.status }}{% else %}deferred{% endif %}">{{ job.status }}</span>
+                            </td>
+                            <td class="rq-nowrap">{{ job.created_at|timestamp_tooltip }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="paginator">
+                {% if page_range|length > 1 %}
+                    {% for p in page_range %}
+                        {% if p|is_ellipsis %}
+                            {{ p }}
+                        {% elif p == page %}
+                            <span class="this-page">{{ p }}</span>
+                        {% elif forloop.last %}
+                            <a href="?page={{ p }}" class="end">{{ p }}</a>
+                        {% else %}
+                            <a href="?page={{ p }}">{{ p }}</a>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+                {{ waiting_count }} job{{ waiting_count|pluralize }}
+            </p>
+        {% else %}
+            <div class="rq-table-foot">No jobs are waiting for a slot</div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
