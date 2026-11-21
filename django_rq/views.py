@@ -1,15 +1,18 @@
-from typing import Any, cast
+import zlib
+from datetime import datetime
+from typing import Any, Optional, cast
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
-from rq import requeue_job
+from rq import Queue, requeue_job
 from rq.exceptions import NoSuchJobError
 from rq.job import Job, JobStatus
+from rq.rate_limit import RateLimitRegistry
 from rq.registry import (
     DeferredJobRegistry,
     FailedJobRegistry,
@@ -17,6 +20,7 @@ from rq.registry import (
     ScheduledJobRegistry,
     StartedJobRegistry,
 )
+from rq.utils import as_text, utcparse
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
@@ -277,6 +281,165 @@ def workers(request: HttpRequest, queue_index: int) -> HttpResponse:
     return render(request, 'django_rq/workers.html', context_data)
 
 
+def _callable_name(raw_data: Optional[bytes], serializer: Any) -> Optional[str]:
+    """A job's `func_name`, or None when its payload cannot be read.
+
+    The name only exists inside the serialized payload, which may not decode with this serializer.
+    """
+    if not raw_data:
+        return None
+    try:
+        payload = zlib.decompress(raw_data)
+    except zlib.error:
+        # RQ compresses `data` on write but still accepts an uncompressed value on read.
+        payload = raw_data
+    try:
+        return serializer.loads(payload)[0]
+    except Exception:
+        return None
+
+
+def _parse_timestamp(value: Optional[str]) -> Optional[datetime]:
+    """A job timestamp, or None when the field is missing or unreadable."""
+    if not value:
+        return None
+    try:
+        return utcparse(value)
+    except ValueError:
+        return None
+
+
+def _get_job_summaries(queue: Queue, job_ids: list[str]) -> list[dict[str, Any]]:
+    """Read a few fields per job straight from Redis, skipping jobs that no longer exist.
+
+    Not `Job.fetch_many()`, because `Job.restore()` raises on any hash it cannot parse and a rate
+    limit registry collects stale entries. Payloads decode with their origin queue's serializer.
+    """
+    # No MULTI: a read-only batch only needs the saved round trips.
+    with queue.connection.pipeline(transaction=False) as pipeline:
+        for job_id in job_ids:
+            pipeline.hmget(Job.key_for(job_id), ('origin', 'status', 'created_at', 'enqueued_at', 'data'))
+        rows = pipeline.execute()
+
+    queues_map = get_queues_map()
+    serializer_by_origin: dict[str, Any] = {}
+    summaries = []
+    for job_id, row in zip(job_ids, rows):
+        origin, status, created_at, enqueued_at = (as_text(value) if value else None for value in row[:4])
+        if origin is None:
+            # Expired or deleted. Releasing the slot it may still hold is the worker's job.
+            continue
+        if origin not in serializer_by_origin:
+            index = queues_map.get(origin)
+            serializer_by_origin[origin] = (
+                get_queue_by_index(index).serializer if index is not None else queue.serializer
+            )
+        summaries.append(
+            {
+                'id': job_id,
+                'origin': origin,
+                'callable': _callable_name(row[4], serializer_by_origin[origin]),
+                'status': status,
+                'created_at': _parse_timestamp(created_at),
+                'enqueued_at': _parse_timestamp(enqueued_at),
+            }
+        )
+    return summaries
+
+
+def _connection_identity(queue: Queue) -> Optional[tuple]:
+    """Identifies the Redis database a queue points at, or None if it cannot be established.
+
+    Compared per connection type, since `host:port/db` alone would give two different Unix
+    sockets the same identity and would conflate Sentinel services sharing an endpoint.
+    """
+    kwargs = get_displayable_connection_kwargs(queue)
+    db = kwargs.get('db', 0)
+    socket_path = kwargs.get('unix_socket_path') or kwargs.get('path')
+    if socket_path:
+        return ('unix', socket_path, db)
+    if kwargs.get('service_name') or kwargs.get('sentinels'):
+        return ('sentinel', tuple(kwargs.get('sentinels') or ()), kwargs.get('service_name'), db)
+    if kwargs.get('host') and kwargs.get('port'):
+        return ('tcp', kwargs['host'], kwargs['port'], db)
+    return None
+
+
+@never_cache
+@staff_member_required
+def rate_limit_detail(request: HttpRequest, queue_index: int, rate_limit_key: str) -> HttpResponse:
+    """Show a rate limit key: its concurrency, the jobs holding a slot and those waiting.
+
+    The queue index only supplies the Redis connection and a fallback serializer. A rate limit
+    key is scoped to a connection rather than to a queue, so the jobs listed here may come from
+    several queues and each row links through its own `origin`.
+    """
+    try:
+        queue = get_queue_by_index(queue_index)
+    except IndexError:
+        raise Http404(f"Couldn't find queue with this index: {queue_index}")
+
+    connection = queue.connection
+    # Check membership first: a key like "reports:allowed" would otherwise read another key's
+    # sorted set as its config hash and raise WRONGTYPE.
+    if not connection.sismember(RateLimitRegistry.rl_keys_key, rate_limit_key):
+        raise Http404(f"Couldn't find rate limit key: {rate_limit_key}")
+
+    registry = RateLimitRegistry(rate_limit_key, connection)
+    tab = 'waiting' if request.GET.get('tab') == 'waiting' else 'holding'
+
+    # Both counts in one round trip: read separately, a promotion landing between them would
+    # render a pair that doesn't add up.
+    with connection.pipeline(transaction=False) as pipeline:
+        pipeline.zcard(registry.allowed_key)
+        pipeline.zcard(registry.rate_limited_key)
+        slot_holder_count, waiting_count = pipeline.execute()
+
+    # `tab_count` counts the selected tab's registry entries, so it includes any whose job has
+    # expired and therefore has no row to show.
+    if tab == 'waiting':
+        entries_key, tab_count = registry.rate_limited_key, waiting_count
+    else:
+        entries_key, tab_count = registry.allowed_key, slot_holder_count
+
+    page, page_range, offset = paginate(request, tab_count, DEFAULT_ITEMS_PER_PAGE)
+    jobs: list[dict[str, Any]] = []
+    if tab_count > 0:
+        # Only the current page is read, and a raw ZRANGE returns bytes, which `Job.key_for`
+        # cannot concatenate.
+        raw_ids = connection.zrange(entries_key, offset, offset + DEFAULT_ITEMS_PER_PAGE - 1)
+        jobs = _get_job_summaries(queue, [as_text(job_id) for job_id in raw_ids])
+
+    # Link only through a queue on this Redis database, or job detail would open the wrong connection.
+    identity = _connection_identity(queue)
+    queues_map = get_queues_map()
+    index_by_origin: dict[str, int] = {}
+    if identity is not None:
+        for origin in {summary['origin'] for summary in jobs}:
+            index = queues_map.get(origin)
+            if index is not None and _connection_identity(get_queue_by_index(index)) == identity:
+                index_by_origin[origin] = index
+    for summary in jobs:
+        summary['queue_index'] = index_by_origin.get(summary['origin'])
+
+    context_data = {
+        **each_context(request),
+        'queue': queue,
+        'queue_index': queue_index,
+        'rate_limit_key': rate_limit_key,
+        # Live, so it can differ from a job's saved `rate_limit_concurrency`.
+        'concurrency_limit': registry.concurrency,
+        'tab': tab,
+        'jobs': jobs,
+        'slot_holder_count': slot_holder_count,
+        'waiting_count': waiting_count,
+        'tab_count': tab_count,
+        'page': page,
+        'page_range': page_range,
+    }
+    return render(request, 'django_rq/rate_limit_detail.html', context_data)
+
+
 @never_cache
 @staff_member_required
 def worker_details(request: HttpRequest, queue_index: int, key: str) -> HttpResponse:
@@ -338,6 +501,24 @@ def deferred_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
     return render(request, 'django_rq/deferred_jobs.html', context_data)
 
 
+def _rate_limit_url(request: HttpRequest, queue: Queue, queue_index: int, job: Job) -> Optional[str]:
+    """URL of the job's rate limit page, or None when there is nothing to link to.
+
+    None covers a job with no rate limit, and one whose registry has drained or does not exist
+    yet, since the page 404s for an unregistered key. It also covers a key that cannot go in a
+    URL path at all, such as one containing a newline: an unhandled NoReverseMatch would take
+    this whole page down over a cosmetic link.
+    """
+    if not job.rate_limit_key:
+        return None
+    if not queue.connection.sismember(RateLimitRegistry.rl_keys_key, job.rate_limit_key):
+        return None
+    try:
+        return reverse(rq_viewname(request, 'rate_limit_detail'), args=[queue_index, job.rate_limit_key])
+    except NoReverseMatch:
+        return None
+
+
 @never_cache
 @staff_member_required
 def job_detail(request: HttpRequest, queue_index: int, job_id: str) -> HttpResponse:
@@ -395,6 +576,7 @@ def job_detail(request: HttpRequest, queue_index: int, job_id: str) -> HttpRespo
         'dependencies': dependencies,
         'dependents': dependents,
         'can_enqueue': job.get_status() in _ENQUEUEABLE_STATUSES,
+        'rate_limit_url': _rate_limit_url(request, queue, queue_index, job),
     }
     return render(request, 'django_rq/job_detail.html', context_data)
 

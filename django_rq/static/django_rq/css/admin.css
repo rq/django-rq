@@ -147,7 +147,8 @@ html[data-theme="dark"] {
 .rq-state-finished  { color: var(--rq-finished-fg);    background: var(--message-success-bg); }
 .rq-state-started   { color: var(--link-fg);           background: var(--message-info-bg); }
 .rq-state-queued,
-.rq-state-scheduled { color: var(--rq-queued-fg);      background: var(--message-warning-bg); }
+.rq-state-scheduled,
+.rq-state-rate_limited { color: var(--rq-queued-fg);   background: var(--message-warning-bg); }
 .rq-state-deferred  { color: var(--body-quiet-color);  background: var(--message-debug-bg); }
 
 /* ── 5. Tables ─────────────────────────────────────────────────── */
@@ -188,22 +189,8 @@ html[data-theme="dark"] {
 }
 .rq-table tbody tr.rq-clickable { cursor: pointer; }
 
+/* Width, not content, decides where this column ends, so two stacked tables line up. */
 .rq-table .rq-col-job-id { width: 320px; }
-/* Widths, not content, decide where these columns start, so two stacked tables line up. */
-.rq-table .rq-col-callable { width: 250px; min-width: 250px; }
-/* Truncation lives on an inner block because CSS leaves max-width on table cells undefined,
-   and a browser that ignores it would widen the column instead of clipping. */
-.rq-table .rq-col-callable .rq-truncate {
-    max-width: 250px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-/* Measured to fit their content, with the cells' 16px side padding on top of these widths:
-   96px for the `rate_limited` pill, the longest status these pages show in practice, and
-   92px for a queue name of ~14 characters. Longer values widen the column rather than wrap. */
-.rq-table .rq-col-queue  { width: 100px; min-width: 100px; }
-.rq-table .rq-col-status { width: 100px; min-width: 100px; }
 
 .rq-panel > .rq-table th,
 .rq-panel > .rq-table td { padding-left: 16px; padding-right: 16px; }
@@ -216,6 +203,40 @@ html[data-theme="dark"] {
     border-top: 1px solid var(--hairline-color);
     font-size: 11.5px;
     color: var(--body-quiet-color);
+}
+
+/* ── 5b. Tabs ──────────────────────────────────────────────────── */
+/* Page links, not ARIA tabs: the active one is marked with `aria-current="page"`. */
+.rq-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--hairline-color);
+    background: var(--darkened-bg);
+}
+.rq-tab {
+    padding: 9px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--body-quiet-color);
+    text-decoration: none;
+    /* Transparent rather than absent, so the active tab's border doesn't shift the text. */
+    border-bottom: 2px solid transparent;
+}
+.rq-tab:hover { color: var(--body-fg); }
+.rq-tab[aria-current] {
+    color: var(--link-fg);
+    background: var(--body-bg);
+    border-bottom-color: var(--link-fg);
+}
+.rq-tab-count {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-size: 10.5px;
+    color: var(--body-quiet-color);
+    background: var(--selected-bg);
 }
 
 /* Django admin's stock paginator, indented to line up with the panel's contents. */
