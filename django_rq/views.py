@@ -386,31 +386,40 @@ def rate_limit_detail(request: HttpRequest, queue_index: int, rate_limit_key: st
         raise Http404(f"Couldn't find rate limit key: {rate_limit_key}")
 
     registry = RateLimitRegistry(rate_limit_key, connection)
+    tab = 'waiting' if request.GET.get('tab') == 'waiting' else 'holding'
 
-    # Both counts come from the registry, so they can exceed the rows shown once expired jobs drop out.
-    slot_holder_ids = registry.get_allowed_job_ids()
-    slot_holder_count = len(slot_holder_ids)
-    slot_holders = _get_job_summaries(queue, slot_holder_ids)
+    # Both counts in one round trip: read separately, a promotion landing between them would
+    # render a pair that doesn't add up.
+    with connection.pipeline(transaction=False) as pipeline:
+        pipeline.zcard(registry.allowed_key)
+        pipeline.zcard(registry.rate_limited_key)
+        slot_holder_count, waiting_count = pipeline.execute()
 
-    waiting_count = registry.get_rate_limited_job_count()
-    page, page_range, offset = paginate(request, waiting_count)
-    waiting_jobs: list[dict[str, Any]] = []
-    if waiting_count > 0:
-        # `get_rate_limited_job_ids()` takes no offset, and a raw ZRANGE returns bytes, which
-        # `Job.key_for` cannot concatenate.
-        raw_ids = connection.zrange(registry.rate_limited_key, offset, offset + DEFAULT_ITEMS_PER_PAGE - 1)
-        waiting_jobs = _get_job_summaries(queue, [as_text(job_id) for job_id in raw_ids])
+    # `tab_count` counts the selected tab's registry entries, so it includes any whose job has
+    # expired and therefore has no row to show.
+    if tab == 'waiting':
+        entries_key, tab_count = registry.rate_limited_key, waiting_count
+    else:
+        entries_key, tab_count = registry.allowed_key, slot_holder_count
+
+    page, page_range, offset = paginate(request, tab_count, DEFAULT_ITEMS_PER_PAGE)
+    jobs: list[dict[str, Any]] = []
+    if tab_count > 0:
+        # Only the current page is read, and a raw ZRANGE returns bytes, which `Job.key_for`
+        # cannot concatenate.
+        raw_ids = connection.zrange(entries_key, offset, offset + DEFAULT_ITEMS_PER_PAGE - 1)
+        jobs = _get_job_summaries(queue, [as_text(job_id) for job_id in raw_ids])
 
     # Link only through a queue on this Redis database, or job detail would open the wrong connection.
     identity = _connection_identity(queue)
     queues_map = get_queues_map()
     index_by_origin: dict[str, int] = {}
     if identity is not None:
-        for origin in {summary['origin'] for summary in slot_holders + waiting_jobs}:
+        for origin in {summary['origin'] for summary in jobs}:
             index = queues_map.get(origin)
             if index is not None and _connection_identity(get_queue_by_index(index)) == identity:
                 index_by_origin[origin] = index
-    for summary in slot_holders + waiting_jobs:
+    for summary in jobs:
         summary['queue_index'] = index_by_origin.get(summary['origin'])
 
     context_data = {
@@ -420,11 +429,11 @@ def rate_limit_detail(request: HttpRequest, queue_index: int, rate_limit_key: st
         'rate_limit_key': rate_limit_key,
         # Live, so it can differ from a job's saved `rate_limit_concurrency`.
         'concurrency_limit': registry.concurrency,
-        'slot_holders': slot_holders,
+        'tab': tab,
+        'jobs': jobs,
         'slot_holder_count': slot_holder_count,
-        'expired_slot_count': slot_holder_count - len(slot_holders),
-        'waiting_jobs': waiting_jobs,
         'waiting_count': waiting_count,
+        'tab_count': tab_count,
         'page': page,
         'page_range': page_range,
     }
