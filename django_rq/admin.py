@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Any, Optional
+from typing import Any
 
 from django.contrib import admin
 from django.http.request import HttpRequest
@@ -14,7 +14,7 @@ class QueueAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False  # Hide the admin "+ Add" link for Queues
 
-    def has_change_permission(self, request: HttpRequest, obj: Optional[Any] = None) -> bool:
+    def has_change_permission(self, request: HttpRequest, obj: Any | None = None) -> bool:
         return True
 
     def has_module_permission(self, request: HttpRequest):
@@ -30,7 +30,7 @@ class QueueAdmin(admin.ModelAdmin):
         """
         return request.user.has_module_perms('django_rq')  # type: ignore[union-attr]
 
-    def changelist_view(self, request: HttpRequest, extra_context: Optional[dict[str, Any]] = None) -> HttpResponse:
+    def changelist_view(self, request: HttpRequest, extra_context: dict[str, Any] | None = None) -> HttpResponse:
         """The 'change list' admin view for this model."""
         # proxy request to stats view
         return stats_views.stats(request)

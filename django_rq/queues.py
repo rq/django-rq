@@ -1,6 +1,7 @@
 import warnings
+from collections.abc import Callable
 from functools import partial
-from typing import Any, Callable, Optional, Union, cast
+from typing import Any, cast
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -46,8 +47,8 @@ def get_commit_mode() -> str:
 
 
 def get_queue_class(
-    config: Optional[dict[str, Any]] = None,
-    queue_class: Optional[Union[str, type[Queue]]] = None,
+    config: dict[str, Any] | None = None,
+    queue_class: str | type[Queue] | None = None,
 ) -> type[Queue]:
     """
     Return queue class from config or from RQ settings, otherwise return DjangoRQ.
@@ -99,7 +100,7 @@ class DjangoRQ(Queue):
         """
         return getattr(super(), django_rq_method)(*args, **kwargs)
 
-    def _enqueue_or_defer(self, django_rq_method: str, *args: Any, **kwargs: Any) -> Optional[Job]:
+    def _enqueue_or_defer(self, django_rq_method: str, *args: Any, **kwargs: Any) -> Job | None:
         """
         Run the named RQ method now, or defer it according to this queue's commit mode.
 
@@ -138,13 +139,13 @@ class DjangoRQ(Queue):
 
 def get_queue(
     name: str = 'default',
-    default_timeout: Optional[int] = None,
-    is_async: Optional[bool] = None,
-    autocommit: Optional[bool] = None,
-    commit_mode: Optional[str] = None,
-    connection: Optional[Redis] = None,
-    queue_class: Optional[Union[str, type[Queue]]] = None,
-    job_class: Optional[Union[str, type[Job]]] = None,
+    default_timeout: int | None = None,
+    is_async: bool | None = None,
+    autocommit: bool | None = None,
+    commit_mode: str | None = None,
+    connection: Redis | None = None,
+    queue_class: str | type[Queue] | None = None,
+    job_class: str | type[Job] | None = None,
     serializer: Any = None,
     **kwargs: Any,
 ) -> Queue:
@@ -238,7 +239,7 @@ def enqueue(func: Callable, *args, **kwargs) -> Job:
     return get_queue().enqueue(func, *args, **kwargs)
 
 
-def get_result_ttl(name: str = 'default') -> Optional[int]:
+def get_result_ttl(name: str = 'default') -> int | None:
     """
     Returns the result ttl from RQ_QUEUES if found, otherwise from RQ
     """
@@ -278,9 +279,9 @@ try:
 
     def get_scheduler(
         name: str = 'default',
-        queue: Optional[Queue] = None,
+        queue: Queue | None = None,
         interval: int = 60,
-        connection: Optional[Redis] = None,
+        connection: Redis | None = None,
     ) -> DjangoScheduler:
         """
         Returns an RQ Scheduler instance using parameters defined in

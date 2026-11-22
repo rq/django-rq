@@ -1,8 +1,8 @@
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
 from functools import cached_property
-from typing import Any, Callable, Optional, cast
+from typing import Any, cast
 
 from redis import Redis
 from rq.cron import CronJob, CronScheduler
@@ -38,7 +38,7 @@ def get_cron_job_history(
     return [(as_text(job_id), datetime.fromtimestamp(score, tz=timezone.utc)) for job_id, score in entries]
 
 
-def get_cron_job_data(cron_job: CronJob, queues_map: Optional[dict[str, int]] = None) -> dict[str, Any]:
+def get_cron_job_data(cron_job: CronJob, queues_map: dict[str, int] | None = None) -> dict[str, Any]:
     """
     Returns a dict describing `cron_job` for display purposes.
 
@@ -108,7 +108,7 @@ class DjangoCronScheduler(CronScheduler):
 
     def __init__(
         self,
-        connection: Optional[Redis] = None,
+        connection: Redis | None = None,
         logging_level: int = logging.INFO,
         name: str = '',
     ):
@@ -118,16 +118,16 @@ class DjangoCronScheduler(CronScheduler):
         self,
         func: Callable[..., Any],
         queue_name: str,
-        args: Optional[tuple[Any, ...]] = None,
-        kwargs: Optional[dict[str, Any]] = None,
-        interval: Optional[int] = None,
-        cron: Optional[str] = None,
-        job_timeout: Optional[int] = None,
+        args: tuple[Any, ...] | None = None,
+        kwargs: dict[str, Any] | None = None,
+        interval: int | None = None,
+        cron: str | None = None,
+        job_timeout: int | None = None,
         result_ttl: int = 500,
-        ttl: Optional[int] = None,
-        failure_ttl: Optional[int] = None,
-        meta: Optional[dict[str, Any]] = None,
-        webhooks: Optional[Sequence[Any]] = None,
+        ttl: int | None = None,
+        failure_ttl: int | None = None,
+        meta: dict[str, Any] | None = None,
+        webhooks: Sequence[Any] | None = None,
         name: str = '',
     ):
         """
@@ -160,7 +160,7 @@ class DjangoCronScheduler(CronScheduler):
         """
         connection = get_connection(queue_name)
         # The parent types connection as required, but Django RQ can defer it until registration.
-        current_connection = cast(Optional[Redis], self.connection)
+        current_connection = cast(Redis | None, self.connection)
         if current_connection is None:
             self.connection = connection
         elif get_connection_identity(connection) != get_connection_identity(current_connection):
@@ -195,7 +195,7 @@ class DjangoCronScheduler(CronScheduler):
     @cached_property
     def connection_index(self) -> int:
         """Return the index of this scheduler's Redis database in the configured groups."""
-        connection = cast(Optional[Redis], self.connection)
+        connection = cast(Redis | None, self.connection)
         if connection is None:
             raise ValueError('No connection has been set for this scheduler yet.')
         identity = get_connection_identity(connection)
