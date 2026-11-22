@@ -1,4 +1,5 @@
 import datetime
+from unittest.mock import patch
 from uuid import uuid4
 
 from django.core.paginator import Paginator
@@ -13,6 +14,7 @@ from django_rq.utils import (
     REQUEUEABLE_STATUSES,
     get_cron_schedulers,
     get_jobs,
+    get_scheduler_statistics,
     get_statistics,
     paginate,
     requeue_job,
@@ -25,6 +27,12 @@ from tests.utils import flush_registry
 
 
 class UtilsTest(DjangoRQTestCase):
+    @patch('django_rq.utils.RQ_SCHEDULER_INSTALLED', False)
+    @patch('django_rq.utils.get_connection_groups')
+    def test_scheduler_statistics_skip_connection_groups_without_rq_scheduler(self, get_connection_groups):
+        self.assertEqual(get_scheduler_statistics(), {'schedulers': []})
+        get_connection_groups.assert_not_called()
+
     def test_paginate(self):
         """Page numbers come from user input, so unusable ones must not become bad offsets."""
         factory = RequestFactory()

@@ -4,7 +4,6 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import Paginator
 from django.db import connections
 from django.http import HttpRequest
-from redis.sentinel import SentinelConnectionPool
 from rq.command import send_stop_job_command
 from rq.cron import CronScheduler
 from rq.executions import Execution
@@ -22,10 +21,18 @@ from rq.registry import (
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
-from .connection_utils import get_connection, get_redis_connection, get_unique_connection_configs
+from .connection_utils import (
+    ConnectionType,
+    SentinelAddress,
+    TCPAddress,
+    get_connection,
+    get_connection_groups,
+    get_connection_identity,
+    get_connection_label,
+)
 from .cron import DjangoCronScheduler
-from .queues import get_queue_by_index, get_scheduler
-from .settings import get_queues_list
+from .queues import RQ_SCHEDULER_INSTALLED, get_queue_by_index, get_scheduler
+from .settings import get_queues_list, get_queues_map
 from .templatetags.django_rq import to_localtime
 
 DEFAULT_ITEMS_PER_PAGE = 100
@@ -97,63 +104,17 @@ def get_scheduler_pid(queue: Queue) -> Union[bool, int, None]:
         return None
 
 
-_DISPLAYABLE_CONNECTION_KWARGS = (
-    'host',
-    'port',
-    'db',
-    'username',
-    'client_name',
-    'service_name',
-    'sentinels',
-    'unix_socket_path',
-    'path',
-    'socket_timeout',
-    'socket_connect_timeout',
-    'socket_keepalive',
-    'health_check_interval',
-    'protocol',
-    'encoding',
-    'decode_responses',
-)
-
-
 def get_displayable_connection_kwargs(obj: Union[Queue, CronScheduler]) -> dict[str, Any]:
-    """Return safe Redis connection metadata for templates and JSON output.
-
-    Only operationally meaningful fields are returned. Secret-bearing values
-    and redis-py internals are excluded by the allowlist.
-
-    Accepts anything holding a Redis connection: a queue or a cron scheduler.
-
-    For Sentinel-backed queues, host and port reflect the first sentinel
-    endpoint; sentinels lists all known endpoints; service_name identifies the
-    master.
-    """
-    pool = obj.connection.connection_pool
-    connection_kwargs = pool.connection_kwargs.copy()
-
-    if isinstance(pool, SentinelConnectionPool):
-        connection_kwargs['service_name'] = getattr(pool, 'service_name', None)
-        sentinel_connections = pool.sentinel_manager.sentinels
-        sentinel_kwargs = [
-            sentinel.connection_pool.connection_kwargs
-            for sentinel in sentinel_connections
-        ]
-        if sentinel_kwargs:
-            first_sentinel_kwargs = sentinel_kwargs[0]
-            connection_kwargs['host'] = first_sentinel_kwargs.get('host')
-            connection_kwargs['port'] = first_sentinel_kwargs.get('port')
-            connection_kwargs['sentinels'] = [
-                (kwargs.get('host'), kwargs.get('port'))
-                for kwargs in sentinel_kwargs
-                if kwargs.get('host') is not None and kwargs.get('port') is not None
-            ]
-
-    return {
-        key: connection_kwargs[key]
-        for key in _DISPLAYABLE_CONNECTION_KWARGS
-        if connection_kwargs.get(key) is not None
-    }
+    """Return the Redis address and database for templates and JSON output."""
+    identity = get_connection_identity(obj.connection)
+    address = identity.address
+    if isinstance(address, TCPAddress):
+        return {'host': address.host, 'port': address.port, 'db': identity.db}
+    if isinstance(address, SentinelAddress):
+        return {'sentinels': list(address.endpoints), 'service_name': address.service_name, 'db': identity.db}
+    if identity.connection_type is ConnectionType.UNIX:
+        return {'path': address, 'db': identity.db}
+    return {}
 
 
 def get_statistics(run_maintenance_tasks: bool = False) -> dict[str, list[dict[str, Any]]]:
@@ -207,52 +168,41 @@ def get_statistics(run_maintenance_tasks: bool = False) -> dict[str, list[dict[s
     return {'queues': queues}
 
 
-def get_scheduler_statistics() -> dict[str, dict[str, Any]]:
-    schedulers = {}
-    for index, config in enumerate(get_queues_list()):
-        # there is only one scheduler per redis connection, so we use the connection as key
-        # to handle the possibility of a configuration with multiple redis connections and scheduled
-        # jobs in more than one of them
-        queue = get_queue_by_index(index)
-        connection_kwargs = get_displayable_connection_kwargs(queue)
-        conn_key = (
-            f"{connection_kwargs.get('host', 'NOHOST')}:{connection_kwargs.get('port', 6379)}/"
-            f"{connection_kwargs.get('db', 0)}"
-        )
-        if conn_key not in schedulers:
-            try:
-                scheduler = get_scheduler(config['name'])
-                schedulers[conn_key] = {
+def get_scheduler_statistics() -> dict[str, list[dict[str, Any]]]:
+    if not RQ_SCHEDULER_INSTALLED:
+        return {'schedulers': []}
+
+    schedulers = []
+    queue_index_by_name = get_queues_map()
+    for identity, group in get_connection_groups().items():
+        connection = group.client()
+        name = group.names[0]
+        try:
+            scheduler = get_scheduler(name, connection=connection)
+            schedulers.append(
+                {
+                    'label': get_connection_label(identity),
                     'count': scheduler.count(),
-                    'index': index,
+                    'index': queue_index_by_name[name],
                 }
-            except ImproperlyConfigured:
-                pass
+            )
+        except ImproperlyConfigured:
+            pass
     return {'schedulers': schedulers}
 
 
 def get_cron_schedulers() -> list[DjangoCronScheduler]:
-    """
-    Fetches all running CronScheduler instances from each unique Redis connection
-    defined in RQ_QUEUES.
-
-    Returns:
-        List of running DjangoCronScheduler instances
-    """
-    unique_configs = get_unique_connection_configs()
+    """Fetch running cron schedulers once per configured Redis database."""
     cron_schedulers = []
-
-    for config in unique_configs:
+    for index, group in enumerate(get_connection_groups().values()):
         try:
-            connection = get_redis_connection(config)
-            # Fetch all running schedulers for this connection
-            schedulers = DjangoCronScheduler.all(connection, cleanup=True)
-            cron_schedulers.extend(schedulers)
+            schedulers = DjangoCronScheduler.all(group.client(), cleanup=True)
         except Exception:
-            # Skip configs that fail to create a connection
-            # (e.g., USE_REDIS_CACHE without django-redis installed)
-            pass
-
+            # Skip connections that fail to initialize or reach the database.
+            continue
+        for scheduler in schedulers:
+            scheduler.connection_index = index
+        cron_schedulers.extend(schedulers)
     return cron_schedulers
 
 

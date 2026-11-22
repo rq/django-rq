@@ -1,6 +1,6 @@
 from rq.job import JobStatus
 
-from ..connection_utils import filter_connection_params, get_connection, get_unique_connection_configs
+from ..connection_utils import get_connection, get_connection_identity
 from ..queues import get_queue
 from ..workers import get_worker_class
 
@@ -31,12 +31,13 @@ try:
                 rq_jobs = GaugeMetricFamily('rq_jobs', 'RQ jobs by status', labels=['queue', 'status'])
 
                 worker_class = get_worker_class()
-                unique_configs = get_unique_connection_configs()
-                connections = {}
-                for queue_name, config in QUEUES.items():
-                    index = unique_configs.index(filter_connection_params(config))
-                    if index not in connections:
-                        connections[index] = connection = get_connection(queue_name)
+                # Keep clients alive so Python can't reuse an opaque pool's identity during the scrape.
+                connection_by_identity = {}
+                for queue_name in QUEUES:
+                    connection = get_connection(queue_name)
+                    identity = get_connection_identity(connection)
+                    if identity not in connection_by_identity:
+                        connection_by_identity[identity] = connection
 
                         for worker in worker_class.all(connection):
                             name = worker.name
@@ -45,8 +46,6 @@ try:
                             rq_job_successful_total.add_metric([name, label_queues], worker.successful_job_count)
                             rq_job_failed_total.add_metric([name, label_queues], worker.failed_job_count)
                             rq_working_seconds_total.add_metric([name, label_queues], worker.total_working_time)
-                    else:
-                        connection = connections[index]
 
                     queue = get_queue(queue_name, connection=connection)
                     rq_jobs.add_metric([queue_name, JobStatus.QUEUED], queue.count)

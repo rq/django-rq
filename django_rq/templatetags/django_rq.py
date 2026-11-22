@@ -8,7 +8,14 @@ from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from rq.exceptions import InvalidJobOperation
 
+from ..connection_utils import get_connection_identity, get_connection_label
+
 register = template.Library()
+
+
+@register.filter
+def redis_connection_label(connection):
+    return get_connection_label(get_connection_identity(connection))
 
 
 @register.filter

@@ -8,7 +8,7 @@ from redis import Redis
 from rq.cron import CronJob, CronScheduler
 from rq.utils import as_text
 
-from .connection_utils import get_connection, get_redis_connection, get_unique_connection_configs
+from .connection_utils import get_connection, get_connection_groups, get_connection_identity
 from .settings import get_queues_map
 
 # `CronJob.get_job_ids()` and the job history sorted set backing it were added in RQ 2.11
@@ -106,49 +106,13 @@ class DjangoCronScheduler(CronScheduler):
     - Integrates with RQ_QUEUES configuration from Django settings
     """
 
-    _connection_config: Optional[dict[str, Any]]
-
     def __init__(
         self,
         connection: Optional[Redis] = None,
         logging_level: int = logging.INFO,
         name: str = '',
     ):
-        """
-        Initialize DjangoCronScheduler with optional Redis connection.
-
-        If connection is not provided, it will be set when the first job is registered via register().
-
-        Args:
-            connection: Optional Redis connection instance
-            logging_level: Logging level for the scheduler
-            name: Optional name for the scheduler instance
-        """
-        # Call parent __init__ with the provided connection (or None)
         super().__init__(connection=cast(Redis, connection), logging_level=logging_level, name=name)
-
-        # Track our django_rq specific state
-        if connection is not None:
-            self._connection_config = self._get_connection_config(connection)
-        else:
-            self._connection_config = None
-
-    def _get_connection_config(self, connection: Redis) -> dict[str, Any]:
-        """
-        Extract Redis connection configuration to compare connections.
-
-        Args:
-            connection: Redis connection instance
-
-        Returns:
-            Dictionary of connection parameters for comparison
-        """
-        kwargs = connection.connection_pool.connection_kwargs
-
-        # Only compare essential connection parameters that determine if
-        # two connections are to the same Redis instance
-        essential_params = ['host', 'port', 'db', 'username', 'password']
-        return {key: kwargs.get(key) for key in essential_params if key in kwargs}
 
     def register(
         self,
@@ -194,25 +158,17 @@ class DjangoCronScheduler(CronScheduler):
         Raises:
             ValueError: If queue not found or uses different Redis connection
         """
-        # Get connection for this queue
         connection = get_connection(queue_name)
-        current_config = self._get_connection_config(connection)
-
-        if self._connection_config:
-            # Validate that this queue uses the same Redis connection
-            if current_config != self._connection_config:
-                raise ValueError(
-                    f"Queue '{queue_name}' uses a different Redis connection than previously "
-                    + 'registered queues. All jobs in a DjangoCronScheduler instance must use '
-                    + 'queues with the same Redis connection.'
-                )
-        else:
-            # First registration - set connection
+        # The parent types connection as required, but Django RQ can defer it until registration.
+        current_connection = cast(Optional[Redis], self.connection)
+        if current_connection is None:
             self.connection = connection
-            self._connection_config = current_config
-            # Clear cached_property so it recalculates with new connection
-            if 'connection_index' in self.__dict__:
-                del self.__dict__['connection_index']
+        elif get_connection_identity(connection) != get_connection_identity(current_connection):
+            raise ValueError(
+                f"Queue '{queue_name}' uses a different Redis connection than previously "
+                'registered queues. All jobs in a DjangoCronScheduler instance must use '
+                'queues with the same Redis connection.'
+            )
 
         # Now call parent register method. `webhooks` and `name` are only passed along when
         # set, since CronScheduler.register() only accepts them on rq >= 2.10 and >= 2.11
@@ -238,35 +194,16 @@ class DjangoCronScheduler(CronScheduler):
 
     @cached_property
     def connection_index(self) -> int:
-        """
-        Returns the index of this scheduler's Redis connection in the unique connection configs list.
-
-        This allows identifying which connection the scheduler is using, which can be useful for
-        monitoring and management purposes (e.g., identifying schedulers by connection_index).
-
-        Returns:
-            The index of the connection in get_unique_connection_configs()
-
-        Raises:
-            ValueError: If no connection has been set yet (before first register() call),
-                       or if the connection config cannot be found in unique configs
-        """
-        if not self._connection_config:
+        """Return the index of this scheduler's Redis database in the configured groups."""
+        connection = cast(Optional[Redis], self.connection)
+        if connection is None:
             raise ValueError('No connection has been set for this scheduler yet.')
-
-        unique_configs = get_unique_connection_configs()
-
-        # Find which index matches our connection by comparing essential params
-        for i, unique_config in enumerate(unique_configs):
-            conn = get_redis_connection(unique_config)
-            config = self._get_connection_config(conn)
-
-            # If it matches our connection config, this is our index
-            if config == self._connection_config:
-                return i
-
-        # This should never happen - if we have a connection_config, it must be in the list
-        raise ValueError('Could not find matching connection config in unique configs.')
+        groups = list(get_connection_groups())
+        identity = get_connection_identity(connection)
+        try:
+            return groups.index(identity)
+        except ValueError:
+            raise ValueError("No queue in RQ_QUEUES uses this scheduler's Redis connection.") from None
 
     def get_jobs_data(self) -> list[dict[str, Any]]:
         """Returns a list of dicts describing each registered cron job for display purposes."""
