@@ -179,14 +179,14 @@ def get_scheduler_statistics() -> dict[str, list[dict[str, Any]]]:
 
     schedulers = []
     queue_index_by_name = get_queues_map()
-    for identity, group in get_connection_groups().items():
-        connection = group.client()
+    for group in get_connection_groups():
+        connection = group.connection
         name = group.names[0]
         try:
             scheduler = get_scheduler(name, connection=connection)
             schedulers.append(
                 {
-                    'label': get_connection_label(identity),
+                    'label': get_connection_label(group.identity),
                     'count': scheduler.count(),
                     'index': queue_index_by_name[name],
                 }
@@ -199,9 +199,9 @@ def get_scheduler_statistics() -> dict[str, list[dict[str, Any]]]:
 def get_cron_schedulers() -> list[DjangoCronScheduler]:
     """Fetch running cron schedulers once per configured Redis database."""
     cron_schedulers = []
-    for index, group in enumerate(get_connection_groups().values()):
+    for index, group in enumerate(get_connection_groups()):
         try:
-            schedulers = DjangoCronScheduler.all(group.client(), cleanup=True)
+            schedulers = DjangoCronScheduler.all(group.connection, cleanup=True)
         except Exception:
             # Skip connections that fail to initialize or reach the database.
             continue
@@ -243,19 +243,19 @@ def get_rate_limits(limit: int = 20) -> tuple[list[dict[str, Any]], int]:
     connection_by_index: dict[int, Redis] = {}
     label_by_index: dict[int, str] = {}
     entries: list[tuple[str, int]] = []
-    for identity, group in get_connection_groups().items():
+    for group in get_connection_groups():
         # Any queue on the database will do: the group shares one connection, and the
         # queue's index is what addresses the detail view.
         index = queues_map[group.names[0]]
         try:
-            connection = group.client()
+            connection = group.connection
             keys = connection.smembers(RateLimitRegistry.rl_keys_key)
         except Exception:
             # Skip databases we cannot reach, so one unusable config does not take the whole
             # dashboard down. Same tradeoff as get_cron_schedulers().
             continue
         connection_by_index[index] = connection
-        label_by_index[index] = get_connection_label(identity)
+        label_by_index[index] = get_connection_label(group.identity)
         entries.extend((as_text(key), index) for key in keys)
 
     total = len(entries)
