@@ -12,8 +12,8 @@ from rq.utils import import_attribute
 
 from . import thread_queue
 from .connection_utils import (
-    filter_connection_params,
     get_connection,
+    get_connection_identity,
     get_redis_connection,
 )
 from .jobs import get_job_class
@@ -213,8 +213,6 @@ def get_queues(*queue_names, **kwargs):
     Return queue instances from specified queue names.
     All instances must use the same Redis connection.
     """
-    from .settings import QUEUES
-
     if len(queue_names) <= 1:
         # Return "default" queue if no queue name is specified
         # or one queue with specified name
@@ -224,16 +222,15 @@ def get_queues(*queue_names, **kwargs):
     # import job class only once for all queues
     kwargs['job_class'] = get_job_class(kwargs.pop('job_class', None))
 
-    queue_params = QUEUES[queue_names[0]]
-    connection_params = filter_connection_params(queue_params)
     queues = [get_queue(queue_names[0], **kwargs)]
+    identity = get_connection_identity(queues[0].connection)
 
     # do consistency checks while building return list
     for name in queue_names[1:]:
         queue = get_queue(name, **kwargs)
         if type(queue) is not type(queues[0]):
             raise ValueError(f'Queues must have the same class."{name}" and "{queue_names[0]}" have different classes')
-        if connection_params != filter_connection_params(QUEUES[name]):
+        if get_connection_identity(queue.connection) != identity:
             raise ValueError(
                 f'Queues must have the same redis connection."{name}" and "{queue_names[0]}" have different connections'
             )
@@ -269,6 +266,8 @@ instance instead of a ``Queue`` instance.
 """
 try:
     from rq_scheduler import Scheduler
+
+    RQ_SCHEDULER_INSTALLED = True
 
     class DjangoScheduler(Scheduler):
         """
@@ -315,6 +314,7 @@ try:
         )
 
 except ImportError:
+    RQ_SCHEDULER_INSTALLED = False
 
     def get_scheduler(*args, **kwargs):  # type: ignore[misc]
         raise ImproperlyConfigured('rq_scheduler not installed')

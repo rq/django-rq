@@ -145,18 +145,14 @@
                         <th>
                             <div class="text"><span>Name</span></div>
                         </th>
-                        <th><div class="text"><span>Host</span></div></th>
-                        <th><div class="text"><span>Port</span></div></th>
-                        <th><div class="text"><span>DB</span></div></th>
+                        <th><div class="text"><span>Redis Connection</span></div></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for cron_scheduler in cron_schedulers %}
                     <tr class="{% cycle 'row1' 'row2' %}">
                         <td><a href="{% rq_url 'cron_scheduler_detail' cron_scheduler.connection_index cron_scheduler.name %}">{{ cron_scheduler.name }}</a></td>
-                        <td>{{ cron_scheduler.connection.connection_pool.connection_kwargs.host }}</td>
-                        <td>{{ cron_scheduler.connection.connection_pool.connection_kwargs.port }}</td>
-                        <td>{{ cron_scheduler.connection.connection_pool.connection_kwargs.db }}</td>
+                        <td>{{ cron_scheduler.connection|redis_connection_label }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -176,9 +172,9 @@
                 <th>Recurring Jobs</th>
             </tr>
         </thead>
-        {% for connection, scheduler in schedulers.items %}
+        {% for scheduler in schedulers %}
         <tr class="{% cycle 'row1' 'row2' %}">
-            <td><a href="{% rq_url 'scheduler_jobs' scheduler.index %}">{{ connection }}</a></td>
+            <td><a href="{% rq_url 'scheduler_jobs' scheduler.index %}">{{ scheduler.label }}</a></td>
             <td><a href="{% rq_url 'scheduler_jobs' scheduler.index %}">{{ scheduler.count }}</a></td>
         </tr>
         {% endfor %}

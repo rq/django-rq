@@ -51,6 +51,24 @@ class PrometheusTest(DjangoRQTestCase):
             self.assertEqual(response.status_code, 200)
             self.assertLessEqual(lines, set(response.content.decode('utf-8').splitlines()))
 
+    @override_settings(
+        RQ_QUEUES={
+            **RQ_QUEUES,
+            'url': {'URL': f'redis://{REDIS_CONFIG_1.host}:{REDIS_CONFIG_1.port}/{REDIS_CONFIG_1.db}'},
+        }
+    )
+    def test_metrics_count_workers_once_per_database(self):
+        worker = get_worker('default', name='grouped')
+        worker.register_birth()
+        self.addCleanup(worker.register_death)
+
+        response = self.client.get(reverse('django_rq:metrics'))
+        self.assertEqual(response.status_code, 200)
+        lines = response.content.decode('utf-8').splitlines()
+        self.assertEqual(lines.count('rq_workers{name="grouped",queues="default",state="?"} 1.0'), 1)
+        for queue_name in ('default', 'url'):
+            self.assertIn(f'rq_jobs{{queue="{queue_name}",status="queued"}} 0.0', lines)
+
     @patch('django_rq.settings.QUEUES', RQ_QUEUES)
     def test_metrics_default(self):
         self.assertMetricsContain(

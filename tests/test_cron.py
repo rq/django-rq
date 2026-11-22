@@ -12,6 +12,7 @@ from django.urls import reverse
 from rq.cron import CronJob
 
 from django_rq import get_connection
+from django_rq.connection_utils import get_connection_by_index, get_connection_identity
 from django_rq.cron import (
     CRON_JOB_HISTORY_SUPPORTED,
     DjangoCronScheduler,
@@ -19,8 +20,10 @@ from django_rq.cron import (
     get_cron_job_history_count,
 )
 from django_rq.cron_views import ITEMS_PER_PAGE
+from django_rq.utils import get_cron_schedulers
 from tests.base import DjangoRQTestCase
 from tests.fixtures import say_hello
+from tests.redis_config import REDIS_CONFIG_1, REDIS_CONFIG_2
 
 # `CronJob.name`, `job_history_key` and `get_job_ids()` were added in RQ 2.11, but django-rq
 # still supports older versions and degrades gracefully
@@ -34,7 +37,6 @@ class CronTest(DjangoRQTestCase):
 
         # Should not have connection until first register() call
         self.assertIsNone(scheduler.connection)
-        self.assertIsNone(scheduler._connection_config)
         self.assertEqual(scheduler._cron_jobs, [])
 
     def test_first_register_initializes_connection(self):
@@ -46,7 +48,6 @@ class CronTest(DjangoRQTestCase):
 
         # Should now have connection set
         self.assertIsNotNone(scheduler.connection)
-        self.assertIsNotNone(scheduler._connection_config)
         self.assertIsInstance(cron_job, CronJob)
         self.assertEqual(len(scheduler.get_jobs()), 1)
 
@@ -150,6 +151,35 @@ class CronTest(DjangoRQTestCase):
 
         # Should have a different connection_index
         self.assertNotEqual(scheduler2.connection_index, scheduler.connection_index)
+
+    def test_connection_index_reports_unconfigured_connection(self):
+        scheduler = DjangoCronScheduler(connection=get_connection('default'))
+        with override_settings(RQ_QUEUES={}):
+            with self.assertRaisesMessage(ValueError, "No queue in RQ_QUEUES uses this scheduler's Redis connection."):
+                _ = scheduler.connection_index
+
+    @override_settings(
+        RQ_QUEUES={
+            'a-other': {'HOST': REDIS_CONFIG_2.host, 'PORT': REDIS_CONFIG_2.port, 'DB': REDIS_CONFIG_2.db},
+            'b-tcp': {'HOST': REDIS_CONFIG_1.host, 'PORT': REDIS_CONFIG_1.port, 'DB': REDIS_CONFIG_1.db},
+            'c-url': {'URL': f'redis://{REDIS_CONFIG_1.host}:{REDIS_CONFIG_1.port}/{REDIS_CONFIG_1.db}'},
+        }
+    )
+    def test_cron_discovery_and_index_use_the_same_database_groups(self):
+        scheduler = DjangoCronScheduler(name='grouped')
+        scheduler.register(say_hello, 'b-tcp', interval=60)
+        scheduler.register(say_hello, 'c-url', interval=60)
+        scheduler.register_birth()
+        self.addCleanup(scheduler.register_death)
+
+        found = [item for item in get_cron_schedulers() if item.name == scheduler.name]
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0].connection_index, scheduler.connection_index)
+        self.assertEqual(scheduler.connection_index, 1)
+        self.assertEqual(
+            get_connection_identity(get_connection_by_index(scheduler.connection_index)),
+            get_connection_identity(scheduler.connection),
+        )
 
 
 class CronCommandTest(DjangoRQTestCase):

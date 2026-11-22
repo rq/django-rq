@@ -24,6 +24,7 @@ from rq.utils import as_text, utcparse
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
+from .connection_utils import get_connection_identity
 from .queues import get_queue_by_index, get_scheduler_by_index
 from .settings import get_queues_list, get_queues_map
 from .utils import (
@@ -347,24 +348,6 @@ def _get_job_summaries(queue: Queue, job_ids: list[str]) -> list[dict[str, Any]]
     return summaries
 
 
-def _connection_identity(queue: Queue) -> Optional[tuple]:
-    """Identifies the Redis database a queue points at, or None if it cannot be established.
-
-    Compared per connection type, since `host:port/db` alone would give two different Unix
-    sockets the same identity and would conflate Sentinel services sharing an endpoint.
-    """
-    kwargs = get_displayable_connection_kwargs(queue)
-    db = kwargs.get('db', 0)
-    socket_path = kwargs.get('unix_socket_path') or kwargs.get('path')
-    if socket_path:
-        return ('unix', socket_path, db)
-    if kwargs.get('service_name') or kwargs.get('sentinels'):
-        return ('sentinel', tuple(kwargs.get('sentinels') or ()), kwargs.get('service_name'), db)
-    if kwargs.get('host') and kwargs.get('port'):
-        return ('tcp', kwargs['host'], kwargs['port'], db)
-    return None
-
-
 @never_cache
 @staff_member_required
 def rate_limit_detail(request: HttpRequest, queue_index: int, rate_limit_key: str) -> HttpResponse:
@@ -411,14 +394,13 @@ def rate_limit_detail(request: HttpRequest, queue_index: int, rate_limit_key: st
         jobs = _get_job_summaries(queue, [as_text(job_id) for job_id in raw_ids])
 
     # Link only through a queue on this Redis database, or job detail would open the wrong connection.
-    identity = _connection_identity(queue)
+    identity = get_connection_identity(queue.connection)
     queues_map = get_queues_map()
     index_by_origin: dict[str, int] = {}
-    if identity is not None:
-        for origin in {summary['origin'] for summary in jobs}:
-            index = queues_map.get(origin)
-            if index is not None and _connection_identity(get_queue_by_index(index)) == identity:
-                index_by_origin[origin] = index
+    for origin in {summary['origin'] for summary in jobs}:
+        index = queues_map.get(origin)
+        if index is not None and get_connection_identity(get_queue_by_index(index).connection) == identity:
+            index_by_origin[origin] = index
     for summary in jobs:
         summary['queue_index'] = index_by_origin.get(summary['origin'])
 
