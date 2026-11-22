@@ -14,10 +14,7 @@ from django_rq.utils import (
     REQUEUEABLE_STATUSES,
     get_cron_schedulers,
     get_jobs,
-<<<<<<< HEAD
-=======
     get_rate_limits,
->>>>>>> master
     get_scheduler_statistics,
     get_statistics,
     paginate,

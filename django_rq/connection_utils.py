@@ -37,7 +37,6 @@ class ConnectionIdentity:
     db: int | None
 
 
-<<<<<<< HEAD
 @dataclass
 class ConnectionGroup:
     identity: ConnectionIdentity
@@ -50,16 +49,6 @@ class ConnectionGroup:
         if isinstance(self._connection, Exception):
             raise self._connection
         return self._connection
-=======
-class ConnectionGroup(NamedTuple):
-    names: list[str]
-    connection: Redis | Exception
-
-    def client(self) -> Redis:
-        if isinstance(self.connection, Exception):
-            raise self.connection
-        return self.connection
->>>>>>> master
 
 
 def get_redis_connection(config: dict[str, Any], use_strict_redis: bool = False) -> Redis:
@@ -172,26 +161,17 @@ def get_connection_identity(connection: Redis) -> ConnectionIdentity:
     return fallback
 
 
-<<<<<<< HEAD
 def get_connection_groups() -> list[ConnectionGroup]:
     """Group queue names by Redis database, ordered by each group's first queue name."""
     from .settings import get_queues_list
 
     group_by_identity: dict[ConnectionIdentity, ConnectionGroup] = {}
-=======
-def get_connection_groups() -> dict[ConnectionIdentity, ConnectionGroup]:
-    """Group queue names in sorted order and retain a client for each database."""
-    from .settings import get_queues_list
-
-    groups: dict[ConnectionIdentity, ConnectionGroup] = {}
->>>>>>> master
     for config in get_queues_list():
         name = config['name']
         try:
             connection = get_redis_connection(config['connection_config'])
         except Exception as error:
             # Keep the index reserved when a client cannot be constructed.
-<<<<<<< HEAD
             identity = ConnectionIdentity(ConnectionType.FAILED_QUEUE, name, None)
             group_by_identity[identity] = ConnectionGroup(identity, [name], error)
             continue
@@ -199,13 +179,6 @@ def get_connection_groups() -> dict[ConnectionIdentity, ConnectionGroup]:
         group = group_by_identity.setdefault(identity, ConnectionGroup(identity, [], connection))
         group.names.append(name)
     return list(group_by_identity.values())
-=======
-            groups[ConnectionIdentity(ConnectionType.FAILED_QUEUE, name, None)] = ConnectionGroup([name], error)
-            continue
-        group = groups.setdefault(get_connection_identity(connection), ConnectionGroup([], connection))
-        group.names.append(name)
-    return groups
->>>>>>> master
 
 
 def get_connection_label(identity: ConnectionIdentity) -> str:
@@ -271,8 +244,4 @@ def get_unique_connection_configs(config: dict[str, dict[str, Any]] | None = Non
 
 def get_connection_by_index(index: int) -> Redis:
     """Return a client for the database at the specified group index."""
-<<<<<<< HEAD
     return get_connection_groups()[index].connection
-=======
-    return list(get_connection_groups().values())[index].client()
->>>>>>> master

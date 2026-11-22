@@ -198,20 +198,11 @@ class DjangoCronScheduler(CronScheduler):
         connection = cast(Optional[Redis], self.connection)
         if connection is None:
             raise ValueError('No connection has been set for this scheduler yet.')
-<<<<<<< HEAD
         identity = get_connection_identity(connection)
         for index, group in enumerate(get_connection_groups()):
             if group.identity == identity:
                 return index
         raise ValueError("No queue in RQ_QUEUES uses this scheduler's Redis connection.")
-=======
-        groups = list(get_connection_groups())
-        identity = get_connection_identity(connection)
-        try:
-            return groups.index(identity)
-        except ValueError:
-            raise ValueError("No queue in RQ_QUEUES uses this scheduler's Redis connection.") from None
->>>>>>> master
 
     def get_jobs_data(self) -> list[dict[str, Any]]:
         """Returns a list of dicts describing each registered cron job for display purposes."""
