@@ -11,11 +11,7 @@ from rq.queue import Queue
 from rq.utils import import_attribute
 
 from . import thread_queue
-from .connection_utils import (
-    get_connection,
-    get_connection_identity,
-    get_redis_connection,
-)
+from .connection_utils import get_connection, get_connection_identity
 from .jobs import get_job_class
 from .settings import get_queues_list
 
@@ -188,16 +184,9 @@ def get_queue(
 
 
 def get_queue_by_index(index: int) -> Queue:
-    """
-    Returns an rq Queue using parameters defined in ``QUEUES_LIST``
-    """
-    config = get_queues_list()[int(index)]
-    return get_queue_class(config)(
-        config['name'],
-        connection=get_redis_connection(config['connection_config']),
-        is_async=config.get('ASYNC', True),
-        serializer=config['connection_config'].get('SERIALIZER'),
-    )
+    """Return the configured queue at the given index in queue-name order."""
+    name = get_queues_list()[int(index)]['name']
+    return get_queue(name)
 
 
 def get_scheduler_by_index(index: int) -> 'DjangoScheduler':

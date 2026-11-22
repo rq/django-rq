@@ -26,7 +26,7 @@ from django_rq.connection_utils import get_connection
 from django_rq.decorators import job
 from django_rq.jobs import get_job_class
 from django_rq.management.commands import rqworker
-from django_rq.queues import DjangoRQ, get_queue, get_queues
+from django_rq.queues import DjangoRQ, get_queue, get_queue_by_index, get_queues
 from django_rq.templatetags.django_rq import force_escape, job_status, timestamp_tooltip, to_localtime
 from django_rq.utils import get_displayable_connection_kwargs, get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
@@ -101,6 +101,19 @@ class DisplayableConnectionKwargsTest(DjangoRQTestCase):
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class QueuesTest(DjangoRQTestCase):
+    @override_settings(
+        RQ_QUEUES={
+            'z-default': QUEUES['default'],
+            'a-custom': {**QUEUES['test1'], 'ASYNC': False},
+        }
+    )
+    def test_get_queue_by_index_uses_queue_configuration(self):
+        queue = get_queue_by_index(0)
+        self.assertEqual(queue.name, 'a-custom')
+        self.assertIsInstance(queue, DummyQueue)
+        self.assertFalse(queue.is_async)
+        self.assertEqual(queue._default_timeout, 400)
+
     def test_get_queue_default(self):
         """
         Test that get_queue use the right parameters for `default`
