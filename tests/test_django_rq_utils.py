@@ -14,6 +14,10 @@ from django_rq.utils import (
     REQUEUEABLE_STATUSES,
     get_cron_schedulers,
     get_jobs,
+<<<<<<< HEAD
+=======
+    get_rate_limits,
+>>>>>>> master
     get_scheduler_statistics,
     get_statistics,
     paginate,
@@ -235,3 +239,69 @@ class UtilsTest(DjangoRQTestCase):
         with self.assertRaises(ValueError):
             requeue_job(queue, failed_job)
         self.assertEqual(queue.job_ids.count(failed_job.id), 1)
+
+    @override_settings(
+        RQ={'COMMIT_MODE': 'auto'},
+        # Three queues on one Redis: a key must be listed once, not once per queue.
+        RQ_QUEUES={
+            name: {'HOST': REDIS_CONFIG_1.host, 'PORT': REDIS_CONFIG_1.port, 'DB': REDIS_CONFIG_1.db}
+            for name in ('a_queue', 'b_queue', 'c_queue')
+        },
+    )
+    def test_get_rate_limits(self):
+        """get_rate_limits() reports each key once per connection, sorted, capped."""
+        from rq.rate_limit import RateLimit, RateLimitRegistry
+
+        queue = get_queue('a_queue')
+        queue.connection.flushdb()
+        for _ in range(3):
+            queue.enqueue(access_self, rate_limit=RateLimit('reports', 2))
+        queue.enqueue(access_self, rate_limit=RateLimit('alpha', 5))
+        # An idle key, as left behind until a worker's maintenance pass cleans it up.
+        RateLimitRegistry('idle', queue.connection).register(7, queue.connection)
+
+        rate_limits, total = get_rate_limits()
+        self.assertEqual(total, 3)
+        self.assertEqual([rate_limit['key'] for rate_limit in rate_limits], ['alpha', 'idle', 'reports'])
+
+        by_key = {rate_limit['key']: rate_limit for rate_limit in rate_limits}
+        self.assertEqual(
+            (
+                by_key['reports']['slot_holder_count'],
+                by_key['reports']['waiting_count'],
+                by_key['reports']['concurrency'],
+            ),
+            (2, 1, 2),
+        )
+        self.assertEqual((by_key['idle']['slot_holder_count'], by_key['idle']['waiting_count']), (0, 0))
+        self.assertEqual(
+            by_key['alpha']['connection_label'],
+            f'{REDIS_CONFIG_1.host}:{REDIS_CONFIG_1.port}/{REDIS_CONFIG_1.db}',
+        )
+        # Any of the three queues will do; it only supplies the connection.
+        self.assertIn(by_key['alpha']['queue_index'], (0, 1, 2))
+
+        # The cap trims rows but not the total, so the dashboard can say how many were hidden.
+        rate_limits, total = get_rate_limits(limit=2)
+        self.assertEqual((total, [rate_limit['key'] for rate_limit in rate_limits]), (3, ['alpha', 'idle']))
+
+    @override_settings(
+        RQ={'COMMIT_MODE': 'auto'},
+        RQ_QUEUES={'a_queue': {'HOST': REDIS_CONFIG_1.host, 'PORT': REDIS_CONFIG_1.port, 'DB': REDIS_CONFIG_1.db}},
+    )
+    def test_get_rate_limits_with_an_unreadable_key(self):
+        """A key colliding with another's sub-key costs its own counts, not the whole list."""
+        from rq.rate_limit import RateLimit, RateLimitRegistry
+
+        queue = get_queue('a_queue')
+        queue.connection.flushdb()
+        queue.enqueue(access_self, rate_limit=RateLimit('reports', 1))
+        # `rq:rl:reports:allowed` already exists as a sorted set, so reading it as this key's
+        # config hash is a WRONGTYPE error.
+        queue.connection.sadd(RateLimitRegistry.rl_keys_key, 'reports:allowed')
+
+        rate_limits, total = get_rate_limits()
+        self.assertEqual(total, 2)
+        by_key = {rate_limit['key']: rate_limit for rate_limit in rate_limits}
+        self.assertEqual(by_key['reports']['concurrency'], 1)
+        self.assertIsNone(by_key['reports:allowed']['concurrency'])

@@ -212,7 +212,11 @@ class ConnectionIdentityTest(SimpleTestCase):
     def test_grouping_and_index_use_effective_tcp_address(self):
         groups = get_connection_groups()
         self.assertEqual(
+<<<<<<< HEAD
             [(group.identity, group.names) for group in groups],
+=======
+            [(identity, group.names) for identity, group in groups.items()],
+>>>>>>> master
             [
                 (ConnectionIdentity(ConnectionType.TCP, TCPAddress('localhost', 6379), 0), ['a-url', 'b-explicit']),
                 (ConnectionIdentity(ConnectionType.TCP, TCPAddress('localhost', 6379), 1), ['z-other-db']),
@@ -275,7 +279,11 @@ class ConnectionIdentityTest(SimpleTestCase):
         ]
         with patch('django_rq.connection_utils.get_redis_connection', side_effect=clients):
             groups = get_connection_groups()
+<<<<<<< HEAD
         self.assertEqual([group.names for group in groups], [['a-cache', 'b-cache'], ['c-cache']])
+=======
+        self.assertEqual([group.names for group in groups.values()], [['a-cache', 'b-cache'], ['c-cache']])
+>>>>>>> master
 
     @override_settings(RQ_QUEUES={'a-invalid': {}, 'b-valid': {'URL': 'redis://localhost'}})
     def test_failed_connections_keep_their_index(self):

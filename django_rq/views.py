@@ -483,22 +483,31 @@ def deferred_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
     return render(request, 'django_rq/deferred_jobs.html', context_data)
 
 
-def _rate_limit_url(request: HttpRequest, queue: Queue, queue_index: int, job: Job) -> Optional[str]:
+def rate_limit_url(request: HttpRequest, queue_index: int, rate_limit_key: str) -> Optional[str]:
+    """URL of a rate limit's detail page, or None for a key `reverse()` refuses.
+
+    Only a key containing a newline: it is matched raw against the `path` converter's `.+`
+    before being encoded, and `.` does not match a newline, while slashes, spaces and other
+    control characters encode fine. An unhandled NoReverseMatch would take a whole page down
+    over a cosmetic link.
+    """
+    try:
+        return reverse(rq_viewname(request, 'rate_limit_detail'), args=[queue_index, rate_limit_key])
+    except NoReverseMatch:
+        return None
+
+
+def _job_rate_limit_url(request: HttpRequest, queue: Queue, queue_index: int, job: Job) -> Optional[str]:
     """URL of the job's rate limit page, or None when there is nothing to link to.
 
     None covers a job with no rate limit, and one whose registry has drained or does not exist
-    yet, since the page 404s for an unregistered key. It also covers a key that cannot go in a
-    URL path at all, such as one containing a newline: an unhandled NoReverseMatch would take
-    this whole page down over a cosmetic link.
+    yet, since the page 404s for an unregistered key.
     """
     if not job.rate_limit_key:
         return None
     if not queue.connection.sismember(RateLimitRegistry.rl_keys_key, job.rate_limit_key):
         return None
-    try:
-        return reverse(rq_viewname(request, 'rate_limit_detail'), args=[queue_index, job.rate_limit_key])
-    except NoReverseMatch:
-        return None
+    return rate_limit_url(request, queue_index, job.rate_limit_key)
 
 
 @never_cache
@@ -558,7 +567,7 @@ def job_detail(request: HttpRequest, queue_index: int, job_id: str) -> HttpRespo
         'dependencies': dependencies,
         'dependents': dependents,
         'can_enqueue': job.get_status() in _ENQUEUEABLE_STATUSES,
-        'rate_limit_url': _rate_limit_url(request, queue, queue_index, job),
+        'rate_limit_url': _job_rate_limit_url(request, queue, queue_index, job),
     }
     return render(request, 'django_rq/job_detail.html', context_data)
 

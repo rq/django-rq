@@ -1,14 +1,21 @@
+from collections import defaultdict
 from typing import Any, Optional, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import Paginator
 from django.db import connections
 from django.http import HttpRequest
+<<<<<<< HEAD
+=======
+from redis import Redis
+from redis.exceptions import RedisError
+>>>>>>> master
 from rq.command import send_stop_job_command
 from rq.cron import CronScheduler
 from rq.executions import Execution
 from rq.job import Job, JobStatus
 from rq.queue import Queue
+from rq.rate_limit import RateLimitRegistry
 from rq.registry import (
     BaseRegistry,
     DeferredJobRegistry,
@@ -18,6 +25,7 @@ from rq.registry import (
     StartedJobRegistry,
     clean_registries,
 )
+from rq.utils import as_text
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
 
@@ -174,14 +182,23 @@ def get_scheduler_statistics() -> dict[str, list[dict[str, Any]]]:
 
     schedulers = []
     queue_index_by_name = get_queues_map()
+<<<<<<< HEAD
     for group in get_connection_groups():
         connection = group.connection
+=======
+    for identity, group in get_connection_groups().items():
+        connection = group.client()
+>>>>>>> master
         name = group.names[0]
         try:
             scheduler = get_scheduler(name, connection=connection)
             schedulers.append(
                 {
+<<<<<<< HEAD
                     'label': get_connection_label(group.identity),
+=======
+                    'label': get_connection_label(identity),
+>>>>>>> master
                     'count': scheduler.count(),
                     'index': queue_index_by_name[name],
                 }
@@ -194,9 +211,15 @@ def get_scheduler_statistics() -> dict[str, list[dict[str, Any]]]:
 def get_cron_schedulers() -> list[DjangoCronScheduler]:
     """Fetch running cron schedulers once per configured Redis database."""
     cron_schedulers = []
+<<<<<<< HEAD
     for index, group in enumerate(get_connection_groups()):
         try:
             schedulers = DjangoCronScheduler.all(group.connection, cleanup=True)
+=======
+    for index, group in enumerate(get_connection_groups().values()):
+        try:
+            schedulers = DjangoCronScheduler.all(group.client(), cleanup=True)
+>>>>>>> master
         except Exception:
             # Skip connections that fail to initialize or reach the database.
             continue
@@ -204,6 +227,97 @@ def get_cron_schedulers() -> list[DjangoCronScheduler]:
             scheduler.connection_index = index
         cron_schedulers.extend(schedulers)
     return cron_schedulers
+
+
+def _optional_int(value: Any) -> Optional[int]:
+    """An integer read from a rate limit pipeline, or None when it is unavailable.
+
+    Redis returns an error in place of a value for a key whose name collides with another
+    key's, e.g. a rate limit literally named "reports:allowed"; an unset concurrency reads
+    back as None.
+    """
+    if value is None or isinstance(value, Exception):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def get_rate_limits(limit: int = 20) -> tuple[list[dict[str, Any]], int]:
+    """A preview of the rate limits registered across the Redis databases in RQ_QUEUES.
+
+    Rate limit keys are often per-tenant and unbounded, so this is a preview: the first
+    `limit` keys in global alphabetical order -- so one busy database can fill it and hide
+    another's keys entirely -- plus the total number found, which lets a caller say how many
+    were left out. Every key is read and sorted to make that order deterministic, so
+    discovery costs one SMEMBERS per database however small the preview is; only the keys
+    that survive the cap cost a round trip for their counts.
+
+    A rate limit key belongs to a database rather than a queue, but the detail view is
+    addressed by queue index, so each row carries the index of a queue on its database.
+    """
+    queues_map = get_queues_map()
+    connection_by_index: dict[int, Redis] = {}
+    label_by_index: dict[int, str] = {}
+    entries: list[tuple[str, int]] = []
+    for identity, group in get_connection_groups().items():
+        # Any queue on the database will do: the group shares one connection, and the
+        # queue's index is what addresses the detail view.
+        index = queues_map[group.names[0]]
+        try:
+            connection = group.client()
+            keys = connection.smembers(RateLimitRegistry.rl_keys_key)
+        except Exception:
+            # Skip databases we cannot reach, so one unusable config does not take the whole
+            # dashboard down. Same tradeoff as get_cron_schedulers().
+            continue
+        connection_by_index[index] = connection
+        label_by_index[index] = get_connection_label(identity)
+        entries.extend((as_text(key), index) for key in keys)
+
+    total = len(entries)
+    entries.sort()
+
+    # Rows are built in the order they are rendered, then grouped so each database's numbers
+    # can be read in one batch and filled in place. A row whose numbers cannot be read keeps
+    # its None values and renders as an em-dash.
+    rate_limits: list[dict[str, Any]] = []
+    rows_by_index: defaultdict[int, list[dict[str, Any]]] = defaultdict(list)
+    for key, index in entries[:limit]:
+        row: dict[str, Any] = {
+            'key': key,
+            'queue_index': index,
+            'slot_holder_count': None,
+            'waiting_count': None,
+            'concurrency': None,
+            'connection_label': label_by_index[index],
+        }
+        rate_limits.append(row)
+        rows_by_index[index].append(row)
+
+    for index, rows in rows_by_index.items():
+        connection = connection_by_index[index]
+        try:
+            with connection.pipeline(transaction=False) as pipeline:
+                for row in rows:
+                    registry = RateLimitRegistry(row['key'], connection)
+                    pipeline.zcard(registry.allowed_key)
+                    pipeline.zcard(registry.rate_limited_key)
+                    pipeline.hget(registry.config_key, 'concurrency')
+                # Command errors come back in place rather than raised, so one unreadable key
+                # costs its own row's numbers instead of the whole batch. A connection
+                # failure still raises, and leaves this database's rows unfilled.
+                results = pipeline.execute(raise_on_error=False)
+        except RedisError:
+            continue
+        for position, row in enumerate(rows):
+            slot_holder_count, waiting_count, concurrency = results[position * 3 : position * 3 + 3]
+            row['slot_holder_count'] = _optional_int(slot_holder_count)
+            row['waiting_count'] = _optional_int(waiting_count)
+            row['concurrency'] = _optional_int(concurrency)
+
+    return rate_limits, total
 
 
 def get_jobs(

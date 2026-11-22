@@ -11,7 +11,15 @@ from rq.queue import Queue
 from rq.utils import import_attribute
 
 from . import thread_queue
+<<<<<<< HEAD
 from .connection_utils import get_connection, get_connection_identity
+=======
+from .connection_utils import (
+    get_connection,
+    get_connection_identity,
+    get_redis_connection,
+)
+>>>>>>> master
 from .jobs import get_job_class
 from .settings import get_queues_list
 
