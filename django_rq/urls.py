@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from django.urls import URLPattern, path, re_path
 
@@ -34,7 +34,7 @@ def get_api_urlpatterns(name_prefix: str = '') -> list[URLPattern]:
     ]
 
 
-def get_admin_urlpatterns(name_prefix: str = '', view_wrapper: Optional[Callable] = None) -> list[URLPattern]:
+def get_admin_urlpatterns(name_prefix: str = '', view_wrapper: Callable | None = None) -> list[URLPattern]:
     """
     Get URL patterns for views that should be wrapped with admin authentication.
 

@@ -1,6 +1,6 @@
 import zlib
 from datetime import datetime
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
@@ -282,7 +282,7 @@ def workers(request: HttpRequest, queue_index: int) -> HttpResponse:
     return render(request, 'django_rq/workers.html', context_data)
 
 
-def _callable_name(raw_data: Optional[bytes], serializer: Any) -> Optional[str]:
+def _callable_name(raw_data: bytes | None, serializer: Any) -> str | None:
     """A job's `func_name`, or None when its payload cannot be read.
 
     The name only exists inside the serialized payload, which may not decode with this serializer.
@@ -300,7 +300,7 @@ def _callable_name(raw_data: Optional[bytes], serializer: Any) -> Optional[str]:
         return None
 
 
-def _parse_timestamp(value: Optional[str]) -> Optional[datetime]:
+def _parse_timestamp(value: str | None) -> datetime | None:
     """A job timestamp, or None when the field is missing or unreadable."""
     if not value:
         return None
@@ -483,7 +483,7 @@ def deferred_jobs(request: HttpRequest, queue_index: int) -> HttpResponse:
     return render(request, 'django_rq/deferred_jobs.html', context_data)
 
 
-def rate_limit_url(request: HttpRequest, queue_index: int, rate_limit_key: str) -> Optional[str]:
+def rate_limit_url(request: HttpRequest, queue_index: int, rate_limit_key: str) -> str | None:
     """URL of a rate limit's detail page, or None for a key `reverse()` refuses.
 
     Only a key containing a newline: it is matched raw against the `path` converter's `.+`
@@ -497,7 +497,7 @@ def rate_limit_url(request: HttpRequest, queue_index: int, rate_limit_key: str) 
         return None
 
 
-def _job_rate_limit_url(request: HttpRequest, queue: Queue, queue_index: int, job: Job) -> Optional[str]:
+def _job_rate_limit_url(request: HttpRequest, queue: Queue, queue_index: int, job: Job) -> str | None:
     """URL of the job's rate limit page, or None when there is nothing to link to.
 
     None covers a job with no rate limit, and one whose registry has drained or does not exist

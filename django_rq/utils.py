@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Optional, Union
+from typing import Any
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import Paginator
@@ -60,7 +60,7 @@ REQUEUEABLE_STATUSES = {
 
 def paginate(
     request: HttpRequest, num_items: int, items_per_page: int = DEFAULT_ITEMS_PER_PAGE
-) -> tuple[int, list[Union[int, str]], int]:
+) -> tuple[int, list[int | str], int]:
     """Returns (page, page_range, offset) for a paginated view.
 
     The page number comes from user input, so it is validated rather than trusted: an
@@ -92,7 +92,7 @@ def paginate(
     return page.number, page_range, items_per_page * (page.number - 1)
 
 
-def get_scheduler_pid(queue: Queue) -> Union[bool, int, None]:
+def get_scheduler_pid(queue: Queue) -> bool | int | None:
     '''Checks whether there's a scheduler-lock on a particular queue, and returns the PID.
     It Only works with RQ's Built-in RQScheduler.
     When RQ-Scheduler is available returns False
@@ -109,7 +109,7 @@ def get_scheduler_pid(queue: Queue) -> Union[bool, int, None]:
         return None
 
 
-def get_displayable_connection_kwargs(obj: Union[Queue, CronScheduler]) -> dict[str, Any]:
+def get_displayable_connection_kwargs(obj: Queue | CronScheduler) -> dict[str, Any]:
     """Return the Redis address and database for templates and JSON output."""
     identity = get_connection_identity(obj.connection)
     address = identity.address
@@ -211,7 +211,7 @@ def get_cron_schedulers() -> list[DjangoCronScheduler]:
     return cron_schedulers
 
 
-def _optional_int(value: Any) -> Optional[int]:
+def _optional_int(value: Any) -> int | None:
     """An integer read from a rate limit pipeline, or None when it is unavailable.
 
     Redis returns an error in place of a value for a key whose name collides with another
@@ -305,15 +305,9 @@ def get_rate_limits(limit: int = 20) -> tuple[list[dict[str, Any]], int]:
 def get_jobs(
     queue,
     job_ids,
-    registry: Optional[
-        Union[
-            DeferredJobRegistry,
-            FailedJobRegistry,
-            FinishedJobRegistry,
-            ScheduledJobRegistry,
-            StartedJobRegistry,
-        ]
-    ] = None,
+    registry: (
+        DeferredJobRegistry | FailedJobRegistry | FinishedJobRegistry | ScheduledJobRegistry | StartedJobRegistry | None
+    ) = None,
 ) -> list[Job]:
     """Fetch jobs in bulk from Redis.
     1. If job data is not present in Redis, discard the result
@@ -344,7 +338,7 @@ def get_executions(queue, composite_keys: list[tuple[str, str]]) -> list[Executi
     return executions
 
 
-def stop_jobs(queue: Queue, job_ids: Union[str, list[str], tuple[str, ...]]) -> tuple[list[str], list[str]]:
+def stop_jobs(queue: Queue, job_ids: str | list[str] | tuple[str, ...]) -> tuple[list[str], list[str]]:
     job_ids = job_ids if isinstance(job_ids, (list, tuple)) else [job_ids]
     stopped_job_ids = []
     failed_to_stop_job_ids = []

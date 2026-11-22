@@ -1,7 +1,5 @@
 from secrets import compare_digest
 
-from typing import Optional
-
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
@@ -87,7 +85,7 @@ def stats(request: HttpRequest) -> HttpResponse:
 
 
 @never_cache
-def stats_json(request: HttpRequest, token: Optional[str] = None) -> JsonResponse:
+def stats_json(request: HttpRequest, token: str | None = None) -> JsonResponse:
     if not is_authorized(request):
         api_token = django_rq_settings.get_api_token()
         if token and compare_digest(token, api_token):
