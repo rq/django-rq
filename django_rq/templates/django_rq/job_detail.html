@@ -31,7 +31,7 @@
         <h1>
             Job
             {{ job.id }}
-            <span class="rq-pill rq-state-{% if status == 'queued' or status == 'finished' or status == 'failed' or status == 'started' or status == 'deferred' or status == 'scheduled' %}{{ status }}{% else %}deferred{% endif %}">{{ status }}</span>
+            <span class="rq-pill rq-state-{% if status == 'queued' or status == 'finished' or status == 'failed' or status == 'started' or status == 'deferred' or status == 'scheduled' or status == 'rate_limited' %}{{ status }}{% else %}deferred{% endif %}">{{ status }}</span>
         </h1>
     </div>
 
@@ -49,9 +49,25 @@
                     <div class="rq-field">
                         <div class="rq-field-label">Status</div>
                         <div class="rq-field-value">
-                            <span class="rq-pill rq-pill-dense rq-state-{% if status == 'queued' or status == 'finished' or status == 'failed' or status == 'started' or status == 'deferred' or status == 'scheduled' %}{{ status }}{% else %}deferred{% endif %}">{{ status }}</span>
+                            <span class="rq-pill rq-pill-dense rq-state-{% if status == 'queued' or status == 'finished' or status == 'failed' or status == 'started' or status == 'deferred' or status == 'scheduled' or status == 'rate_limited' %}{{ status }}{% else %}deferred{% endif %}">{{ status }}</span>
                         </div>
                     </div>
+                    {% if job.rate_limit_key %}
+                    <div class="rq-field">
+                        <div class="rq-field-label">Rate limit</div>
+                        <div class="rq-field-value rq-mono">
+                            {% if rate_limit_url %}
+                                <a href="{{ rate_limit_url }}">{{ job.rate_limit_key }}</a>
+                            {% else %}
+                                {{ job.rate_limit_key }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="rq-field">
+                        <div class="rq-field-label">Configured concurrency</div>
+                        <div class="rq-field-value">{{ job.rate_limit_concurrency|default:"—" }}</div>
+                    </div>
+                    {% endif %}
                     <div class="rq-field">
                         <div class="rq-field-label">Timeout</div>
                         <div class="rq-field-value">{{ job.timeout|default:"—" }}{% if job.timeout %}s{% endif %}</div>
