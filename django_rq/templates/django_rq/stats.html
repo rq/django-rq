@@ -5,8 +5,20 @@
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
     <style>
-        #changelist table thead th:first-child {
+        /* #rate-limits repeats what #changelist gets from the admin stylesheet; it has an
+           id of its own because admin/js/actions.js looks #result_list up by id. */
+        #changelist table thead th:first-child,
+        #rate-limits table thead th:first-child {
             width: inherit
+        }
+        #rate-limits table {
+            width: 100%;
+        }
+        #rate-limits .paginator {
+            color: var(--body-quiet-color);
+            border-bottom: 1px solid var(--hairline-color);
+            background: var(--body-bg);
+            overflow: hidden;
         }
     </style>
 {% endblock %}
@@ -159,6 +171,45 @@
             </table>
             {% else %}
             <p class="paginator">No running cron schedulers</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <h1>Rate Limits</h1>
+    <div class="module" id="rate-limits">
+        <div class="results">
+            {% if rate_limits %}
+            <table id="rate_limit_list">
+                <thead>
+                    <tr>
+                        <th><div class="text"><span>Key</span></div></th>
+                        <th><div class="text"><span>Slots in use</span></div></th>
+                        <th><div class="text"><span>Waiting</span></div></th>
+                        <th><div class="text"><span>Redis Connection</span></div></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rate_limit in rate_limits %}
+                    <tr class="{% cycle 'row1' 'row2' %}">
+                        <td>
+                            {% if rate_limit.url %}
+                            <a href="{{ rate_limit.url }}">{{ rate_limit.key }}</a>
+                            {% else %}
+                            {{ rate_limit.key }}
+                            {% endif %}
+                        </td>
+                        <td>{{ rate_limit.slot_holder_count|default_if_none:"—" }} of {{ rate_limit.concurrency|default_if_none:"—" }}</td>
+                        <td>{{ rate_limit.waiting_count|default_if_none:"—" }}</td>
+                        <td>{{ rate_limit.connection_label }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if rate_limit_total > rate_limits|length %}
+            <p class="paginator">Showing the first {{ rate_limits|length }} of {{ rate_limit_total }} rate limits, by key</p>
+            {% endif %}
+            {% else %}
+            <p class="paginator">No rate limits</p>
             {% endif %}
         </div>
     </div>

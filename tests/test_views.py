@@ -132,6 +132,79 @@ class ViewTest(DjangoRQTestCase):
         url = reverse('admin:django_rq_rate_limit_detail', args=[get_queue_index('django_rq_test'), key])
         return url, RateLimitRegistry(key, queue.connection), jobs
 
+    @override_settings(
+        RQ={'COMMIT_MODE': 'auto'},
+        RQ_QUEUES={'a_queue': {'HOST': REDIS_CONFIG_1.host, 'PORT': REDIS_CONFIG_1.port, 'DB': REDIS_CONFIG_1.db}},
+    )
+    def test_stats_lists_rate_limits(self):
+        """The dashboard lists registered rate limits, each linking to its detail page."""
+        from rq.rate_limit import RateLimit
+
+        queue = get_queue('a_queue')
+        queue.connection.flushdb()
+        url = reverse('admin:django_rq_home')
+
+        # With nothing registered the section still renders, with its empty state.
+        self.assertContains(self.client.get(url), 'No rate limits')
+
+        for _ in range(3):
+            queue.enqueue(access_self, rate_limit=RateLimit('reports', 2))
+        response = self.client.get(url)
+
+        (rate_limit,) = response.context['rate_limits']
+        self.assertEqual(response.context['rate_limit_total'], 1)
+        detail_url = reverse('admin:django_rq_rate_limit_detail', args=[rate_limit['queue_index'], 'reports'])
+        self.assertEqual(rate_limit['url'], detail_url)
+        # Exactly once: queues sharing a connection must not each contribute a row.
+        self.assertEqual(response.content.decode().count(f'href="{detail_url}"'), 1)
+        self.assertContains(response, '2 of 2')
+        self.assertEqual(self.client.get(detail_url).status_code, 200)
+
+        # A key that cannot go in a URL path is listed, but as plain text.
+        queue.enqueue(access_self, rate_limit=RateLimit('two\nlines', 1))
+        response = self.client.get(url)
+        unusable = [row for row in response.context['rate_limits'] if row['key'] == 'two\nlines']
+        self.assertEqual([row['url'] for row in unusable], [None])
+
+    @override_settings(
+        RQ={'COMMIT_MODE': 'auto'},
+        RQ_QUEUES={'a_queue': {'HOST': REDIS_CONFIG_1.host, 'PORT': REDIS_CONFIG_1.port, 'DB': REDIS_CONFIG_1.db}},
+    )
+    def test_stats_does_not_link_rate_limits_its_own_maintenance_removes(self):
+        """The dashboard runs RQ maintenance, which deletes drained registries, before listing."""
+        from rq.rate_limit import RateLimitRegistry
+
+        queue = get_queue('a_queue')
+        queue.connection.flushdb()
+        RateLimitRegistry('idle-key', queue.connection).register(7, queue.connection)
+
+        response = self.client.get(reverse('admin:django_rq_home'))
+        self.assertEqual(response.context['rate_limits'], [])
+        self.assertFalse(queue.connection.sismember(RateLimitRegistry.rl_keys_key, 'idle-key'))
+
+    @override_settings(
+        RQ={'COMMIT_MODE': 'auto'},
+        RQ_QUEUES={'a_queue': {'HOST': REDIS_CONFIG_1.host, 'PORT': REDIS_CONFIG_1.port, 'DB': REDIS_CONFIG_1.db}},
+    )
+    def test_stats_rate_limit_list_is_capped(self):
+        """Over the cap the dashboard shows a preview and says how many keys exist."""
+        from rq.rate_limit import RateLimit, RateLimitRegistry
+
+        queue = get_queue('a_queue')
+        queue.connection.flushdb()
+        # Zero padded so alphabetical order is also numerical order.
+        for index in range(21):
+            queue.enqueue(access_self, rate_limit=RateLimit(f'key-{index:02d}', 1))
+
+        response = self.client.get(reverse('admin:django_rq_home'))
+        keys = [row['key'] for row in response.context['rate_limits']]
+        self.assertEqual((len(keys), keys[0], keys[-1]), (20, 'key-00', 'key-19'))
+        self.assertContains(response, 'Showing the first 20 of 21 rate limits, by key')
+
+        # Within the cap there is nothing to say.
+        queue.connection.srem(RateLimitRegistry.rl_keys_key, 'key-20')
+        self.assertNotContains(self.client.get(reverse('admin:django_rq_home')), 'Showing')
+
     @override_settings(RQ={'COMMIT_MODE': 'auto'})
     def test_rate_limit_detail(self):
         """Each tab lists its own jobs, and anything but `waiting` falls back to holding"""
