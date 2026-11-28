@@ -216,7 +216,7 @@
                         {% endif %}
                     {% endfor %}
                 {% endif %}
-                {{ num_jobs }} job{{ num_jobs|pluralize }}
+                {{ num_jobs|floatformat:"0g" }} job{{ num_jobs|pluralize }}
             </p>
         {% else %}
             <div class="rq-table-foot">No jobs recorded for this cron job</div>

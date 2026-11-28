@@ -105,37 +105,37 @@
                     <div class="rq-field">
                         <div class="rq-field-label">Queued</div>
                         <div class="rq-field-value">
-                            <a href="{% rq_url 'jobs' queue_index %}">{{ num_jobs }}</a>
+                            <a href="{% rq_url 'jobs' queue_index %}">{{ num_jobs|floatformat:"0g" }}</a>
                         </div>
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">Started</div>
                         <div class="rq-field-value">
-                            <a href="{% rq_url 'started_jobs' queue_index %}">{{ num_started }}</a>
+                            <a href="{% rq_url 'started_jobs' queue_index %}">{{ num_started|floatformat:"0g" }}</a>
                         </div>
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">Deferred</div>
                         <div class="rq-field-value">
-                            <a href="{% rq_url 'deferred_jobs' queue_index %}">{{ num_deferred }}</a>
+                            <a href="{% rq_url 'deferred_jobs' queue_index %}">{{ num_deferred|floatformat:"0g" }}</a>
                         </div>
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">Finished</div>
                         <div class="rq-field-value">
-                            <a href="{% rq_url 'finished_jobs' queue_index %}">{{ num_finished }}</a>
+                            <a href="{% rq_url 'finished_jobs' queue_index %}">{{ num_finished|floatformat:"0g" }}</a>
                         </div>
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">Failed</div>
                         <div class="rq-field-value">
-                            <a href="{% rq_url 'failed_jobs' queue_index %}">{{ num_failed }}</a>
+                            <a href="{% rq_url 'failed_jobs' queue_index %}">{{ num_failed|floatformat:"0g" }}</a>
                         </div>
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">Scheduled</div>
                         <div class="rq-field-value">
-                            <a href="{% rq_url 'scheduled_jobs' queue_index %}">{{ num_scheduled }}</a>
+                            <a href="{% rq_url 'scheduled_jobs' queue_index %}">{{ num_scheduled|floatformat:"0g" }}</a>
                         </div>
                     </div>
                 </div>
@@ -171,7 +171,7 @@
                     <div class="rq-field">
                         <div class="rq-field-label">Workers</div>
                         <div class="rq-field-value">
-                            <a href="{% rq_url 'workers' queue_index %}">{{ num_workers }}</a>
+                            <a href="{% rq_url 'workers' queue_index %}">{{ num_workers|floatformat:"0g" }}</a>
                         </div>
                     </div>
                     {% if scheduler_pid is not False %}

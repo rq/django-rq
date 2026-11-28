@@ -36,11 +36,11 @@
                 <div class="rq-panel-body">
                     <div class="rq-field">
                         <div class="rq-field-label">Slots in use</div>
-                        <div class="rq-field-value">{{ slot_holder_count }} of {{ concurrency_limit }}</div>
+                        <div class="rq-field-value">{{ slot_holder_count|floatformat:"0g" }} of {{ concurrency_limit|floatformat:"0g" }}</div>
                     </div>
                     <div class="rq-field">
                         <div class="rq-field-label">Jobs Waiting</div>
-                        <div class="rq-field-value">{{ waiting_count }}</div>
+                        <div class="rq-field-value">{{ waiting_count|floatformat:"0g" }}</div>
                     </div>
                 </div>
             </div>
@@ -50,10 +50,10 @@
     <div class="rq-panel">
         <nav class="rq-tabs" aria-label="Rate limit jobs">
             <a class="rq-tab" href="?tab=holding"{% if tab == 'holding' %} aria-current="page"{% endif %}>
-                Holding a slot <span class="rq-tab-count">{{ slot_holder_count }}</span>
+                Holding a slot <span class="rq-tab-count">{{ slot_holder_count|floatformat:"0g" }}</span>
             </a>
             <a class="rq-tab" href="?tab=waiting"{% if tab == 'waiting' %} aria-current="page"{% endif %}>
-                Waiting for a slot <span class="rq-tab-count">{{ waiting_count }}</span>
+                Waiting for a slot <span class="rq-tab-count">{{ waiting_count|floatformat:"0g" }}</span>
             </a>
         </nav>
         {% if jobs %}
@@ -113,7 +113,7 @@
                         {% endif %}
                     {% endfor %}
                 {% endif %}
-                {{ tab_count }} job{{ tab_count|pluralize }}
+                {{ tab_count|floatformat:"0g" }} job{{ tab_count|pluralize }}
             </p>
         {% endif %}
     </div>
