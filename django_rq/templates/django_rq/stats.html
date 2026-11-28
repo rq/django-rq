@@ -42,36 +42,36 @@
                                     <div class="text"><span>Name</span></div>
                                     <div class="clear"></div>
                                 </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Queued Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Active Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Deferred Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Finished Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Failed Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Scheduled Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
+                                <th scope="col" class="sortable rq-right">
                                     <div class="text"><span>Workers</span></div>
                                     <div class="clear"></div>
                                 </th>
+                                <th scope="col" class="sortable rq-right">
+                                    <div class="text"><span>Queued</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable rq-right">
+                                    <div class="text"><span>Active</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable rq-right">
+                                    <div class="text"><span>Deferred</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable rq-right">
+                                    <div class="text"><span>Finished</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable rq-right">
+                                    <div class="text"><span>Failed</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable rq-right">
+                                    <div class="text"><span>Scheduled</span></div>
+                                    <div class="clear"></div>
+                                </th>
                                 {% if queue.scheduler_pid is not False %}
-                                <th scope="col" class="sortable">
+                                <th scope="col" class="sortable rq-right">
                                     <div class="text"><span>Scheduler PID</span></div>
                                     <div class="clear"></div>
                                 </th>
@@ -86,42 +86,43 @@
                                         {{ queue.name }}
                                     </a>
                                 </th>
-                                <th>
+                                <th class="rq-num">
+                                    <a href="{% rq_url 'workers' queue.index %}">
+                                        {{ queue.workers }}
+                                    </a>
+                                </th>
+                                <th class="rq-num">
                                     <a href="{% rq_url 'jobs' queue.index %}">
                                         {{ queue.jobs }}
                                     </a>
                                 </th>
-                                <th>
+                                <th class="rq-num">
                                     <a href="{% rq_url 'started_jobs' queue.index %}">
                                         {{ queue.started_jobs }}
                                     </a>
                                 </th>
-                                <th>
+                                <th class="rq-num">
                                     <a href="{% rq_url 'deferred_jobs' queue.index %}">
                                         {{ queue.deferred_jobs }}
                                     </a>
                                 </th>
-                                <th>
+                                <th class="rq-num">
                                     <a href="{% rq_url 'finished_jobs' queue.index %}">
                                         {{ queue.finished_jobs }}
                                     </a>
                                 </th>
-                                <th>
+                                <th class="rq-num">
                                     <a href="{% rq_url 'failed_jobs' queue.index %}">
                                         {{ queue.failed_jobs }}
                                     </a>
                                 </th>
-                                <th>
+                                <th class="rq-num">
                                     <a href="{% rq_url 'scheduled_jobs' queue.index %}">
                                         {{ queue.scheduled_jobs }}
                                     </a>
                                 </th>
-                                <th><a href="{% rq_url 'workers' queue.index %}">
-                                        {{ queue.workers }}
-                                    </a>
-                                </th>
                                 {% if queue.scheduler_pid is not False %}
-                                <td>{{ queue.scheduler_pid|default_if_none:"-" }}</td>
+                                <td class="rq-num">{{ queue.scheduler_pid|default_if_none:"-" }}</td>
                                 {% endif %}
                             </tr>
                             {% endfor %}
@@ -163,7 +164,7 @@
                                 <tr>
                                     <th scope="col"><div class="text"><span>Key</span></div></th>
                                     <th scope="col"><div class="text"><span>Slots in use</span></div></th>
-                                    <th scope="col"><div class="text"><span>Waiting</span></div></th>
+                                    <th scope="col" class="rq-right"><div class="text"><span>Jobs Waiting</span></div></th>
                                     <th scope="col"><div class="text"><span>Connection</span></div></th>
                                 </tr>
                             </thead>
@@ -178,7 +179,7 @@
                                         {% endif %}
                                     </th>
                                     <td>{{ rate_limit.slot_holder_count|default_if_none:"—" }} of {{ rate_limit.concurrency|default_if_none:"—" }}</td>
-                                    <td>
+                                    <td class="rq-num">
                                         {% if rate_limit.url %}
                                         <a href="{{ rate_limit.url }}?tab=waiting">{{ rate_limit.waiting_count|default_if_none:"—" }}</a>
                                         {% else %}

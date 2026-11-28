@@ -324,4 +324,5 @@ html[data-theme="dark"] {
 .rq-mono   { font-family: var(--rq-mono); }
 .rq-nowrap { white-space: nowrap; }
 .rq-num    { text-align: right; font-family: var(--rq-mono); font-variant-numeric: tabular-nums; }
+.rq-right  { text-align: right; }
 .rq-quiet  { color: var(--body-quiet-color); }
