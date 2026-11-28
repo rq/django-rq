@@ -27,7 +27,7 @@
         <h1>Cron Scheduler {{ scheduler.name }}</h1>
     </div>
 
-    <div class="rq-grid">
+    <div class="rq-grid rq-grid-even">
         <div class="rq-col">
             <div class="rq-panel">
                 <div class="rq-panel-header">Process</div>
@@ -43,7 +43,7 @@
                     {% if scheduler.config_file %}
                     <div class="rq-field">
                         <div class="rq-field-label">Config file</div>
-                        <div class="rq-field-value rq-mono">{{ scheduler.config_file }}</div>
+                        <div class="rq-field-value">{{ scheduler.config_file }}</div>
                     </div>
                     {% endif %}
                     <div class="rq-field">
@@ -100,7 +100,7 @@
     </div>
 
     <div class="rq-panel">
-        <div class="rq-panel-header">Cron Jobs</div>
+        <div class="rq-panel-header rq-panel-header-table">Cron Jobs</div>
         {% if cron_jobs %}
             <div class="rq-table-scroll">
                 <table class="rq-table">

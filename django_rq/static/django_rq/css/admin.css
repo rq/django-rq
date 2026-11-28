@@ -78,8 +78,14 @@ html[data-theme="dark"] {
     gap: var(--rq-grid-gap);
     margin-bottom: var(--rq-grid-gap);
 }
+/* `.rq-grid` with its columns sharing the width evenly, for a page whose two panels carry
+   comparable amounts of content. */
+.rq-grid-even {
+    grid-template-columns: 1fr 1fr;
+}
 @media (max-width: 900px) {
-    .rq-grid { grid-template-columns: 1fr; }
+    .rq-grid,
+    .rq-grid-even { grid-template-columns: 1fr; }
 }
 .rq-col {
     display: flex;
@@ -117,6 +123,14 @@ html[data-theme="dark"] {
     font-weight: 700;
 }
 .rq-panel-body { padding: 10px 0; }
+
+/* A panel that heads a table wears Django admin's own module-header colors, so a titled
+   table reads the same here as the modules on the dashboard. */
+.rq-panel-header-table {
+    background: var(--header-bg);
+    color: var(--header-link-color);
+    border-bottom-color: transparent;
+}
 
 .rq-field {
     display: grid;
