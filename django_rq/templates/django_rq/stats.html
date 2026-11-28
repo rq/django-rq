@@ -4,11 +4,12 @@
 {% block extrastyle %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+    <link rel="stylesheet" type="text/css" href="{% static "django_rq/css/admin.css" %}">
 {% endblock %}
 
 {% block title %}Django RQ{% endblock %}
 
-{% block content_title %}<h1>Django RQ</h1>{% endblock %}
+{% block content_title %}{% endblock %}
 
 {% block breadcrumbs %}
     <div class="breadcrumbs">
@@ -20,6 +21,15 @@
 {% block content %}
 
 <div id="content-main">
+    <div class="rq-changelist-header">
+        <h1>Django RQ</h1>
+        <ul class="object-tools">
+            <li><a href="{% rq_url 'home_json' %}">View as JSON</a></li>
+            {% if view_metrics %}
+            <li><a href="{% rq_url 'metrics' %}">View Metrics</a></li>
+            {% endif %}
+        </ul>
+    </div>
     <div id="changelist">
         <div id="changelist-form" class="changelist-form-container">
             <div class="module">
@@ -32,36 +42,36 @@
                                     <div class="text"><span>Name</span></div>
                                     <div class="clear"></div>
                                 </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Queued Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Active Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Deferred Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Finished Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Failed Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class="text"><span>Scheduled Jobs</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
+                                <th scope="col" class="sortable rq-right">
                                     <div class="text"><span>Workers</span></div>
                                     <div class="clear"></div>
                                 </th>
+                                <th scope="col" class="sortable rq-right">
+                                    <div class="text"><span>Queued</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable rq-right">
+                                    <div class="text"><span>Active</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable rq-right">
+                                    <div class="text"><span>Deferred</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable rq-right">
+                                    <div class="text"><span>Finished</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable rq-right">
+                                    <div class="text"><span>Failed</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable rq-right">
+                                    <div class="text"><span>Scheduled</span></div>
+                                    <div class="clear"></div>
+                                </th>
                                 {% if queue.scheduler_pid is not False %}
-                                <th scope="col" class="sortable">
+                                <th scope="col" class="sortable rq-right">
                                     <div class="text"><span>Scheduler PID</span></div>
                                     <div class="clear"></div>
                                 </th>
@@ -76,121 +86,118 @@
                                         {{ queue.name }}
                                     </a>
                                 </th>
-                                <th>
+                                <th class="rq-num">
+                                    <a href="{% rq_url 'workers' queue.index %}">
+                                        {{ queue.workers|floatformat:"0g" }}
+                                    </a>
+                                </th>
+                                <th class="rq-num">
                                     <a href="{% rq_url 'jobs' queue.index %}">
-                                        {{ queue.jobs }}
+                                        {{ queue.jobs|floatformat:"0g" }}
                                     </a>
                                 </th>
-                                <th>
+                                <th class="rq-num">
                                     <a href="{% rq_url 'started_jobs' queue.index %}">
-                                        {{ queue.started_jobs }}
+                                        {{ queue.started_jobs|floatformat:"0g" }}
                                     </a>
                                 </th>
-                                <th>
+                                <th class="rq-num">
                                     <a href="{% rq_url 'deferred_jobs' queue.index %}">
-                                        {{ queue.deferred_jobs }}
+                                        {{ queue.deferred_jobs|floatformat:"0g" }}
                                     </a>
                                 </th>
-                                <th>
+                                <th class="rq-num">
                                     <a href="{% rq_url 'finished_jobs' queue.index %}">
-                                        {{ queue.finished_jobs }}
+                                        {{ queue.finished_jobs|floatformat:"0g" }}
                                     </a>
                                 </th>
-                                <th>
+                                <th class="rq-num">
                                     <a href="{% rq_url 'failed_jobs' queue.index %}">
-                                        {{ queue.failed_jobs }}
+                                        {{ queue.failed_jobs|floatformat:"0g" }}
                                     </a>
                                 </th>
-                                <th>
+                                <th class="rq-num">
                                     <a href="{% rq_url 'scheduled_jobs' queue.index %}">
-                                        {{ queue.scheduled_jobs }}
-                                    </a>
-                                </th>
-                                <th><a href="{% rq_url 'workers' queue.index %}">
-                                        {{ queue.workers }}
+                                        {{ queue.scheduled_jobs|floatformat:"0g" }}
                                     </a>
                                 </th>
                                 {% if queue.scheduler_pid is not False %}
-                                <td>{{ queue.scheduler_pid|default_if_none:"-" }}</td>
+                                <td class="rq-num">{{ queue.scheduler_pid|default_if_none:"-" }}</td>
                                 {% endif %}
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
-                <p class="paginator">
-                    <a href="{% rq_url 'home_json' %}" class="showall">View as JSON</a>
-                    {% if view_metrics %}
-                    <a href="{% rq_url 'metrics' %}" class="showall">View Metrics</a>
-                    {% endif %}
-                </p>
             </div>
 
-            <div class="module">
-                <h2 id="cron-schedulers-heading">Cron Schedulers</h2>
-                <div class="results">
-                    {% if cron_schedulers %}
-                    <table id="result_list" aria-labelledby="cron-schedulers-heading">
-                        <thead>
-                            <tr>
-                                <th>
-                                    <div class="text"><span>Name</span></div>
-                                </th>
-                                <th><div class="text"><span>Redis Connection</span></div></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for cron_scheduler in cron_schedulers %}
-                            <tr class="{% cycle 'row1' 'row2' %}">
-                                <td><a href="{% rq_url 'cron_scheduler_detail' cron_scheduler.connection_index cron_scheduler.name %}">{{ cron_scheduler.name }}</a></td>
-                                <td>{{ cron_scheduler.connection|redis_connection_label }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% else %}
-                    <p class="paginator">No running cron schedulers</p>
+            <div class="rq-split">
+                <div class="module">
+                    <h2 id="cron-schedulers-heading">Cron schedulers</h2>
+                    <div class="results">
+                        <table id="result_list" aria-labelledby="cron-schedulers-heading">
+                            <thead>
+                                <tr>
+                                    <th scope="col"><div class="text"><span>Name</span></div></th>
+                                    <th scope="col"><div class="text"><span>Connection</span></div></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cron_scheduler in cron_schedulers %}
+                                <tr class="{% cycle 'row1' 'row2' %}">
+                                    <td><a href="{% rq_url 'cron_scheduler_detail' cron_scheduler.connection_index cron_scheduler.name %}">{{ cron_scheduler.name }}</a></td>
+                                    <td>{{ cron_scheduler.connection|redis_connection_label }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr class="row1"><td colspan="2" class="rq-quiet">No running cron schedulers</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="module" id="rate-limits">
+                    <h2 id="rate-limits-heading">Rate limits</h2>
+                    <div class="results">
+                        <table id="rate_limit_list" aria-labelledby="rate-limits-heading">
+                            <thead>
+                                <tr>
+                                    <th scope="col"><div class="text"><span>Key</span></div></th>
+                                    <th scope="col"><div class="text"><span>Slots in use</span></div></th>
+                                    <th scope="col" class="rq-right"><div class="text"><span>Jobs Waiting</span></div></th>
+                                    <th scope="col"><div class="text"><span>Connection</span></div></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rate_limit in rate_limits %}
+                                <tr class="{% cycle 'row1' 'row2' %}">
+                                    <th scope="row">
+                                        {% if rate_limit.url %}
+                                        <a href="{{ rate_limit.url }}">{{ rate_limit.key }}</a>
+                                        {% else %}
+                                        {{ rate_limit.key }}
+                                        {% endif %}
+                                    </th>
+                                    <td>{{ rate_limit.slot_holder_count|floatformat:"0g"|default:"—" }} of {{ rate_limit.concurrency|floatformat:"0g"|default:"—" }}</td>
+                                    <td class="rq-num">
+                                        {% if rate_limit.url %}
+                                        <a href="{{ rate_limit.url }}?tab=waiting">{{ rate_limit.waiting_count|floatformat:"0g"|default:"—" }}</a>
+                                        {% else %}
+                                        {{ rate_limit.waiting_count|floatformat:"0g"|default:"—" }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ rate_limit.connection_label }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr class="row1"><td colspan="4" class="rq-quiet">No rate limits.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if rate_limit_total > rate_limits|length %}
+                    <p class="paginator">Showing the first {{ rate_limits|length }} of {{ rate_limit_total }} rate limits, by key</p>
                     {% endif %}
                 </div>
-            </div>
-
-            <div class="module" id="rate-limits">
-                <h2 id="rate-limits-heading">Rate Limits</h2>
-                {% if rate_limits %}
-                <div class="results">
-                    <table id="rate_limit_list" aria-labelledby="rate-limits-heading">
-                        <thead>
-                            <tr>
-                                <th scope="col"><div class="text"><span>Key</span></div></th>
-                                <th scope="col"><div class="text"><span>Slots in use</span></div></th>
-                                <th scope="col"><div class="text"><span>Waiting</span></div></th>
-                                <th scope="col"><div class="text"><span>Redis Connection</span></div></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for rate_limit in rate_limits %}
-                            <tr class="{% cycle 'row1' 'row2' %}">
-                                <th scope="row">
-                                    {% if rate_limit.url %}
-                                    <a href="{{ rate_limit.url }}">{{ rate_limit.key }}</a>
-                                    {% else %}
-                                    {{ rate_limit.key }}
-                                    {% endif %}
-                                </th>
-                                <td>{{ rate_limit.slot_holder_count|default_if_none:"—" }} of {{ rate_limit.concurrency|default_if_none:"—" }}</td>
-                                <td>{{ rate_limit.waiting_count|default_if_none:"—" }}</td>
-                                <td>{{ rate_limit.connection_label }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% if rate_limit_total > rate_limits|length %}
-                <p class="paginator">Showing the first {{ rate_limits|length }} of {{ rate_limit_total }} rate limits, by key</p>
-                {% endif %}
-                {% else %}
-                <p class="paginator">No rate limits</p>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -200,14 +207,14 @@
     <table>
         <thead>
             <tr>
-                <th>Redis Connection</th>
+                <th>Connection</th>
                 <th>Recurring Jobs</th>
             </tr>
         </thead>
         {% for scheduler in schedulers %}
         <tr class="{% cycle 'row1' 'row2' %}">
             <td><a href="{% rq_url 'scheduler_jobs' scheduler.index %}">{{ scheduler.label }}</a></td>
-            <td><a href="{% rq_url 'scheduler_jobs' scheduler.index %}">{{ scheduler.count }}</a></td>
+            <td><a href="{% rq_url 'scheduler_jobs' scheduler.index %}">{{ scheduler.count|floatformat:"0g" }}</a></td>
         </tr>
         {% endfor %}
     </table>

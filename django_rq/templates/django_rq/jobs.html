@@ -167,7 +167,7 @@
                             <a href="?page={{ p }}">{{ p }}</a>
                         {% endif %}
                     {% endfor %}
-                    {{ num_jobs }} jobs
+                    {{ num_jobs|floatformat:"0g" }} jobs
                 </p>
             </form>
           </div>

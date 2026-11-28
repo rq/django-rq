@@ -85,7 +85,7 @@
             <div class="form-row">
                 <div>
                     <label class="required">Successful job count:</label>
-                    <div class="data">{{ worker.successful_job_count }}</div>
+                    <div class="data">{{ worker.successful_job_count|floatformat:"0g" }}</div>
                 </div>
             </div>
         {% endif %}
@@ -94,7 +94,7 @@
             <div class="form-row">
                 <div>
                     <label class="required">Failed job count:</label>
-                    <div class="data">{{ worker.failed_job_count }}</div>
+                    <div class="data">{{ worker.failed_job_count|floatformat:"0g" }}</div>
                 </div>
             </div>
         {% endif %}

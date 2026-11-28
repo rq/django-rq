@@ -78,14 +78,33 @@ html[data-theme="dark"] {
     gap: var(--rq-grid-gap);
     margin-bottom: var(--rq-grid-gap);
 }
+/* `.rq-grid` with its columns sharing the width evenly, for a page whose two panels carry
+   comparable amounts of content. */
+.rq-grid-even {
+    grid-template-columns: 1fr 1fr;
+}
 @media (max-width: 900px) {
-    .rq-grid { grid-template-columns: 1fr; }
+    .rq-grid,
+    .rq-grid-even { grid-template-columns: 1fr; }
 }
 .rq-col {
     display: flex;
     flex-direction: column;
     gap: var(--rq-grid-gap);
     min-width: 0;
+}
+
+/* Two equal columns that keep their own height, for modules shown side by side.
+   `min-width: 0` lets a wide table scroll inside its column instead of widening it. */
+.rq-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--rq-grid-gap);
+    align-items: start;
+}
+.rq-split > * { min-width: 0; }
+@media (max-width: 900px) {
+    .rq-split { grid-template-columns: 1fr; }
 }
 
 /* ── 3. Panels & fields ────────────────────────────────────────── */
@@ -104,6 +123,14 @@ html[data-theme="dark"] {
     font-weight: 700;
 }
 .rq-panel-body { padding: 10px 0; }
+
+/* A panel that heads a table wears Django admin's own module-header colors, so a titled
+   table reads the same here as the modules on the dashboard. */
+.rq-panel-header-table {
+    background: var(--header-bg);
+    color: var(--header-link-color);
+    border-bottom-color: transparent;
+}
 
 .rq-field {
     display: grid;
@@ -311,4 +338,5 @@ html[data-theme="dark"] {
 .rq-mono   { font-family: var(--rq-mono); }
 .rq-nowrap { white-space: nowrap; }
 .rq-num    { text-align: right; font-family: var(--rq-mono); font-variant-numeric: tabular-nums; }
+.rq-right  { text-align: right; }
 .rq-quiet  { color: var(--body-quiet-color); }
