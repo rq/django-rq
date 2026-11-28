@@ -88,6 +88,19 @@ html[data-theme="dark"] {
     min-width: 0;
 }
 
+/* Two equal columns that keep their own height, for modules shown side by side.
+   `min-width: 0` lets a wide table scroll inside its column instead of widening it. */
+.rq-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--rq-grid-gap);
+    align-items: start;
+}
+.rq-split > * { min-width: 0; }
+@media (max-width: 900px) {
+    .rq-split { grid-template-columns: 1fr; }
+}
+
 /* ── 3. Panels & fields ────────────────────────────────────────── */
 .rq-panel {
     background: var(--body-bg);

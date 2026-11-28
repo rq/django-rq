@@ -134,7 +134,11 @@ class ViewTest(DjangoRQTestCase):
 
     @override_settings(
         RQ={'COMMIT_MODE': 'auto'},
-        RQ_QUEUES={'a_queue': {'HOST': REDIS_CONFIG_1.host, 'PORT': REDIS_CONFIG_1.port, 'DB': REDIS_CONFIG_1.db}},
+        # Two queues on one Redis: a key must be listed once, not once per queue.
+        RQ_QUEUES={
+            name: {'HOST': REDIS_CONFIG_1.host, 'PORT': REDIS_CONFIG_1.port, 'DB': REDIS_CONFIG_1.db}
+            for name in ('a_queue', 'b_queue')
+        },
     )
     def test_stats_lists_rate_limits(self):
         """The dashboard lists registered rate limits, each linking to its detail page."""
@@ -145,20 +149,31 @@ class ViewTest(DjangoRQTestCase):
         url = reverse('admin:django_rq_home')
 
         # With nothing registered the section still renders, with its empty state.
-        self.assertContains(self.client.get(url), 'No rate limits')
+        response = self.client.get(url)
+        self.assertContains(response, 'Rate limits')
+        self.assertContains(response, 'No rate limits.')
 
+        # concurrency=2, so two jobs hold a slot and the third waits for one.
         for _ in range(3):
             queue.enqueue(access_self, rate_limit=RateLimit('reports', 2))
         response = self.client.get(url)
 
         (rate_limit,) = response.context['rate_limits']
         self.assertEqual(response.context['rate_limit_total'], 1)
+        self.assertEqual(
+            (rate_limit['concurrency'], rate_limit['slot_holder_count'], rate_limit['waiting_count']),
+            (2, 2, 1),
+        )
+        self.assertContains(response, '2 of 2')
+
+        content = response.content.decode()
         detail_url = reverse('admin:django_rq_rate_limit_detail', args=[rate_limit['queue_index'], 'reports'])
         self.assertEqual(rate_limit['url'], detail_url)
         # Exactly once: queues sharing a connection must not each contribute a row.
-        self.assertEqual(response.content.decode().count(f'href="{detail_url}"'), 1)
-        self.assertContains(response, '2 of 2')
-        self.assertEqual(self.client.get(detail_url).status_code, 200)
+        self.assertEqual(content.count(f'href="{detail_url}"'), 1)
+        # The waiting count opens the detail page on the tab listing the jobs it counts.
+        self.assertIn(f'href="{detail_url}?tab=waiting"', content)
+        self.assertEqual(self.client.get(detail_url, {'tab': 'waiting'}).status_code, 200)
 
         # A key that cannot go in a URL path is listed, but as plain text.
         queue.enqueue(access_self, rate_limit=RateLimit('two\nlines', 1))
