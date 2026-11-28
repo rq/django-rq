@@ -78,14 +78,33 @@ html[data-theme="dark"] {
     gap: var(--rq-grid-gap);
     margin-bottom: var(--rq-grid-gap);
 }
+/* `.rq-grid` with its columns sharing the width evenly, for a page whose two panels carry
+   comparable amounts of content. */
+.rq-grid-even {
+    grid-template-columns: 1fr 1fr;
+}
 @media (max-width: 900px) {
-    .rq-grid { grid-template-columns: 1fr; }
+    .rq-grid,
+    .rq-grid-even { grid-template-columns: 1fr; }
 }
 .rq-col {
     display: flex;
     flex-direction: column;
     gap: var(--rq-grid-gap);
     min-width: 0;
+}
+
+/* Two equal columns that keep their own height, for modules shown side by side.
+   `min-width: 0` lets a wide table scroll inside its column instead of widening it. */
+.rq-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--rq-grid-gap);
+    align-items: start;
+}
+.rq-split > * { min-width: 0; }
+@media (max-width: 900px) {
+    .rq-split { grid-template-columns: 1fr; }
 }
 
 /* ── 3. Panels & fields ────────────────────────────────────────── */
@@ -104,6 +123,14 @@ html[data-theme="dark"] {
     font-weight: 700;
 }
 .rq-panel-body { padding: 10px 0; }
+
+/* A panel that heads a table wears Django admin's own module-header colors, so a titled
+   table reads the same here as the modules on the dashboard. */
+.rq-panel-header-table {
+    background: var(--header-bg);
+    color: var(--header-link-color);
+    border-bottom-color: transparent;
+}
 
 .rq-field {
     display: grid;
@@ -147,7 +174,8 @@ html[data-theme="dark"] {
 .rq-state-finished  { color: var(--rq-finished-fg);    background: var(--message-success-bg); }
 .rq-state-started   { color: var(--link-fg);           background: var(--message-info-bg); }
 .rq-state-queued,
-.rq-state-scheduled { color: var(--rq-queued-fg);      background: var(--message-warning-bg); }
+.rq-state-scheduled,
+.rq-state-rate_limited { color: var(--rq-queued-fg);   background: var(--message-warning-bg); }
 .rq-state-deferred  { color: var(--body-quiet-color);  background: var(--message-debug-bg); }
 
 /* ── 5. Tables ─────────────────────────────────────────────────── */
@@ -156,6 +184,8 @@ html[data-theme="dark"] {
     border: 1px solid var(--hairline-color);
     margin-bottom: 16px;
 }
+/* Wrapper for tables too wide to fit — scrolls the table, not the page. */
+.rq-table-scroll { overflow-x: auto; }
 .rq-table {
     width: 100%;
     border-collapse: collapse;
@@ -186,10 +216,58 @@ html[data-theme="dark"] {
 }
 .rq-table tbody tr.rq-clickable { cursor: pointer; }
 
+/* Width, not content, decides where this column ends, so two stacked tables line up. */
 .rq-table .rq-col-job-id { width: 320px; }
 
 .rq-panel > .rq-table th,
 .rq-panel > .rq-table td { padding-left: 16px; padding-right: 16px; }
+.rq-panel > .rq-table-scroll > .rq-table th,
+.rq-panel > .rq-table-scroll > .rq-table td { padding-left: 16px; padding-right: 16px; }
+
+/* Muted strip below a table, for empty states and status messages. */
+.rq-table-foot {
+    padding: 10px 16px;
+    border-top: 1px solid var(--hairline-color);
+    font-size: 11.5px;
+    color: var(--body-quiet-color);
+}
+
+/* ── 5b. Tabs ──────────────────────────────────────────────────── */
+/* Page links, not ARIA tabs: the active one is marked with `aria-current="page"`. */
+.rq-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--hairline-color);
+    background: var(--darkened-bg);
+}
+.rq-tab {
+    padding: 9px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--body-quiet-color);
+    text-decoration: none;
+    /* Transparent rather than absent, so the active tab's border doesn't shift the text. */
+    border-bottom: 2px solid transparent;
+}
+.rq-tab:hover { color: var(--body-fg); }
+.rq-tab[aria-current] {
+    color: var(--link-fg);
+    background: var(--body-bg);
+    border-bottom-color: var(--link-fg);
+}
+.rq-tab-count {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-size: 10.5px;
+    color: var(--body-quiet-color);
+    background: var(--selected-bg);
+}
+
+/* Django admin's stock paginator, indented to line up with the panel's contents. */
+.rq-panel > .paginator { padding-left: 16px; padding-right: 16px; }
 
 .rq-table .rq-cell-action { text-align: right; }
 .rq-table .rq-cell-action a {
@@ -260,3 +338,5 @@ html[data-theme="dark"] {
 .rq-mono   { font-family: var(--rq-mono); }
 .rq-nowrap { white-space: nowrap; }
 .rq-num    { text-align: right; font-family: var(--rq-mono); font-variant-numeric: tabular-nums; }
+.rq-right  { text-align: right; }
+.rq-quiet  { color: var(--body-quiet-color); }

@@ -3,15 +3,23 @@ from unittest import mock, skipIf
 from unittest.mock import MagicMock, patch
 
 from django.conf import settings
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, override_settings
+from redis import Redis
+from redis.connection import Connection, ConnectionPool
 
 from django_rq.connection_utils import (
+    ConnectionIdentity,
+    ConnectionType,
+    SentinelAddress,
+    TCPAddress,
     get_connection,
     get_connection_by_index,
+    get_connection_groups,
+    get_connection_identity,
     get_redis_connection,
     get_unique_connection_configs,
 )
-from django_rq.queues import get_queue
+from django_rq.queues import get_queue, get_queues
 from tests.base import DjangoRQTestCase
 from tests.fixtures import access_self
 from tests.redis_config import REDIS_CONFIG_1, REDIS_CONFIG_2, REDIS_CONFIG_3
@@ -103,7 +111,8 @@ class ConnectionTest(DjangoRQTestCase):
             'DB': REDIS_CONFIG_2.db,
         }
         config = {'default': connection_params_1, 'test': connection_params_2}
-        unique_configs = get_unique_connection_configs(config)
+        with self.assertWarnsMessage(DeprecationWarning, 'Use get_connection_groups() for cron connection indexes.'):
+            unique_configs = get_unique_connection_configs(config)
         self.assertEqual(len(unique_configs), 2)
         self.assertIn(connection_params_1, unique_configs)
         self.assertIn(connection_params_2, unique_configs)
@@ -191,40 +200,94 @@ class ConnectionTest(DjangoRQTestCase):
         # Unique configs in order: params_1 (from alpha), params_2 (from charlie), params_3 (from zebra)
         self.assertEqual(first_result, [connection_params_1, connection_params_2, connection_params_3])
 
-    def test_get_connection_by_index(self):
-        """
-        Test that get_connection_by_index returns the correct connection for valid indices.
-        """
-        # Get all unique configs to know how many we have
-        unique_configs = get_unique_connection_configs()
 
-        # Test all valid indices and verify connections are correct
-        for i in range(len(unique_configs)):
-            expected_config = unique_configs[i]
+class ConnectionIdentityTest(SimpleTestCase):
+    @override_settings(
+        RQ_QUEUES={
+            'z-other-db': {'URL': 'redis://localhost/1'},
+            'b-explicit': {'HOST': 'localhost', 'PORT': 6379, 'DB': 0},
+            'a-url': {'URL': 'redis://user:secret@localhost?port=6379'},
+        }
+    )
+    def test_grouping_and_index_use_effective_tcp_address(self):
+        groups = get_connection_groups()
+        self.assertEqual(
+            [(group.identity, group.names) for group in groups],
+            [
+                (ConnectionIdentity(ConnectionType.TCP, TCPAddress('localhost', 6379), 0), ['a-url', 'b-explicit']),
+                (ConnectionIdentity(ConnectionType.TCP, TCPAddress('localhost', 6379), 1), ['z-other-db']),
+            ],
+        )
+        self.assertEqual(
+            get_connection_identity(get_connection_by_index(1)),
+            ConnectionIdentity(ConnectionType.TCP, TCPAddress('localhost', 6379), 1),
+        )
+        self.assertEqual([q.name for q in get_queues('a-url', 'b-explicit')], ['a-url', 'b-explicit'])
+        with self.assertRaises(ValueError):
+            get_queues('a-url', 'z-other-db')
 
-            # Skip configs that might not be valid Redis connections (cache backends)
-            if 'USE_REDIS_CACHE' in expected_config:
-                continue
+    def test_tcp_defaults_and_tls(self):
+        identity = ConnectionIdentity(ConnectionType.TCP, TCPAddress('localhost', 6379), 0)
+        self.assertEqual(get_connection_identity(Redis.from_url('redis:///0')), identity)
+        self.assertEqual(get_connection_identity(Redis.from_url('rediss://localhost')), identity)
+        self.assertEqual(get_connection_identity(get_redis_connection({'HOST': None, 'PORT': 6379})), identity)
 
-            connection = get_connection_by_index(i)
+    def test_unix_socket_path_and_database(self):
+        socket = get_redis_connection({'UNIX_SOCKET_PATH': '/tmp/redis.sock', 'DB': 2})
+        identity = get_connection_identity(socket)
+        self.assertEqual(identity, ConnectionIdentity(ConnectionType.UNIX, '/tmp/redis.sock', 2))
+        self.assertEqual(get_connection_identity(Redis.from_url('unix:///tmp/redis.sock?db=2')), identity)
+        self.assertNotEqual(get_connection_identity(Redis.from_url('unix:///tmp/other.sock?db=2')), identity)
+        self.assertNotEqual(get_connection_identity(Redis.from_url('unix:///tmp/redis.sock?db=3')), identity)
 
-            # Verify connection matches expected config
-            if 'HOST' in expected_config:
-                # Regular HOST/PORT/DB config
-                self.assert_connection_kwargs(connection, expected_config)
-            elif 'URL' in expected_config:
-                # URL-based config - verify DB if specified
-                if 'DB' in expected_config:
-                    connection_kwargs = connection.connection_pool.connection_kwargs
-                    self.assertEqual(connection_kwargs['db'], expected_config['DB'])
-            elif 'SENTINELS' in expected_config:
-                # Sentinel config - connection pool type is different
-                from redis.sentinel import SentinelConnectionPool
+    def test_sentinel_endpoints_and_master(self):
+        endpoints = [TCPAddress('one', 26379), TCPAddress('two', 26379)]
+        config = {'SENTINELS': endpoints, 'MASTER_NAME': 'main'}
+        connection = get_redis_connection(config)
+        identity = get_connection_identity(connection)
+        self.assertEqual(
+            identity, ConnectionIdentity(ConnectionType.SENTINEL, SentinelAddress(tuple(endpoints), 'main'), 0)
+        )
 
-                self.assertIsInstance(connection.connection_pool, SentinelConnectionPool)
+        connection.connection_pool.sentinel_manager.sentinels.reverse()
+        self.assertEqual(get_connection_identity(connection), identity)
+        repeated = get_redis_connection({**config, 'SENTINELS': [*reversed(endpoints), endpoints[0]]})
+        self.assertEqual(get_connection_identity(repeated), identity)
+        other_master = get_redis_connection({**config, 'MASTER_NAME': 'other'})
+        self.assertNotEqual(get_connection_identity(other_master), identity)
+
+    @override_settings(
+        RQ_QUEUES={
+            'a-cache': {'USE_REDIS_CACHE': 'first'},
+            'b-cache': {'USE_REDIS_CACHE': 'shared'},
+            'c-cache': {'USE_REDIS_CACHE': 'separate'},
+        }
+    )
+    def test_opaque_targets_group_only_by_shared_pool(self):
+        class CustomConnection(Connection):
+            pass
+
+        pool = ConnectionPool(connection_class=CustomConnection)
+        clients = [
+            Redis(connection_pool=pool),
+            Redis(connection_pool=pool),
+            Redis(connection_pool=ConnectionPool(connection_class=CustomConnection)),
+        ]
+        with patch('django_rq.connection_utils.get_redis_connection', side_effect=clients):
+            groups = get_connection_groups()
+        self.assertEqual([group.names for group in groups], [['a-cache', 'b-cache'], ['c-cache']])
+
+    @override_settings(RQ_QUEUES={'a-invalid': {}, 'b-valid': {'URL': 'redis://localhost'}})
+    def test_failed_connections_keep_their_index(self):
+        with self.assertRaises(KeyError):
+            get_connection_by_index(0)
+        self.assertEqual(
+            get_connection_identity(get_connection_by_index(1)),
+            ConnectionIdentity(ConnectionType.TCP, TCPAddress('localhost', 6379), 0),
+        )
 
 
-class RedisCacheTest(TestCase):
+class RedisCacheTest(DjangoRQTestCase):
     @skipIf(settings.REDIS_CACHE_TYPE != 'django-redis', 'django-redis not installed')
     @patch('django_redis.get_redis_connection')
     def test_get_queue_django_redis(self, mocked):
@@ -249,9 +312,6 @@ class RedisCacheTest(TestCase):
         cachePort = settings.CACHES[queueName]['LOCATION'].split(':')[1]
         cacheDBNum = settings.CACHES[queueName]['OPTIONS']['DB']
 
-        self.assert_connection_kwargs(queue.connection, {
-            'host': cacheHost,
-            'port': int(cachePort),
-            'db': int(cacheDBNum),
-            'password': None
-        })
+        self.assert_connection_kwargs(
+            queue.connection, {'host': cacheHost, 'port': int(cachePort), 'db': int(cacheDBNum), 'password': None}
+        )

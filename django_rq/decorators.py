@@ -1,5 +1,9 @@
-from typing import TYPE_CHECKING, Any, Callable, Optional, Protocol, TypeVar, Union, overload
+from __future__ import annotations
 
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, ParamSpec, Protocol, TypeVar, overload
+
+from django.conf import settings
 from rq.decorators import job as _rq_job
 
 from .queues import get_queue, get_result_ttl
@@ -7,7 +11,6 @@ from .queues import get_queue, get_result_ttl
 if TYPE_CHECKING:
     from redis import Redis
     from rq import Queue
-    from typing_extensions import ParamSpec
 
     P = ParamSpec('P')
     R = TypeVar('R', covariant=True)
@@ -19,24 +22,24 @@ if TYPE_CHECKING:
 
 
 @overload
-def job(func_or_queue: 'Callable[P, R]') -> '_JobFn[P, R]': ...
+def job(func_or_queue: Callable[P, R]) -> _JobFn[P, R]: ...
 
 
 @overload
 def job(
-    func_or_queue: Union['Queue', str],
-    connection: Optional['Redis'] = None,
+    func_or_queue: Queue | str,
+    connection: Redis | None = None,
     *args: Any,
     **kwargs: Any,
-) -> Callable[['Callable[P, R]'], '_JobFn[P, R]']: ...
+) -> Callable[[Callable[P, R]], _JobFn[P, R]]: ...
 
 
 def job(
-    func_or_queue: Union['Callable[P, R]', 'Queue', str],
-    connection: Optional['Redis'] = None,
+    func_or_queue: Callable[P, R] | Queue | str,
+    connection: Redis | None = None,
     *args: Any,
     **kwargs: Any,
-) -> Union['_JobFn[P, R]', Callable[['Callable[P, R]'], '_JobFn[P, R]']]:
+) -> _JobFn[P, R] | Callable[[Callable[P, R]], _JobFn[P, R]]:
     """
     The same as RQ's job decorator, but it automatically works out
     the ``connection`` argument from RQ_QUEUES.
@@ -48,7 +51,7 @@ def job(
     """
     if callable(func_or_queue):
         func = func_or_queue
-        queue: Union[Queue, str] = 'default'
+        queue: Queue | str = 'default'
     else:
         func = None
         queue = func_or_queue
@@ -63,6 +66,8 @@ def job(
         except KeyError:
             pass
     else:
+        if queue.name in settings.RQ_QUEUES:
+            queue_name = queue.name
         if connection is None:
             connection = queue.connection
 

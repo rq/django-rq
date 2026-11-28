@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from django.urls import URLPattern, path, re_path
 
@@ -34,7 +34,7 @@ def get_api_urlpatterns(name_prefix: str = '') -> list[URLPattern]:
     ]
 
 
-def get_admin_urlpatterns(name_prefix: str = '', view_wrapper: Optional[Callable] = None) -> list[URLPattern]:
+def get_admin_urlpatterns(name_prefix: str = '', view_wrapper: Callable | None = None) -> list[URLPattern]:
     """
     Get URL patterns for views that should be wrapped with admin authentication.
 
@@ -77,6 +77,15 @@ def get_admin_urlpatterns(name_prefix: str = '', view_wrapper: Optional[Callable
         # Bulk actions
         path('queues/confirm-action/<int:queue_index>/', maybe_wrap(views.confirm_action), name=f'{name_prefix}confirm_action'),
         path('queues/actions/<int:queue_index>/', maybe_wrap(views.actions), name=f'{name_prefix}actions'),
+        # Rate limits. Their own prefix: under `queues/<index>/` the route would collide with the
+        # job action routes, since `queues/0/rate-limits/delete/` is a valid delete URL for a job
+        # whose id is `rate-limits`.
+        # `path` rather than `str` because a rate limit key is user supplied and may contain slashes.
+        path(
+            'rate-limits/<int:queue_index>/<path:rate_limit_key>/',
+            maybe_wrap(views.rate_limit_detail),
+            name=f'{name_prefix}rate_limit_detail',
+        ),
         # Workers
         path('workers/<int:queue_index>/', maybe_wrap(views.workers), name=f'{name_prefix}workers'),
         path('workers/<int:queue_index>/<str:key>/', maybe_wrap(views.worker_details), name=f'{name_prefix}worker_details'),
@@ -86,6 +95,12 @@ def get_admin_urlpatterns(name_prefix: str = '', view_wrapper: Optional[Callable
             'cron-schedulers/<int:connection_index>/<str:scheduler_name>/',
             maybe_wrap(cron_views.cron_scheduler_detail),
             name=f'{name_prefix}cron_scheduler_detail',
+        ),
+        # `path` rather than `str` because a cron job's name is user supplied and may contain slashes
+        path(
+            'cron-schedulers/<int:connection_index>/<str:scheduler_name>/jobs/<path:cron_job_name>/',
+            maybe_wrap(cron_views.cron_job_detail),
+            name=f'{name_prefix}cron_job_detail',
         ),
     ]
 

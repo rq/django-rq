@@ -71,6 +71,14 @@
                                     <div class="clear"></div>
                                 </th>
                                 <th scope="col" class="sortable">
+                                    <div class='text'><span>Callable</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable">
+                                    <div class='text'><span>Status</span></div>
+                                    <div class="clear"></div>
+                                </th>
+                                <th scope="col" class="sortable">
                                     <div class='text'><span>Created</span></div>
                                     <div class="clear"></div>
                                 </th>
@@ -97,14 +105,6 @@
                                     </div>
                                     <div class="clear"></div>
                                 </th>
-                                <th scope="col" class="sortable">
-                                    <div class='text'><span>Status</span></div>
-                                    <div class="clear"></div>
-                                </th>
-                                <th scope="col" class="sortable">
-                                    <div class='text'><span>Callable</span></div>
-                                    <div class="clear"></div>
-                                </th>
                                 {% block extra_columns %}
                                 {% endblock extra_columns %}
                             </tr>
@@ -120,6 +120,8 @@
                                             {{ job.id }}
                                         </a>
                                     </th>
+                                    <td>{{ job|show_func_name }}</td>
+                                    <td>{{ job|job_status }}</td>
                                     <td>
                                         {% if job.created_at %}
                                             {{ job.created_at|timestamp_tooltip }}
@@ -142,8 +144,6 @@
                                             {{ job.ended_at|timestamp_tooltip }}
                                         {% endif %}
                                     </td>
-                                    <td>{{ job|job_status }}</td>
-                                    <td>{{ job|show_func_name }}</td>
                                     {% block extra_columns_values %}
                                     {% endblock extra_columns_values %}
                                 </tr>
@@ -153,7 +153,9 @@
                 </div>
                 <p class="paginator">
                     {% for p in page_range %}
-                        {% if p == page %}
+                        {% if p|is_ellipsis %}
+                            {{ p }}
+                        {% elif p == page %}
                             <span class="this-page">{{ p }}</span>
                         {% elif forloop.last %}
                             <a href="?page={{ p }}" class="end">{{ p }}</a>
@@ -161,7 +163,7 @@
                             <a href="?page={{ p }}">{{ p }}</a>
                         {% endif %}
                     {% endfor %}
-                    {{ num_jobs }} jobs
+                    {{ num_jobs|floatformat:"0g" }} jobs
                 </p>
             </form>
           </div>

@@ -1,5 +1,7 @@
 import warnings
-from typing import Any, Callable, Optional, Union, cast
+from collections.abc import Callable
+from functools import partial
+from typing import Any, cast
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -10,11 +12,7 @@ from rq.queue import Queue
 from rq.utils import import_attribute
 
 from . import thread_queue
-from .connection_utils import (
-    filter_connection_params,
-    get_connection,
-    get_redis_connection,
-)
+from .connection_utils import get_connection, get_connection_identity
 from .jobs import get_job_class
 from .settings import get_queues_list
 
@@ -49,8 +47,8 @@ def get_commit_mode() -> str:
 
 
 def get_queue_class(
-    config: Optional[dict[str, Any]] = None,
-    queue_class: Optional[Union[str, type[Queue]]] = None,
+    config: dict[str, Any] | None = None,
+    queue_class: str | type[Queue] | None = None,
 ) -> type[Queue]:
     """
     Return queue class from config or from RQ settings, otherwise return DjangoRQ.
@@ -95,33 +93,59 @@ class DjangoRQ(Queue):
 
         super().__init__(*args, **kwargs)
 
-    def original_enqueue_call(self, *args, **kwargs):
-        queue_name = kwargs.get('queue_name') or self.name
-        kwargs['result_ttl'] = kwargs.get('result_ttl', get_result_ttl(queue_name))
+    def enqueue_now(self, django_rq_method: str, *args: Any, **kwargs: Any) -> Job:
+        """
+        Run RQ's own ``enqueue_job`` or ``enqueue_at`` right away, bypassing the
+        commit mode. Used to flush deferred calls (see ``thread_queue``).
+        """
+        return getattr(super(), django_rq_method)(*args, **kwargs)
 
-        return super().enqueue_call(*args, **kwargs)
+    def _enqueue_or_defer(self, django_rq_method: str, *args: Any, **kwargs: Any) -> Job | None:
+        """
+        Run the named RQ method now, or defer it according to this queue's commit mode.
+
+        A caller-supplied ``pipeline`` is never deferred: the caller decides when
+        it executes, and commands appended from a commit hook would land after
+        ``pipeline.execute()`` has already run.
+        """
+        if self._commit_mode == 'auto' or kwargs.get('pipeline') is not None:
+            return self.enqueue_now(django_rq_method, *args, **kwargs)
+        if self._commit_mode == 'on_db_commit':
+            if connection.in_atomic_block:
+                transaction.on_commit(partial(self.enqueue_now, django_rq_method, *args, **kwargs))
+                return None
+            return self.enqueue_now(django_rq_method, *args, **kwargs)
+        thread_queue.add(self, django_rq_method, args, kwargs)
+        return None
 
     def enqueue_call(self, *args, **kwargs):
-        if self._commit_mode == 'auto':
-            return self.original_enqueue_call(*args, **kwargs)
-        elif self._commit_mode == 'on_db_commit':
-            if connection.in_atomic_block:
-                transaction.on_commit(lambda: self.original_enqueue_call(*args, **kwargs))
-            else:
-                return self.original_enqueue_call(*args, **kwargs)
-        else:
-            thread_queue.add(self, args, kwargs)
+        # Only inject the DEFAULT_RESULT_TTL default here. RQ's enqueue_call
+        # creates the job and hands it to enqueue_job, where deferral happens.
+        queue_name = kwargs.get('queue_name') or self.name
+        kwargs['result_ttl'] = kwargs.get('result_ttl', get_result_ttl(queue_name))
+        return super().enqueue_call(*args, **kwargs)
+
+    def enqueue_job(self, job, pipeline=None, at_front=False, unique=False, **kwargs):
+        # Mirror RQ's signature so every argument may arrive positionally, then forward
+        # them all by keyword: _enqueue_or_defer only recognises a pipeline passed as a keyword.
+        return self._enqueue_or_defer('enqueue_job', job, pipeline=pipeline, at_front=at_front, unique=unique, **kwargs)
+
+    def enqueue_at(self, *args, **kwargs):
+        # Also covers enqueue_in(): RQ implements it as self.enqueue_at(now() + delta, ...), so the
+        # target time is resolved here, at call time, and the deferred entry is recorded as 'enqueue_at'.
+        # Positional args after the function are job arguments; pipeline can only be a keyword.
+        return self._enqueue_or_defer('enqueue_at', *args, **kwargs)
 
 
 def get_queue(
     name: str = 'default',
-    default_timeout: Optional[int] = None,
-    is_async: Optional[bool] = None,
-    autocommit: Optional[bool] = None,
-    commit_mode: Optional[str] = None,
-    connection: Optional[Redis] = None,
-    queue_class: Optional[Union[str, type[Queue]]] = None,
-    job_class: Optional[Union[str, type[Job]]] = None,
+    default_timeout: int | None = None,
+    is_async: bool | None = None,
+    autocommit: bool | None = None,
+    commit_mode: str | None = None,
+    connection: Redis | None = None,
+    queue_class: str | type[Queue] | None = None,
+    job_class: str | type[Job] | None = None,
     serializer: Any = None,
     **kwargs: Any,
 ) -> Queue:
@@ -161,16 +185,9 @@ def get_queue(
 
 
 def get_queue_by_index(index: int) -> Queue:
-    """
-    Returns an rq Queue using parameters defined in ``QUEUES_LIST``
-    """
-    config = get_queues_list()[int(index)]
-    return get_queue_class(config)(
-        config['name'],
-        connection=get_redis_connection(config['connection_config']),
-        is_async=config.get('ASYNC', True),
-        serializer=config['connection_config'].get('SERIALIZER'),
-    )
+    """Return the configured queue at the given index in queue-name order."""
+    name = get_queues_list()[int(index)]['name']
+    return get_queue(name)
 
 
 def get_scheduler_by_index(index: int) -> 'DjangoScheduler':
@@ -186,8 +203,6 @@ def get_queues(*queue_names, **kwargs):
     Return queue instances from specified queue names.
     All instances must use the same Redis connection.
     """
-    from .settings import QUEUES
-
     if len(queue_names) <= 1:
         # Return "default" queue if no queue name is specified
         # or one queue with specified name
@@ -197,16 +212,15 @@ def get_queues(*queue_names, **kwargs):
     # import job class only once for all queues
     kwargs['job_class'] = get_job_class(kwargs.pop('job_class', None))
 
-    queue_params = QUEUES[queue_names[0]]
-    connection_params = filter_connection_params(queue_params)
     queues = [get_queue(queue_names[0], **kwargs)]
+    identity = get_connection_identity(queues[0].connection)
 
     # do consistency checks while building return list
     for name in queue_names[1:]:
         queue = get_queue(name, **kwargs)
         if type(queue) is not type(queues[0]):
             raise ValueError(f'Queues must have the same class."{name}" and "{queue_names[0]}" have different classes')
-        if connection_params != filter_connection_params(QUEUES[name]):
+        if get_connection_identity(queue.connection) != identity:
             raise ValueError(
                 f'Queues must have the same redis connection."{name}" and "{queue_names[0]}" have different connections'
             )
@@ -225,7 +239,7 @@ def enqueue(func: Callable, *args, **kwargs) -> Job:
     return get_queue().enqueue(func, *args, **kwargs)
 
 
-def get_result_ttl(name: str = 'default') -> Optional[int]:
+def get_result_ttl(name: str = 'default') -> int | None:
     """
     Returns the result ttl from RQ_QUEUES if found, otherwise from RQ
     """
@@ -242,6 +256,8 @@ instance instead of a ``Queue`` instance.
 """
 try:
     from rq_scheduler import Scheduler
+
+    RQ_SCHEDULER_INSTALLED = True
 
     class DjangoScheduler(Scheduler):
         """
@@ -263,9 +279,9 @@ try:
 
     def get_scheduler(
         name: str = 'default',
-        queue: Optional[Queue] = None,
+        queue: Queue | None = None,
         interval: int = 60,
-        connection: Optional[Redis] = None,
+        connection: Redis | None = None,
     ) -> DjangoScheduler:
         """
         Returns an RQ Scheduler instance using parameters defined in
@@ -288,6 +304,7 @@ try:
         )
 
 except ImportError:
+    RQ_SCHEDULER_INSTALLED = False
 
     def get_scheduler(*args, **kwargs):  # type: ignore[misc]
         raise ImproperlyConfigured('rq_scheduler not installed')

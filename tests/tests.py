@@ -11,7 +11,7 @@ import rq
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from django.urls import reverse
 from django.utils.safestring import SafeString
 from rq import Queue
@@ -26,7 +26,7 @@ from django_rq.connection_utils import get_connection
 from django_rq.decorators import job
 from django_rq.jobs import get_job_class
 from django_rq.management.commands import rqworker
-from django_rq.queues import DjangoRQ, get_queue, get_queues
+from django_rq.queues import DjangoRQ, get_queue, get_queue_by_index, get_queues
 from django_rq.templatetags.django_rq import force_escape, job_status, timestamp_tooltip, to_localtime
 from django_rq.utils import get_displayable_connection_kwargs, get_scheduler_pid
 from django_rq.workers import get_worker, get_worker_class
@@ -56,7 +56,7 @@ def long_running_job(timeout=10):
     return 'Done sleeping...'
 
 
-class RqStatsTest(TestCase):
+class RqStatsTest(DjangoRQTestCase):
     @override_settings(
         RQ_QUEUES={
             'default': {
@@ -76,54 +76,44 @@ class RqStatsTest(TestCase):
         call_command('rqstats', '-y')
 
 
-FORBIDDEN_CONNECTION_KEYS = ('password', 'credential_provider', 'connection_pool', 'parser_class', 'retry', 'driver_info')
-
-
-class DisplayableConnectionKwargsTest(TestCase):
-    def test_returns_safe_connection_metadata(self):
-        """get_displayable_connection_kwargs returns operationally meaningful
-        fields and never leaks secrets or redis-py internals."""
+class DisplayableConnectionKwargsTest(DjangoRQTestCase):
+    def test_returns_tcp_address_without_credentials(self):
         queue = get_queue('url')
         self.assertEqual(queue.connection.connection_pool.connection_kwargs.get('password'), 'password')
-
-        displayable = get_displayable_connection_kwargs(queue)
-
-        for key in FORBIDDEN_CONNECTION_KEYS:
-            self.assertNotIn(key, displayable)
-        self.assertEqual(displayable.get('host'), 'host')
-        self.assertEqual(displayable.get('port'), 1234)
-        self.assertEqual(displayable.get('db'), 4)
-        self.assertEqual(displayable.get('username'), 'username')
-
-    def test_sentinel_returns_first_sentinel_endpoint(self):
-        """For Sentinel-backed queues, expose safe Sentinel metadata."""
-        queue = get_queue('sentinel')
-        sentinels = queue.connection.connection_pool.sentinel_manager.sentinels
-        first_sentinel_kwargs = sentinels[0].connection_pool.connection_kwargs
-
-        displayable = get_displayable_connection_kwargs(queue)
-
-        for key in FORBIDDEN_CONNECTION_KEYS:
-            self.assertNotIn(key, displayable)
-        self.assertEqual(displayable.get('host'), first_sentinel_kwargs.get('host'))
-        self.assertEqual(displayable.get('port'), first_sentinel_kwargs.get('port'))
-        self.assertEqual(displayable.get('db'), queue.connection.connection_pool.connection_kwargs.get('db'))
-        self.assertEqual(displayable.get('service_name'), 'testmaster')
-        self.assertEqual(displayable.get('socket_timeout'), 10)
         self.assertEqual(
-            displayable.get('sentinels'),
-            [
-                (
-                    sentinel.connection_pool.connection_kwargs.get('host'),
-                    sentinel.connection_pool.connection_kwargs.get('port'),
-                )
-                for sentinel in sentinels
-            ],
+            get_displayable_connection_kwargs(queue),
+            {'host': 'host', 'port': 1234, 'db': 4},
         )
+
+    def test_returns_sentinel_address(self):
+        queue = get_queue('sentinel')
+        config = settings.RQ_QUEUES['sentinel']
+        self.assertEqual(
+            get_displayable_connection_kwargs(queue),
+            {
+                'db': config['DB'],
+                'service_name': config['MASTER_NAME'],
+                'sentinels': sorted(config['SENTINELS']),
+            },
+        )
+
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
 class QueuesTest(DjangoRQTestCase):
+    @override_settings(
+        RQ_QUEUES={
+            'z-default': QUEUES['default'],
+            'a-custom': {**QUEUES['test1'], 'ASYNC': False},
+        }
+    )
+    def test_get_queue_by_index_uses_queue_configuration(self):
+        queue = get_queue_by_index(0)
+        self.assertEqual(queue.name, 'a-custom')
+        self.assertIsInstance(queue, DummyQueue)
+        self.assertFalse(queue.is_async)
+        self.assertEqual(queue._default_timeout, 400)
+
     def test_get_queue_default(self):
         """
         Test that get_queue use the right parameters for `default`
@@ -326,7 +316,7 @@ class QueuesTest(DjangoRQTestCase):
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
-class DecoratorTest(TestCase):
+class DecoratorTest(DjangoRQTestCase):
     def test_job_decorator(self):
         # Ensure that decorator passes in the right queue from settings.py
         queue_name = 'test3'
@@ -396,6 +386,36 @@ class DecoratorTest(TestCase):
         self.assertEqual(result.result_ttl, 60)
         result.delete()
 
+    @override_settings(RQ={'AUTOCOMMIT': True, 'DEFAULT_RESULT_TTL': 60})
+    def test_job_decorator_queue_object_result_ttl(self):
+        # Ensure the queue's DEFAULT_RESULT_TTL is used when a Queue object is
+        # passed to the decorator (not 'default' queue's TTL)
+        queue_name = 'test3'
+        config = QUEUES[queue_name]
+        queue = get_queue(queue_name)
+
+        @job(queue)
+        def test():
+            pass
+
+        result = test.delay()
+        self.assertEqual(result.origin, queue_name)
+        self.assertEqual(result.result_ttl, config['DEFAULT_RESULT_TTL'])
+        # make sure this test can actually catch the bug
+        self.assertNotEqual(config['DEFAULT_RESULT_TTL'], QUEUES['default']['DEFAULT_RESULT_TTL'])
+        result.delete()
+
+        # A Queue object not in RQ_QUEUES must not raise and falls back to the default queue's TTL
+        queue = Queue('hello_world', connection=get_connection())
+
+        @job(queue)
+        def test():
+            pass
+
+        result = test.delay()
+        self.assertEqual(result.result_ttl, QUEUES['default']['DEFAULT_RESULT_TTL'])
+        result.delete()
+
     def test_job_decorator_default_queue_result_ttl(self):
         # Ensure the default queue DEFAULT_RESULT_TTL is used when queue name is not passed
 
@@ -409,7 +429,7 @@ class DecoratorTest(TestCase):
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
-class WorkersTest(TestCase):
+class WorkersTest(DjangoRQTestCase):
     def test_get_worker_default(self):
         """
         By default, ``get_worker`` should return worker for ``default`` queue.
@@ -475,7 +495,7 @@ class WorkersTest(TestCase):
 
 
 @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
-class SchedulerTest(TestCase):
+class SchedulerTest(DjangoRQTestCase):
     def test_get_scheduler(self):
         """
         Ensure get_scheduler creates a scheduler instance with the right
@@ -542,7 +562,7 @@ class SchedulerTest(TestCase):
         job.delete()
 
 
-class JobClassTest(TestCase):
+class JobClassTest(DjangoRQTestCase):
     def test_default_job_class(self):
         job_class = get_job_class()
         self.assertIs(job_class, Job)
@@ -556,7 +576,7 @@ class JobClassTest(TestCase):
         self.assertIs(get_job_class('tests.fixtures.DummyJob'), DummyJob)
 
 
-class SuspendResumeTest(TestCase):
+class SuspendResumeTest(DjangoRQTestCase):
     def test_suspend_and_resume_commands(self):
         connection = get_connection()
         self.assertEqual(is_suspended(connection), 0)
@@ -566,7 +586,7 @@ class SuspendResumeTest(TestCase):
         self.assertEqual(is_suspended(connection), 0)
 
 
-class QueueClassTest(TestCase):
+class QueueClassTest(DjangoRQTestCase):
     def test_default_queue_class(self):
         queue = get_queue('test')
         self.assertIsInstance(queue, DjangoRQ)
@@ -580,7 +600,7 @@ class QueueClassTest(TestCase):
         self.assertIsInstance(queue, DummyQueue)
 
 
-class WorkerClassTest(TestCase):
+class WorkerClassTest(DjangoRQTestCase):
     def test_default_worker_class(self):
         worker = get_worker()
         self.assertIsInstance(worker, Worker)
@@ -595,7 +615,7 @@ class WorkerClassTest(TestCase):
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
-class TemplateTagTest(TestCase):
+class TemplateTagTest(DjangoRQTestCase):
     def test_job_status(self):
         queue = get_queue()
         job = queue.enqueue(say_hello)
@@ -664,7 +684,7 @@ class TemplateTagTest(TestCase):
         self.assertEqual(escaped_string, expected)
 
 
-class SchedulerPIDTest(TestCase):
+class SchedulerPIDTest(DjangoRQTestCase):
     @skipIf(RQ_SCHEDULER_INSTALLED is False, 'RQ Scheduler not installed')
     @override_settings(
         RQ_QUEUES={

@@ -63,3 +63,9 @@ REDIS_CONFIG_3 = RedisConfig(
     port=REDIS_PORT,
     db=databases[2],
 )
+
+
+def flush_test_databases() -> None:
+    """Clear the databases selected at the start of this test run."""
+    for db in databases:
+        Redis(host=REDIS_HOST, port=REDIS_PORT, db=db).flushdb(asynchronous=False)

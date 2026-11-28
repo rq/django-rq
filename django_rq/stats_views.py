@@ -1,15 +1,13 @@
 from secrets import compare_digest
 
-from typing import Optional
-
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 
 from . import settings as django_rq_settings
-from .utils import get_cron_schedulers, get_scheduler_statistics, get_statistics
-from .views import each_context
+from .utils import get_cron_schedulers, get_rate_limits, get_scheduler_statistics, get_statistics
+from .views import each_context, rate_limit_url
 
 try:
     import prometheus_client
@@ -63,18 +61,31 @@ def prometheus_metrics(request):
 @never_cache
 @staff_member_required
 def stats(request: HttpRequest) -> HttpResponse:
+    # Before the rate limits are read, because maintenance deletes drained rate limit
+    # registries and promotes waiting jobs. Reading first would render links to keys this
+    # same request goes on to remove, which then 404.
+    statistics = get_statistics(run_maintenance_tasks=True)
+
+    rate_limits, rate_limit_total = get_rate_limits()
+    # URLs are built here rather than in the template, because a key the URL resolver
+    # refuses would make `{% rq_url %}` raise mid-render and take the dashboard down.
+    for rate_limit in rate_limits:
+        rate_limit['url'] = rate_limit_url(request, rate_limit['queue_index'], rate_limit['key'])
+
     context_data = {
         **each_context(request),
-        **get_statistics(run_maintenance_tasks=True),
+        **statistics,
         **get_scheduler_statistics(),
         "view_metrics": RQCollector is not None,
         "cron_schedulers": get_cron_schedulers(),
+        "rate_limits": rate_limits,
+        "rate_limit_total": rate_limit_total,
     }
     return render(request, 'django_rq/stats.html', context_data)
 
 
 @never_cache
-def stats_json(request: HttpRequest, token: Optional[str] = None) -> JsonResponse:
+def stats_json(request: HttpRequest, token: str | None = None) -> JsonResponse:
     if not is_authorized(request):
         api_token = django_rq_settings.get_api_token()
         if token and compare_digest(token, api_token):

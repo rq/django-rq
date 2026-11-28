@@ -1,9 +1,11 @@
+import re
 import uuid
 from datetime import datetime
+from unittest import mock
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from django.test.client import Client
 from django.urls import reverse
 from django.utils.html import escape
@@ -13,20 +15,21 @@ from rq.registry import (
     FailedJobRegistry,
     FinishedJobRegistry,
     ScheduledJobRegistry,
-    StartedJobRegistry,
 )
 
 from django_rq import get_queue
 from django_rq.workers import get_worker
 
+from .base import DjangoRQTestCase
 from .fixtures import access_self, failing_job, say_hello
 from .redis_config import REDIS_CONFIG_1
 from .utils import get_queue_index
 
 
 @override_settings(RQ={'AUTOCOMMIT': True})
-class ViewTest(TestCase):
+class ViewTest(DjangoRQTestCase):
     def setUp(self):
+        super().setUp()
         self.user = User.objects.create_user('foo', password='pass')
         self.user.is_staff = True
         self.user.is_active = True
@@ -99,6 +102,280 @@ class ViewTest(TestCase):
         plain_job = queue.enqueue(access_self)
         response = self.client.get(reverse('admin:django_rq_job_detail', args=[queue_index, plain_job.id]))
         self.assertNotContains(response, 'Webhooks')
+
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_job_details_with_rate_limit(self):
+        """A job's rate limit is displayed on the job detail page (and hidden when absent)"""
+        from rq.rate_limit import RateLimit
+
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        job = queue.enqueue(access_self, rate_limit=RateLimit('reports', 2))
+        response = self.client.get(reverse('admin:django_rq_job_detail', args=[queue_index, job.id]))
+        self.assertContains(response, 'Rate limit')
+        self.assertContains(response, 'reports')
+        self.assertContains(response, 'Configured concurrency')
+
+        # A job without a rate limit doesn't render the rows
+        plain_job = queue.enqueue(access_self)
+        response = self.client.get(reverse('admin:django_rq_job_detail', args=[queue_index, plain_job.id]))
+        self.assertNotContains(response, 'Rate limit')
+
+    def _enqueue_rate_limited(self, concurrency, count, key='reports'):
+        """Enqueue `count` jobs sharing one rate limit key. Returns its page URL, registry and jobs."""
+        from rq.rate_limit import RateLimit, RateLimitRegistry
+
+        queue = get_queue('django_rq_test')
+        rate_limit = RateLimit(key, concurrency)
+        jobs = [queue.enqueue(access_self, rate_limit=rate_limit) for _ in range(count)]
+        url = reverse('admin:django_rq_rate_limit_detail', args=[get_queue_index('django_rq_test'), key])
+        return url, RateLimitRegistry(key, queue.connection), jobs
+
+    @override_settings(
+        RQ={'COMMIT_MODE': 'auto'},
+        # Two queues on one Redis: a key must be listed once, not once per queue.
+        RQ_QUEUES={
+            name: {'HOST': REDIS_CONFIG_1.host, 'PORT': REDIS_CONFIG_1.port, 'DB': REDIS_CONFIG_1.db}
+            for name in ('a_queue', 'b_queue')
+        },
+    )
+    def test_stats_lists_rate_limits(self):
+        """The dashboard lists registered rate limits, each linking to its detail page."""
+        from rq.rate_limit import RateLimit
+
+        queue = get_queue('a_queue')
+        queue.connection.flushdb()
+        url = reverse('admin:django_rq_home')
+
+        # With nothing registered the section still renders, with its empty state.
+        response = self.client.get(url)
+        self.assertContains(response, 'Rate limits')
+        self.assertContains(response, 'No rate limits.')
+
+        # concurrency=2, so two jobs hold a slot and the third waits for one.
+        for _ in range(3):
+            queue.enqueue(access_self, rate_limit=RateLimit('reports', 2))
+        response = self.client.get(url)
+
+        (rate_limit,) = response.context['rate_limits']
+        self.assertEqual(response.context['rate_limit_total'], 1)
+        self.assertEqual(
+            (rate_limit['concurrency'], rate_limit['slot_holder_count'], rate_limit['waiting_count']),
+            (2, 2, 1),
+        )
+        self.assertContains(response, '2 of 2')
+
+        content = response.content.decode()
+        detail_url = reverse('admin:django_rq_rate_limit_detail', args=[rate_limit['queue_index'], 'reports'])
+        self.assertEqual(rate_limit['url'], detail_url)
+        # Exactly once: queues sharing a connection must not each contribute a row.
+        self.assertEqual(content.count(f'href="{detail_url}"'), 1)
+        # The waiting count opens the detail page on the tab listing the jobs it counts.
+        self.assertIn(f'href="{detail_url}?tab=waiting"', content)
+        self.assertEqual(self.client.get(detail_url, {'tab': 'waiting'}).status_code, 200)
+
+        # A key that cannot go in a URL path is listed, but as plain text.
+        queue.enqueue(access_self, rate_limit=RateLimit('two\nlines', 1))
+        response = self.client.get(url)
+        unusable = [row for row in response.context['rate_limits'] if row['key'] == 'two\nlines']
+        self.assertEqual([row['url'] for row in unusable], [None])
+
+    @override_settings(
+        RQ={'COMMIT_MODE': 'auto'},
+        RQ_QUEUES={'a_queue': {'HOST': REDIS_CONFIG_1.host, 'PORT': REDIS_CONFIG_1.port, 'DB': REDIS_CONFIG_1.db}},
+    )
+    def test_stats_does_not_link_rate_limits_its_own_maintenance_removes(self):
+        """The dashboard runs RQ maintenance, which deletes drained registries, before listing."""
+        from rq.rate_limit import RateLimitRegistry
+
+        queue = get_queue('a_queue')
+        queue.connection.flushdb()
+        RateLimitRegistry('idle-key', queue.connection).register(7, queue.connection)
+
+        response = self.client.get(reverse('admin:django_rq_home'))
+        self.assertEqual(response.context['rate_limits'], [])
+        self.assertFalse(queue.connection.sismember(RateLimitRegistry.rl_keys_key, 'idle-key'))
+
+    @override_settings(
+        RQ={'COMMIT_MODE': 'auto'},
+        RQ_QUEUES={'a_queue': {'HOST': REDIS_CONFIG_1.host, 'PORT': REDIS_CONFIG_1.port, 'DB': REDIS_CONFIG_1.db}},
+    )
+    def test_stats_rate_limit_list_is_capped(self):
+        """Over the cap the dashboard shows a preview and says how many keys exist."""
+        from rq.rate_limit import RateLimit, RateLimitRegistry
+
+        queue = get_queue('a_queue')
+        queue.connection.flushdb()
+        # Zero padded so alphabetical order is also numerical order.
+        for index in range(21):
+            queue.enqueue(access_self, rate_limit=RateLimit(f'key-{index:02d}', 1))
+
+        response = self.client.get(reverse('admin:django_rq_home'))
+        keys = [row['key'] for row in response.context['rate_limits']]
+        self.assertEqual((len(keys), keys[0], keys[-1]), (20, 'key-00', 'key-19'))
+        self.assertContains(response, 'Showing the first 20 of 21 rate limits, by key')
+
+        # Within the cap there is nothing to say.
+        queue.connection.srem(RateLimitRegistry.rl_keys_key, 'key-20')
+        self.assertNotContains(self.client.get(reverse('admin:django_rq_home')), 'Showing')
+
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_rate_limit_detail(self):
+        """Each tab lists its own jobs, and anything but `waiting` falls back to holding"""
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+        # concurrency=1: the first job takes the only slot, the second waits for it.
+        url, _, (slot_holder, waiting_job) = self._enqueue_rate_limited(concurrency=1, count=2)
+
+        response = self.client.get(url)
+        self.assertEqual(response.context['tab'], 'holding')
+        self.assertEqual(response.context['concurrency_limit'], 1)
+        self.assertEqual([job['id'] for job in response.context['jobs']], [slot_holder.id])
+        # Both counts render on either tab, so the tabs and the summary box always agree
+        self.assertEqual(response.context['slot_holder_count'], 1)
+        self.assertEqual(response.context['waiting_count'], 1)
+        # Jobs link through their own queue, which here is the one in the URL
+        self.assertEqual(response.context['jobs'][0]['queue_index'], queue_index)
+        self.assertContains(response, 'tests.fixtures.access_self')
+
+        response = self.client.get(url, {'tab': 'waiting'})
+        self.assertEqual(response.context['tab'], 'waiting')
+        self.assertEqual([job['id'] for job in response.context['jobs']], [waiting_job.id])
+
+        # The tab is normalized in the view, so an unusable value never reaches the page
+        for tab in ('holding', 'bogus', '', 'Waiting', '"><script>alert(1)</script>'):
+            response = self.client.get(url, {'tab': tab})
+            self.assertEqual(response.context['tab'], 'holding', tab)
+        self.assertNotContains(response, '<script>alert(1)</script>')
+
+        # Every row fills the whole header, on both tabs
+        for tab in ('holding', 'waiting'):
+            body = self.client.get(url, {'tab': tab}).content.decode()
+            table = body.split('<table class="rq-table">')[1].split('</table>')[0]
+            self.assertEqual(len(re.findall(r'<th[ >]', table)), 5, tab)
+            for row in table.split('<tr>')[2:]:
+                self.assertEqual(len(re.findall(r'<td[ >]', row)), 5, tab)
+
+        # A tab with nothing in it says so, and shows no paginator
+        quiet_url, _, _ = self._enqueue_rate_limited(concurrency=5, count=1, key='quiet')
+        response = self.client.get(quiet_url, {'tab': 'waiting'})
+        self.assertContains(response, 'No jobs are waiting for a slot.')
+        self.assertNotContains(response, 'No jobs are holding a slot.')
+        self.assertNotContains(response, 'class="paginator"')
+
+        # Unreadable fields cost the value, not the page: a payload this queue's serializer cannot
+        # read, and a timestamp in no format RQ knows.
+        queue.connection.hset(waiting_job.key, 'data', b'not a payload')
+        queue.connection.hset(slot_holder.key, 'enqueued_at', 'garbage')
+        self.assertIsNone(self.client.get(url, {'tab': 'waiting'}).context['jobs'][0]['callable'])
+        self.assertIsNone(self.client.get(url).context['jobs'][0]['enqueued_at'])
+
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_rate_limit_detail_pagination(self):
+        """Each page reads its own slice of the registry, and every link keeps the tab"""
+        # 101 of the 103 jobs are admitted, so the holding tab spans two pages.
+        url, registry, _ = self._enqueue_rate_limited(concurrency=101, count=103)
+        admitted = registry.get_allowed_job_ids()
+
+        response = self.client.get(url)
+        self.assertEqual([job['id'] for job in response.context['jobs']], admitted[:100])
+        self.assertEqual(response.context['waiting_count'], 2)
+        self.assertContains(response, '101 jobs')
+        self.assertContains(response, 'href="?tab=holding&amp;page=2"')
+
+        response = self.client.get(url, {'page': 2})
+        self.assertEqual([job['id'] for job in response.context['jobs']], admitted[100:])
+
+        # The tab links page 2 offers carry no page of their own, so following one starts over
+        for tab in ('holding', 'waiting'):
+            self.assertContains(response, f'href="?tab={tab}"')
+            self.assertEqual(self.client.get(f'{url}?tab={tab}').context['page'], 1, tab)
+
+        # An unusable page lands on a valid one rather than a negative or oversized Redis offset
+        for page in ('0', '-1', 'abc', ''):
+            self.assertEqual(self.client.get(url, {'page': page}).context['page'], 1, page)
+        for page in ('3', '999', '9' * 30):
+            self.assertEqual(self.client.get(url, {'page': page}).context['page'], 2, page)
+
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_rate_limit_detail_skips_expired_jobs(self):
+        """A registry entry whose job is gone drops out of the rows but still counts"""
+        # One job holds the only slot; 101 wait, so one of them is alone on page 2. Read which from
+        # the registry, since jobs enqueued in the same instant are ordered by id, not by enqueue.
+        url, registry, jobs = self._enqueue_rate_limited(concurrency=1, count=102)
+        (page_two_id,) = registry.connection.zrange(registry.rate_limited_key, 100, 100)
+        registry.connection.delete(jobs[0].key, Job.key_for(page_two_id.decode()))
+
+        # The page it was alone on renders empty, but the count still includes it, so the tab,
+        # the paginator and the link back to page 1 all survive.
+        response = self.client.get(url, {'tab': 'waiting', 'page': 2})
+        self.assertEqual(response.context['jobs'], [])
+        self.assertEqual(response.context['tab_count'], 101)
+        self.assertContains(response, 'href="?tab=waiting&amp;page=1"')
+        self.assertNotContains(response, 'No jobs are waiting for a slot.')
+
+        # Same for the slot the vanished job still holds: counted, not listed, and not "empty"
+        response = self.client.get(url)
+        self.assertEqual(response.context['jobs'], [])
+        self.assertEqual(response.context['slot_holder_count'], 1)
+        self.assertNotContains(response, 'No jobs are holding a slot.')
+
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_rate_limit_detail_404s_for_unusable_keys(self):
+        """Missing, unregistered and type-clashing keys 404 rather than rendering an empty page"""
+        from rq.rate_limit import RateLimit
+
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+        queue.enqueue(access_self, rate_limit=RateLimit('reports', 1))
+
+        unknown = reverse('admin:django_rq_rate_limit_detail', args=[queue_index, 'nope'])
+        self.assertEqual(self.client.get(unknown).status_code, 404)
+        # `rq:rl:reports:allowed` is an existing sorted set, so reading it as this key's config
+        # hash would raise WRONGTYPE if membership weren't checked first.
+        clashing = reverse('admin:django_rq_rate_limit_detail', args=[queue_index, 'reports:allowed'])
+        self.assertEqual(self.client.get(clashing).status_code, 404)
+
+        missing_queue = reverse('admin:django_rq_rate_limit_detail', args=[len(settings.RQ_QUEUES), 'reports'])
+        self.assertEqual(self.client.get(missing_queue).status_code, 404)
+
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_rate_limit_key_is_only_linked_while_its_registry_exists(self):
+        """The job detail page keeps showing a key whose registry has gone, without a link"""
+        from rq.rate_limit import RateLimit, RateLimitRegistry
+
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+        job = queue.enqueue(access_self, rate_limit=RateLimit('reports', 1))
+
+        url = reverse('admin:django_rq_job_detail', args=[queue_index, job.id])
+        rate_limit_url = reverse('admin:django_rq_rate_limit_detail', args=[queue_index, 'reports'])
+        self.assertContains(self.client.get(url), rate_limit_url)
+
+        queue.connection.srem(RateLimitRegistry.rl_keys_key, 'reports')
+        response = self.client.get(url)
+        self.assertContains(response, 'reports')
+        self.assertNotContains(response, rate_limit_url)
+
+    @override_settings(RQ={'COMMIT_MODE': 'auto'})
+    def test_rate_limit_keys_with_awkward_characters(self):
+        """A key with a slash resolves; one a URL path can't carry leaves the page link-free"""
+        from rq.rate_limit import RateLimit
+
+        queue = get_queue('django_rq_test')
+        queue_index = get_queue_index('django_rq_test')
+
+        queue.enqueue(access_self, rate_limit=RateLimit('tenant/42', 1))
+        url = reverse('admin:django_rq_rate_limit_detail', args=[queue_index, 'tenant/42'])
+        self.assertEqual(self.client.get(url).context['rate_limit_key'], 'tenant/42')
+
+        # A newline can't be reversed into a path, so job detail still renders, just without
+        # the link, rather than raising NoReverseMatch.
+        job = queue.enqueue(access_self, rate_limit=RateLimit('two\nlines', 1))
+        response = self.client.get(reverse('admin:django_rq_job_detail', args=[queue_index, job.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['rate_limit_url'])
 
     def test_job_details_with_results(self):
         """Job with results is displayed properly"""
@@ -514,39 +791,16 @@ class ViewTest(TestCase):
             self.assertEqual(response.status_code, 401)
 
     def test_action_stop_jobs(self):
+        """Stopping jobs sends RQ's stop-job command for each selected job."""
         queue = get_queue('django_rq_test')
         queue_index = get_queue_index('django_rq_test')
+        job_ids = [queue.enqueue(access_self).id for _ in range(3)]
 
-        # Enqueue some jobs
-        job_ids, jobs = [], []
-        worker = get_worker('django_rq_test')
-        # Due to implementation details in RQ v2.x, this test only works
-        # with a single job. This test should be changed to use mocks
-        for _ in range(1):
-            job = queue.enqueue(access_self)
-            job_ids.append(job.id)
-            jobs.append(job)
-            worker.prepare_job_execution(job)
-            worker.prepare_execution(job)
-
-        # Check if the jobs are started
-        for job_id in job_ids:
-            job = Job.fetch(job_id, connection=queue.connection)
-            self.assertEqual(job.get_status(), JobStatus.STARTED)
-
-        # Stop those jobs using the view
-        started_job_registry = StartedJobRegistry(queue.name, connection=queue.connection)
-        self.assertEqual(len(started_job_registry), len(job_ids))
-        self.client.post(reverse('admin:django_rq_actions', args=[queue_index]), {'action': 'stop', 'job_ids': job_ids})
-        for job in jobs:
-            worker.monitor_work_horse(job, queue)  # Sets the job as Failed and removes from Started
-        self.assertEqual(len(started_job_registry), 0)
-
-        canceled_job_registry = FailedJobRegistry(queue.name, connection=queue.connection)
-        self.assertEqual(len(canceled_job_registry), len(job_ids))
-
-        for job_id in job_ids:
-            self.assertTrue(job_id in canceled_job_registry)
+        with mock.patch('django_rq.utils.send_stop_job_command') as send_stop_job_command:
+            self.client.post(
+                reverse('admin:django_rq_actions', args=[queue_index]), {'action': 'stop', 'job_ids': job_ids}
+            )
+        self.assertEqual([call.args[1] for call in send_stop_job_command.call_args_list], job_ids)
 
     # def test_scheduler_jobs(self):
     #     # Override testing RQ_QUEUES

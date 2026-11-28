@@ -1,8 +1,54 @@
-from typing import Any
+import warnings
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, NamedTuple
 
 import redis
 from redis import Redis
-from redis.sentinel import Sentinel
+from redis.connection import Connection, SSLConnection, UnixDomainSocketConnection
+from redis.sentinel import Sentinel, SentinelConnectionPool
+
+
+class ConnectionType(Enum):
+    TCP = 'tcp'
+    UNIX = 'unix'
+    SENTINEL = 'sentinel'
+    UNKNOWN = 'unknown'
+    FAILED_QUEUE = 'failed_queue'
+
+
+class TCPAddress(NamedTuple):
+    host: str
+    port: int
+
+
+class SentinelAddress(NamedTuple):
+    endpoints: tuple[TCPAddress, ...]
+    service_name: str
+
+
+ConnectionAddress = TCPAddress | SentinelAddress | str | int
+
+
+@dataclass(frozen=True)
+class ConnectionIdentity:
+    connection_type: ConnectionType
+    address: ConnectionAddress
+    db: int | None
+
+
+@dataclass
+class ConnectionGroup:
+    identity: ConnectionIdentity
+    names: list[str]
+    _connection: Redis | Exception
+
+    @property
+    def connection(self) -> Redis:
+        """Return the Redis client or raise its original initialization error."""
+        if isinstance(self._connection, Exception):
+            raise self._connection
+        return self._connection
 
 
 def get_redis_connection(config: dict[str, Any], use_strict_redis: bool = False) -> Redis:
@@ -85,6 +131,68 @@ def get_connection(
     return get_redis_connection(QUEUES[name], use_strict_redis)
 
 
+def get_connection_identity(connection: Redis) -> ConnectionIdentity:
+    """Identify a configured Redis database or fall back to the client pool's identity."""
+    pool = connection.connection_pool
+    kwargs = pool.connection_kwargs
+    connection_class = getattr(pool, 'connection_class', None)
+    fallback = ConnectionIdentity(ConnectionType.UNKNOWN, id(pool), None)
+    try:
+        db = int(kwargs.get('db') or 0)
+        if isinstance(pool, SentinelConnectionPool):
+            endpoints = set()
+            for sentinel in pool.sentinel_manager.sentinels:
+                options = sentinel.connection_pool.connection_kwargs
+                endpoints.add(TCPAddress(options['host'], int(options['port'])))
+            if endpoints:
+                address = SentinelAddress(tuple(sorted(endpoints)), pool.service_name)
+                return ConnectionIdentity(ConnectionType.SENTINEL, address, db)
+        elif connection_class is UnixDomainSocketConnection and kwargs.get('path'):
+            return ConnectionIdentity(ConnectionType.UNIX, kwargs['path'], db)
+        elif connection_class in (Connection, SSLConnection):
+            host = kwargs.get('host')
+            if host is None:
+                host = 'localhost'
+            port = int(kwargs.get('port', 6379))
+            return ConnectionIdentity(ConnectionType.TCP, TCPAddress(host, port), db)
+    except (KeyError, TypeError, ValueError):
+        # Incomplete metadata can identify the wrong target, especially for Sentinel.
+        return fallback
+    return fallback
+
+
+def get_connection_groups() -> list[ConnectionGroup]:
+    """Group queue names by Redis database, ordered by each group's first queue name."""
+    from .settings import get_queues_list
+
+    group_by_identity: dict[ConnectionIdentity, ConnectionGroup] = {}
+    for config in get_queues_list():
+        name = config['name']
+        try:
+            connection = get_redis_connection(config['connection_config'])
+        except Exception as error:
+            # Keep the index reserved when a client cannot be constructed.
+            identity = ConnectionIdentity(ConnectionType.FAILED_QUEUE, name, None)
+            group_by_identity[identity] = ConnectionGroup(identity, [name], error)
+            continue
+        identity = get_connection_identity(connection)
+        group = group_by_identity.setdefault(identity, ConnectionGroup(identity, [], connection))
+        group.names.append(name)
+    return list(group_by_identity.values())
+
+
+def get_connection_label(identity: ConnectionIdentity) -> str:
+    address = identity.address
+    if isinstance(address, TCPAddress):
+        return f'{address.host}:{address.port}/{identity.db}'
+    if isinstance(address, SentinelAddress):
+        hosts = ', '.join(f'{host}:{port}' for host, port in address.endpoints)
+        return f'{address.service_name}/{identity.db} ({hosts})'
+    if identity.connection_type is ConnectionType.UNIX:
+        return f'{address}/{identity.db}'
+    return '—'
+
+
 def filter_connection_params(queue_params: dict[str, Any]) -> dict[str, Any]:
     """
     Filters the queue params to keep only the connection related params.
@@ -111,11 +219,15 @@ def filter_connection_params(queue_params: dict[str, Any]) -> dict[str, Any]:
 
 
 def get_unique_connection_configs(config: dict[str, dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    """Return distinct connection configurations, ordered by queue name.
+
+    Deprecated. Cron indexes follow the order returned by get_connection_groups().
     """
-    Returns a list of unique Redis connections from config in deterministic order.
-    Configs are ordered based on sorted queue names, allowing reliable use of
-    connection_index to access specific connections.
-    """
+    warnings.warn(
+        'get_unique_connection_configs() is deprecated. Use get_connection_groups() for cron connection indexes.',
+        DeprecationWarning,
+        stacklevel=2,
+    )
     if config is None:
         from .settings import QUEUES
 
@@ -131,15 +243,5 @@ def get_unique_connection_configs(config: dict[str, dict[str, Any]] | None = Non
 
 
 def get_connection_by_index(index: int) -> Redis:
-    """
-    Returns a Redis connection using parameters from the unique connection
-    at the specified index in get_unique_connection_configs()
-
-    Args:
-        index: The index of the connection in the unique connection configs list
-
-    Returns:
-        A Redis connection instance
-    """
-    config = get_unique_connection_configs()[index]
-    return get_redis_connection(config)
+    """Return a client for the database at the specified group index."""
+    return get_connection_groups()[index].connection

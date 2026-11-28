@@ -1,13 +1,21 @@
 import datetime
 
 from django import template
+from django.core.paginator import Paginator
 from django.urls import reverse
 from django.utils import dateformat, timezone
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from rq.exceptions import InvalidJobOperation
 
+from ..connection_utils import get_connection_identity, get_connection_label
+
 register = template.Library()
+
+
+@register.filter
+def redis_connection_label(connection):
+    return get_connection_label(get_connection_identity(connection))
 
 
 @register.filter
@@ -62,6 +70,12 @@ def job_status(job):
     except InvalidJobOperation:
         return 'unknown'
     return getattr(status, 'value', status)
+
+
+@register.filter
+def is_ellipsis(page_number):
+    """True for the gap markers in an elided page range, which are text rather than links."""
+    return page_number == Paginator.ELLIPSIS
 
 
 @register.filter
