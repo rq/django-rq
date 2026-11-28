@@ -3,6 +3,7 @@
 import contextlib
 import io
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -294,3 +295,28 @@ class TestURLConfiguration(unittest.TestCase):
 
             url = reverse('admin:index')
             self.assertEqual(url, '/admin/')
+
+
+class TestEntryPoint(unittest.TestCase):
+    """The console script has to start outside a Django project, where settings don't exist."""
+
+    def test_help_works_without_django_settings_module(self):
+        repo_root = Path(__file__).resolve().parent.parent
+        # CI runs the suite from a source checkout without installing the package, so
+        # point PYTHONPATH at the repo rather than relying on an installed distribution.
+        env = {key: value for key, value in os.environ.items() if key != 'DJANGO_SETTINGS_MODULE'}
+        env['PYTHONPATH'] = str(repo_root)
+
+        # Mirrors what the console script wrapper does, so this covers the callable
+        # registered in pyproject.toml.
+        result = subprocess.run(
+            [sys.executable, '-c', 'from django_rq.dashboard import main; raise SystemExit(main())', '--help'],
+            cwd=repo_root,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('usage: rq-dashboard', result.stdout)
